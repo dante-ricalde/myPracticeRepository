@@ -1,0 +1,46 @@
+
+Main User:					Users Logged:
+Keluchis					Dantito (queue to subscribe -> dantito_keluchis)
+							Danielito (queue to subscribe -> danielito_keluchis)
+							Dante (queue to subscribe -> dante_keluchis)
+							
+queues to subscribe for keluchis:
+keluchis_notification (used to receive notifications from the system)
+keluchis_dantito
+keluchis_danielito
+keluchis_dante
+
+If keluchis starts the conversation:
+
+	keluchis sends the message using: dante_keluchis -> dante receives the messages at: dante_keluchis
+	dante answers the message using: keluchis_dante  -> keluchis receives the messages at: keluchis_dante
+	
+If dante starts the conversation:
+
+	dante sens the message using: keluchis_dante -> keluchis receives the messages at: keluchis_dante
+	keluchis answers the message using: dante_keluchis -> dante receives the messages at: dante_keluchis
+
+
+=========================================================================================================
+
+
+Main User:					Users Logged:
+Dante						Keluchis (queue to subscribe -> keluchis_dante)
+							Dantito (queue to subscribe -> dantito_dante)
+							Danielito (queue to subscribe -> danielito_dante)
+							
+queues to subscribe for Dante:
+dante_notification (used to receive notifications from the system)
+dante_keluchis
+dante_dantito
+dante_danielito
+
+If Dante starts the conversation:
+
+	dante sends the message using: keluchis_dante -> keluchis receives the messages at: keluchis_dante
+	keluchis answers the message using: dante_keluchis ->dante receives the messages at: dante_keluchis
+	
+If keluchis starts the conversation:
+
+	keluchis sends the message using: dante_keluchis -> dante receives the messages at: dante_keluchis
+	dante answers the message using: keluchis_dante -> keluchis receives the messages at: keluchis_dante

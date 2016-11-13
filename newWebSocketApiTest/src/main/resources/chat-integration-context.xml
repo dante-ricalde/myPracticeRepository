@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-ip="http://www.springframework.org/schema/integration/ip" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:task="http://www.springframework.org/schema/task" xmlns:util="http://www.springframework.org/schema/util" 
+	xmlns:int-stomp="http://www.springframework.org/schema/integration/stomp"
+	xmlns:int-websocket="http://www.springframework.org/schema/integration/websocket"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd
+		http://www.springframework.org/schema/integration/stomp http://www.springframework.org/schema/integration/stomp/spring-integration-stomp-4.3.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-4.3.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-4.3.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.3.xsd
+		http://www.springframework.org/schema/integration/websocket http://www.springframework.org/schema/integration/websocket/spring-integration-websocket-4.3.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.6.xsd">
+	
+	
+	<websocket:message-broker application-destination-prefix="/appChatRelay">
+<!--    		<websocket:stomp-endpoint path="/chatRelay" allowed-origins="http://chat-1.rp3svkvi3k.us-west-2.elasticbeanstalk.com,https://chat-1.rp3svkvi3k.us-west-2.elasticbeanstalk.com"> -->
+   		<websocket:stomp-endpoint path="/chatRelay">
+<!-- 		<websocket:stomp-endpoint path="/whatsAppRelay" allowed-origins="http://newwebsocketapitest.cfapps.io,https://newwebsocketapitest.cfapps.io"> -->
+			<websocket:handshake-interceptors>
+			    <bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+			</websocket:handshake-interceptors>
+			<websocket:sockjs heartbeat-time="20000" client-library-url="../../../js/sockjs-1.0.3.js" />
+		</websocket:stomp-endpoint>
+<!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-host="squirrel.rmq.cloudamqp.com" relay-port="5672" system-login="jdukblll" system-passcode="0AVItKp3pcPgYzqpB3Po8IOwjhHRIzN5" client-login="jdukblll" client-passcode="0AVItKp3pcPgYzqpB3Po8IOwjhHRIzN5" /> -->
+		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" />
+<!-- 			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" /> -->
+	</websocket:message-broker>
+	
+	<int:channel id="welcomeChannel" />
+	
+	<int:channel id="chatSubscribeChannel" />
+	
+	<int-event:inbound-channel-adapter event-types="org.springframework.web.socket.messaging.SessionSubscribeEvent" channel="chatSubscribeChannel" />
+	
+	<!--****************************************************** RabbitMQ Configuration ************************************************************ -->
+	
+	<rabbit:connection-factory id="connectionFactory" host="localhost" />
+	
+<!-- 	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" p:host="localhost"></bean> -->
+	
+	<rabbit:admin connection-factory="connectionFactory" auto-startup="true" />
+	
+<!-- 	<bean id="admin" class="org.springframework.amqp.rabbit.core.RabbitAdmin" c:connectionFactory-ref="connectionFactory" p:autoStartup="true" > -->
+		
+<!-- 	</bean> -->
+	
+	<rabbit:queue id="messagesKeluchisNotificationQueue" name="messagesKeluchisNotificationQueue" />
+	
+	<rabbit:direct-exchange name="chatDirectExchange">
+		<rabbit:bindings>
+			<rabbit:binding key="messages-keluchis-notification" queue="messagesKeluchisNotificationQueue" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
+
+<!-- 	<bean id="anonymousNyseMarketDateQueue" class="org.springframework.amqp.core.Queue" c:name="anonymousNyseMarketDateQueue" p:shouldDeclare="true"> -->
+<!-- 		<property name="adminsThatShouldDeclare"> -->
+<!-- 			<array> -->
+<!-- 				<ref bean="admin"/> -->
+<!-- 			</array> -->
+<!-- 		</property> -->
+<!-- 	</bean> -->
+	
+	
+</beans>

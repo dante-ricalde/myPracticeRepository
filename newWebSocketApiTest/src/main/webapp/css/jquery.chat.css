@@ -1,0 +1,41 @@
+@CHARSET "UTF-8";
+.chat-window {
+	text-align: center;	
+}
+
+.chat-window .chat-text-messages {
+	width: 97%;
+	padding: 5px;
+	height: 56%;
+	font-size: 0.8em;
+	background-color: white;
+	text-align: left;
+	overflow: scroll;
+}
+
+.chat-window input {
+	width: 99%;
+	margin: 20px;
+	margin-left: 0px;
+	display: block;
+}
+
+.chat-window button {
+	
+}
+
+.chat-received-message {
+	color: blue;
+	margin: 1px;
+}
+
+.chat-sent-message {	
+	color: maroon;
+	margin: 1px;
+}
+
+.chat-message-time {
+	color: gray;
+	font-size: 0.5em;
+	margin-left: 3px;
+}

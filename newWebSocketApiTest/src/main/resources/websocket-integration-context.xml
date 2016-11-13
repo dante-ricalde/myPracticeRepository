@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-ip="http://www.springframework.org/schema/integration/ip" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:task="http://www.springframework.org/schema/task" xmlns:util="http://www.springframework.org/schema/util" 
+	xmlns:int-stomp="http://www.springframework.org/schema/integration/stomp"
+	xmlns:int-websocket="http://www.springframework.org/schema/integration/websocket"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:c="http://www.springframework.org/schema/c"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.1.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.1.xsd
+		http://www.springframework.org/schema/integration/stomp http://www.springframework.org/schema/integration/stomp/spring-integration-stomp-4.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-4.2.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-4.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.2.xsd
+		http://www.springframework.org/schema/integration/websocket http://www.springframework.org/schema/integration/websocket/spring-integration-websocket-4.2.xsd">
+	
+	<!-- The first case of the websocket channel adapters is simply, the message is received by the inbound and the response to the client is sent by the outbound channel adapter and in this case the message is
+	processed by the int-websocket:server-container for receiving from the client and sending the message to the client. (Though the property use-broker is true is not used a broker in this case because the messages are
+	from type Message and don't have destinations).
+	
+	
+	The second case is the following.
+	The message is received from the client by the WebSocketGateway which sends the (@MessageMapping("/integrationGreeting")) the message to the channel 'greetingChannel', that message is processed by the GatewayProcessor which
+	modify the payload of the message, then returns the message and is sent to the channel 'replyGreetingChannel' and that is a publish-subscribe-channel which transmit the message first to a transformer to send later the message
+	by the <int-stomp:outbound-channel-adapter to the destination '/exchange/amq.direct/messages-dante-kelly', when that happens the message is now transmitted to the replyGreetingChannelSA service activator to send the message using 
+	the template, and the finally the message is transmitted by the publish-subscribe-channel 'replyGreetingChannel' to the WebSocketGateway to send the message to the destination '@SendTo(value = "/topic/integrationGreetingResponse")'.
+	All those messages are sent to the destinations to the client using the stompSessionManager or the template or the Gateway and are consumed by the client by the subscribe operations to the destinations: '/exchange/amq.direct/messages-dante-kelly'
+	and '/topic/integrationGreetingResponse'. The messages sent to the destination '/exchange/amq.direct/messages-dante-kelly' are not only being received in the client, else are also being consumed by the <int-stomp:inbound-channel-adapter.
+	
+	  -->
+	
+	<int-websocket:server-container id="wsc" path="/sockJsChatRelay">
+		<int-websocket:sockjs />
+	</int-websocket:server-container>
+	
+	<int-websocket:inbound-channel-adapter id="wicha" container="wsc" use-broker="true" />
+	
+	<int:service-activator id="wichaSA" input-channel="wicha" output-channel="wichaSAoCh" expression="#this" auto-startup="true" />
+	
+	<int:channel id="wichaSAoCh" />
+	
+	<int-websocket:outbound-channel-adapter id="wocha" container="wsc" channel="wichaSAoCh" />
+	
+	<int:channel id="greetingChannel" />
+	
+	<int:service-activator id="greetingChannelSA" input-channel="greetingChannel" output-channel="replyGreetingChannel" ref="gatewayProcessor" requires-reply="true" auto-startup="true" />
+	
+	<int:publish-subscribe-channel id="replyGreetingChannel" />
+	
+	<bean id="stompClient" class="org.springframework.messaging.simp.stomp.Reactor2TcpStompClient" c:host="127.0.0.1" c:port="61613" p:messageConverter-ref="jMessageConverter"
+		p:receiptTimeLimit="30000" p:taskScheduler-ref="myScheduler" />
+
+	<bean id="stompSessionManager" class="org.springframework.integration.stomp.Reactor2TcpStompSessionManager" c:reactor2TcpStompClient-ref="stompClient" p:autoReceipt="true" />
+	
+	<bean id="jMessageConverter" class="org.springframework.messaging.converter.MappingJackson2MessageConverter" />
+	
+	<int:transformer input-channel="replyGreetingChannel" output-channel="simpleStompOChA" order="2" 
+		expression="T(org.springframework.messaging.support.MessageBuilder).withPayload(payload).copyHeaders(#this.headers['nativeHeaders']['destination']=T(java.util.Arrays).asList('')).setHeader('StompOutboundChannelAdapter', 'true').build()" ></int:transformer>
+	
+	<int-stomp:outbound-channel-adapter id="simpleStompOChA" stomp-session-manager="stompSessionManager" 
+		destination-expression="'/exchange/amq.direct/messages-'+#this.payload.sender+'-'+#this.payload.recipient" mapped-headers="STOMP_OUTBOUND_HEADERS, StompOutboundChannelAdapter"></int-stomp:outbound-channel-adapter>
+		
+	<int:service-activator id="replyGreetingChannelSA" input-channel="replyGreetingChannel" ref="usingTemplateServiceActivator" order="3" />
+		
+	<int:channel id="stompInputChannel" />
+
+	<int-stomp:inbound-channel-adapter id="simpleStompIChA" stomp-session-manager="stompSessionManager" channel="stompInputChannel"
+		destinations="/exchange/amq.direct/messages-dante-kelly" payload-type="test.org.spring.websocket.api.model.ChatMessage" />	
+		
+	<websocket:message-broker application-destination-prefix="/appChatRelay">
+   		<websocket:stomp-endpoint path="/chatRelay">
+			<websocket:handshake-interceptors>
+			    <bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+			</websocket:handshake-interceptors>
+			<websocket:sockjs heartbeat-time="20000" />
+		</websocket:stomp-endpoint>
+		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" />
+	</websocket:message-broker>
+	
+</beans>

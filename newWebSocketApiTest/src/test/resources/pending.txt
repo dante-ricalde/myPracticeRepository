@@ -1,0 +1,224 @@
+1. To load the app with a test java class lifting the context (OK)
+2. To test if the server websocket endpoint is loaded by using the runtime monitoring if it is possible, if not by using a java client
+or browser client to call to the web socket endpoint (it can be used controlers if desired). (OK --> using java and browser client)
+3. try not to use spring mvc, try using WebSocketHttpRequestHandler (OK --> in MVC with WebSocketHttpRequestHandler)
+
+I left creating the web.xml for servlet 3.0 to deploy the web app and test the server websocket endpoint. (OK)
+
+14/05
+
+I left at 
+For client side WebSocket configuration, you should use WebSocketContainerFactoryBean (XML) or ContainerProvider.getWebSocketContainer() (Java config). (OK)
+
+and testing the app with a tyrus client: (OK --> I used standar web socket client and tomcat on the server side)
+- delete this class: UsingAnnotationsClient
+- finish testing this class: XmlApplicationContextTests: I get an error originated by this bean included recently
+
+	<bean class="org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean">
+		<property name="maxTextMessageBufferSize" value="8192" />
+		<property name="maxBinaryMessageBufferSize" value="8192" />
+	</bean>
+	
+	in websocket-context.xml
+	
+When I finish the test client I need to continue to:  For Jetty, you�ll need to supply a pre-configured Jetty
+
+I left at:
+
+21.2.6 Configuring allowed origins
+
+28/05/2015
+I need to lift an app with domain http://mydomain.com and try to consume the web socket <websocket:handlers allowed-origins="http://mydomain.com">
+		<websocket:mapping handler="myHandler" path="/myDomainHandler" /> created in localhost.
+
+This statement:
+
+var myDomainWS2 = new WebSocket("ws://mydomain.com:8080/webSocketApiTest/anyUrlPattern/myDomainHandler")
+
+is bad, I need to put this statement (lines)
+var myDomainWS2 = new WebSocket("ws://localhost:8080/webSocketApiTest/anyUrlPattern/myDomainHandler"), replace localhost by local ip
+ in the app lifted with domain 	http://mydomain.com to consume the web socket in /webSocketApiTest app in localhost.	
+		
+I left at: 
+21.3 SockJS Fallback Options
+
+2/06
+I left at:
+Enable SockJS
+
+7/06
+I left at 21.3.4 Heartbeat Messages
+testing if the heartbeat messages are sent by the server with its scheduler (viewing in the logs (STS console)) . I would like to log them when a heartbeat is received
+in the client.
+
+11/06
+I left at: 
+
+21.3.5 Servlet 3 Async Requests
+and reading the intersting articles:
+
+https://spring.io/blog/2012/05/08/spring-mvc-3-2-preview-techniques-for-real-time-updates/
+https://java.net/jira/browse/SERVLET_SPEC-44
+
+16/06
+I left at:
+
+21.3.7 SockJS Client
+and doing the sockjs client test
+
+20/06
+I left at: 
+21.3.7 SockJS Client
+and doing the test XmlApplicationContextTest.testSockJsClientUsingXhrTransport for testing
+
+HttpClient jettyHttpClient = new HttpClient();
+jettyHttpClient.setMaxConnectionsPerDestination(1000);
+jettyHttpClient.setExecutor(new QueuedThreadPool(1000));
+
+25/06
+I left at:
+21.4 STOMP Over WebSocket Messaging Architecture
+
+02/07
+I left at:
+On the browser side, a client might connect as follows using stomp.js and the sockjs-client:
+and makint the jsp: simpleStompSample.jsp
+
+07/07 ==> 12:07
+I left at:
+The following explains the message flow for the above example:
+and
+Testing the GreetingController and then I need to test the 4 following items from:
+
+The following explains the message flow for the above example:
+
+11/07 ==> 6:30a.m -> 2:05 p.m
+I left the doc at:
+Greetings sent to "/app/greeting" pass through the "clientInboundChannel"
+I finished testing this case: Greetings sent to "/app/greeting" pass through the "clientInboundChannel", I need to test the remaining cases.
+I couldn't configure clientInboundChannel, clientOutboundChannel and brokerChannel because I couldn't set them an 'id' attribute and I couldn't set them handlers to those channels.
+
+15/07 ==> 1:35 a.m -> 6:40
+I left the doc at:
+By default the return value from an @SubscribeMapping method is sent as a message directly back t
+I finished the test where By default the return value from an @SubscribeMapping method is sent as a message directly back to the connected client and does not pass through the broker.
+I need to do the test when the resulting message is sent to the "brokerChannel" 
+
+22/07 ==> 12:25 -> 4:06
+21.4.5 Sending Messages
+
+25/07 ==> 6:55 -> 1:59
+21.4.5 Sending Messages
+I finished the example that makes a post call, it's received by the controller and then it's forwarded to the broker to be consumed by the client (subscriber)
+I need to document this part in the file sendingMessgagesStompSample.jsp
+
+29/07 ==> 4:20 -> 7:20
+
+02/08 ==> 8:20 -> 2:48
+I left the doc at: 
+25.4.7 Full-Featured Broker
+I stayed lifting a broker relay <websocket:message-broker application-destination-prefix="/appBrokerRelay">, using the reactor-net. I got lifting the app and I think
+I need to continue to install rabbit to connect.
+Observation: When the broker relay is up, the simple broker is unavailable
+
+08/08 ==> 8:40 ->
+
+14/08 ==> 4:00 -> 7:15
+I left the doc at: 
+25.4.7 Full-Featured Broker
+I need to analyze the queues and polish the chat
+
+18/08 ==> 3:55 -> 7:00
+25.4.10 Authentication
+
+23/08 ==> 8:55 -> 11:35
+25.4.11 User Destinations
+I am going to build a chat, first login in the app, then choosing a user to chat and finally chat with the user in a dialog window.
+
+29/08 ==> 7:55 -> 1:40
+I left creating the chat, I need to return the users connected to myChat.jsp to connect to an user and start a conversation creating their user queue, sending the messages to the respective user.
+
+01/09 ==> 5:10 -> 7:14
+create a plugin of the form: $('#content').chat(options); to manage all the chat process (creating the dialogs, the calls to the websockets and all the ui needed).
+
+03/09 ==> 4:40 -> 7:00
+I left creating the window dialog to chat with another user, i need to set the standard css for jquery ui. (the jquery ui is downloaded in download folder)
+
+20/09 ==> 
+I need to program the case when a user is connected and another one signs in so that the first user sees immediately when the second user has signed in. (100%)
+-When I send a message I need to remove my duplicated message sent of the view I am and in the another view where I have signed in I need to change the colour of the my message sent to brown. (100%)
+- I need to remove the possibility of send a message to myself (I need to remove myself from the list) (100%).
+
+27/09 ==> 7:05 -> 16:05
+30/09 ==> 4:45 -> 8:13
+	I left the doc at:	
+	25.4.13 STOMP Client
+	I left fixing the tests: I have created the bean <bean id="sessionRegistry" class="org.springframework.security.core.session.SessionRegistryImpl in the test context
+	to avoid errors in private SessionRegistry sessionRegistry in ChatController.
+	Review this .webAppContextSetup(context, springSecurity()) at the url:
+	.webAppContextSetup(context, springSecurity())
+	
+ 01/10 ==> 4:40 -> 7:55
+ I stayed finishing my test to connect with the java stomp client.
+ I need to review this:
+ http://databasefaq.com/index.php/answer/69808/java-spring-spring-websocket-websocketstompclient-wont-connect-to-sockjs-endpoint
+ to only config a single endpoint for both (web socket config app and test).
+ 
+ 03/10 ==> 7:30 - 16:10
+ 04/10 ==> 8:10 - 14:00
+  	I left at: 25.4.14 WebSocket Scope
+  	
+ Improvements to make to chat:
+ 
+ 1.) When a user is disconnected, notify him that he is disconnected with a message, and when the user logs in again in the app he can received the pending messages which he couldn't 
+ 	receive while disconnected (using the heartbeats and trying to reconnect from the client if it's possible and if it's necessary try to log in automatically from the client showing a message
+ 	that the user has been reconnected).
+ 2.) Add the time and the user name to the message sent.
+ 3.) Show all the users but highlighting with a green colour button the users connected.
+ 4.) Add the acknowledgements to the messages sent with a single tick when the message has been successfully sent (use the receipts for this when sending the message), a double tick 
+ 	when the message has been delivered to the recipient, and a green double tick when the recipient has read your message.
+
+ 	
+ 8/10 ==> 5:00 - 8:00
+ 	I left at: 25.4.16 Runtime Monitoring
+ 9/10 ==> 5:00- 7:30
+ 	I finished to read all the doc from: http://docs.spring.io/spring/docs/current/spring-framework-reference/html/websocket.html
+ 11/10 ==> 7:00 - 12:00
+ 12/10 ==> 7:44 - 12:53
+ 	I left with both adapters working. I need to read the part about headers (28.5 STOMP Headers Mapping) and a bit more the namespace configuration. It would be great to apply the (STOMP Integration Events) 	 	 
+ 16/10 ==> 5:00 - 8:08
+ 	I have finished with the chapter: 28. STOMP Support. I need to start with the chapter: 33. WebSockets Support
+ 18/10 ==> 7:38 - 11:00
+ 21/10 ==> 5:30 - 9:15
+ 22/10 ==> 5:05 - 8:10
+ 24/10 ==> 5:05 - 10:47
+ 	I left at 33.2 Overview
+ 26/10 ==> 5:45 - 7:45
+ 	I left at 33.5 WebSockets Namespace Support
+ 27/10 ==> 5:50 - 8:50
+ 	I left reviewing this: I left at 33.5 WebSockets Namespace Support
+ 29/10 ==> 5:30 - 8:50
+ 
+ 3/11 =>
+ 	I need to implement receipts in the client because sometimes the subscribe messages take a few time to be sent to the rabbit mq broker by the StompBrokerRelayMessageHandler and the send
+ message is sent first before (I could solve it using a timeout of 10 seconds for example to send). The best solution is using receips in stomp js client.
+ 
+https://localhost:4443/anyUrlPattern/@websocketSpringIntegration
+
+15/11 =>
+	7:10 => 10:30
+22/11 => 7:55 - 13:23
+28/11 => 7:00 - 11:00
+
+12/06/2016
+	I need to implement the highlighted double tick to show that the recipient has read the message.
+	Solution:
+		- When the recipient receives the message besides sending the message indicating that is received by the client it's necessary to send a message indicating
+		that the message has been read if the user window is open.
+		When the user window passes from being closed to open it's necesary to send a message to the messages-message.sender-notification that the messages has been read
+		so that the sender can mark all the messages that have not been marked as read as read.   
+		
+		
+CHAT URL in local: https://localhost:4443/anyUrlPattern/chat/myChat
+CHAT URL in local: http://localhost:8080/anyUrlPattern/chat/myChat
+CHAR URL in AWS: http://52.41.40.149:8080/webSocketApiTest/anyUrlPattern/chat/myChat

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:task="http://www.springframework.org/schema/task" xmlns:int="http://www.springframework.org/schema/integration"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.1.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.1.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.1.xsd">
+
+	<context:component-scan base-package="test.org.spring.websocket.api" />
+
+	<websocket:handlers>
+<!-- 	<websocket:handlers allowed-origins="*"> -->
+		<websocket:mapping handler="myHandler" path="/myHandler" />
+		<websocket:handshake-interceptors>
+			<bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+		</websocket:handshake-interceptors>
+	</websocket:handlers>
+
+	<websocket:handlers allowed-origins="http://mydomain.com">
+		<websocket:mapping handler="myHandler" path="/myDomainHandler" />
+		<websocket:handshake-interceptors>
+			<bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+		</websocket:handshake-interceptors>
+	</websocket:handlers>
+
+	<websocket:handlers allowed-origins="*">
+		<websocket:mapping handler="myHandler" path="/allOriginsHandler" />
+		<websocket:handshake-interceptors>
+			<bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+		</websocket:handshake-interceptors>
+	</websocket:handlers>
+
+	<websocket:handlers allowed-origins="http://localhost:8080">
+<!-- 	<websocket:handlers allowed-origins="*"> -->
+		<websocket:mapping handler="myHandler" path="/myHandlerWithSockJs" />
+		<websocket:handshake-interceptors>
+			<bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+		</websocket:handshake-interceptors>
+		<websocket:sockjs heartbeat-time="5000" scheduler="myScheduler" stream-bytes-limit="524288" message-cache-size="1000" disconnect-delay="30000" />
+	</websocket:handlers>
+
+	<task:scheduler id="myScheduler" pool-size="50" />
+
+	<!-- In this simple case, the stompClientDestination sends a message and then is received by the StompSubProtocolHandler which pass the message to SimpAnnotationMethodMessageHandler 
+		which then pass the message to the annotated method for application handling in GreetingController. As this message-handling annotated method has a return type, its return type is sent 
+		as the payload of a Spring Message to the SimpleBrokerMessageHandler. (The controller adds the current time, and the return value is passed through the "brokerChannel" as a message 
+		to "/topic/greeting" (destination is selected based on a convention but can be overridden via @SendTo).). Then the broker in turn doesn't broadcasts the message to clients because there 
+		are not subscribers to it. This message-broker uses the default heartbeats from the sockjs (25 seconds by default).
+		You need to take into account that in the process the clientInboundChannel, clientOutboundChannel and brokerChannel are being used. 
+		
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - DispatcherServlet with name 'Multipart' processing GET request for [/webSocketApiTest/anyUrlPattern/simpleStompSample]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Mapping [/simpleStompSample] to HandlerExecutionChain with handler [org.springframework.web.servlet.mvc.UrlFilenameViewController@3d3af19c] and 1 interceptor
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Last-Modified value for [/webSocketApiTest/anyUrlPattern/simpleStompSample] is: -1
+		 DEBUG [org.springframework.web.servlet.mvc.UrlFilenameViewController]  - Returning view name 'simpleStompSample' for lookup path [/simpleStompSample]
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Rendering view [org.springframework.web.servlet.view.InternalResourceView: name 'simpleStompSample'; URL [/WEB-INF/jsp/simpleStompSample.jsp]] in DispatcherServlet with name 'Multipart'
+		 DEBUG [org.springframework.web.servlet.view.InternalResourceView]  - Forwarding to resource [/WEB-INF/jsp/simpleStompSample.jsp] in InternalResourceView 'simpleStompSample'
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Successfully completed request
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Cancelling heartbeat in session o3ctfrso
+		 DEBUG [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - WebSocketServerSockJsSession[id=o3ctfrso] closed with CloseStatus[code=1000, reason=null]
+		 DEBUG [org.springframework.web.socket.messaging.SubProtocolWebSocketHandler]  - Clearing session o3ctfrso
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Processing DISCONNECT session=o3ctfrso
+		 DEBUG [org.springframework.web.socket.messaging.SubProtocolWebSocketHandler]  - No session for GenericMessage [payload=byte[0], headers={simpMessageType=DISCONNECT_ACK, simpSessionId=o3ctfrso}]
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - DispatcherServlet with name 'Multipart' processing GET request for [/webSocketApiTest/anyUrlPattern/portfolio/info]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Matching patterns for request [/portfolio/info] are [/portfolio/**]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - URI Template variables for request [/portfolio/info] are {}
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Mapping [/portfolio/info] to HandlerExecutionChain with handler [org.springframework.web.socket.sockjs.support.SockJsHttpRequestHandler@5ef225ec] and 1 interceptor
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Last-Modified value for [/webSocketApiTest/anyUrlPattern/portfolio/info] is: -1
+		 DEBUG [org.springframework.web.socket.sockjs.transport.handler.DefaultSockJsService]  - GET http://localhost:8080/webSocketApiTest/anyUrlPattern/portfolio/info?t=1436593152907
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Null ModelAndView returned to DispatcherServlet with name 'Multipart': assuming HandlerAdapter completed request handling
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Successfully completed request
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - DispatcherServlet with name 'Multipart' processing GET request for [/webSocketApiTest/anyUrlPattern/portfolio/249/elxmvdok/websocket]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Matching patterns for request [/portfolio/249/elxmvdok/websocket] are [/portfolio/**]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - URI Template variables for request [/portfolio/249/elxmvdok/websocket] are {}
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Mapping [/portfolio/249/elxmvdok/websocket] to HandlerExecutionChain with handler [org.springframework.web.socket.sockjs.support.SockJsHttpRequestHandler@5ef225ec] and 1 interceptor
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Last-Modified value for [/webSocketApiTest/anyUrlPattern/portfolio/249/elxmvdok/websocket] is: -1
+		 TRACE [org.springframework.web.socket.server.support.DefaultHandshakeHandler]  - Processing request http://localhost:8080/webSocketApiTest/anyUrlPattern/portfolio/249/elxmvdok/websocket with headers={host=[localhost:8080], connection=[Upgrade], pragma=[no-cache], cache-control=[no-cache], upgrade=[websocket], origin=[http://localhost:8080], sec-websocket-version=[13], user-agent=[Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.132 Safari/537.36], accept-encoding=[gzip, deflate, sdch], accept-language=[en-US,en;q=0.8,es;q=0.6,ga;q=0.4,gl;q=0.2], sec-websocket-key=[hzKtTI5Q+69pw4JjxWB70g==], sec-websocket-extensions=[permessage-deflate; client_max_window_bits]}
+		 TRACE [org.springframework.web.socket.server.support.DefaultHandshakeHandler]  - Upgrading to WebSocket, subProtocol=null, extensions=[]
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Null ModelAndView returned to DispatcherServlet with name 'Multipart': assuming HandlerAdapter completed request handling
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Successfully completed request
+		 DEBUG [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - New WebSocketServerSockJsSession[id=elxmvdok]
+		 TRACE [org.springframework.web.socket.adapter.NativeWebSocketSession]  - Sending TextMessage payload=[o], byteCount=1, last=true], StandardWebSocketSession[id=2, uri=/webSocketApiTest/anyUrlPattern/portfolio/249/elxmvdok/websocket]
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Scheduled heartbeat in session elxmvdok
+		 TRACE [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - Handling TextMessage payload=[CONNECT
+		ac..], byteCount=56, last=true] in WebSocketServerSockJsSession[id=elxmvdok]
+		 TRACE [org.springframework.web.socket.messaging.StompSubProtocolHandler]  - From client: CONNECT session=null
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Processing CONNECT session=elxmvdok
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Cancelling heartbeat in session elxmvdok
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Preparing to write SockJsFrame content='a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]'
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Writing SockJsFrame content='a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]'
+		 TRACE [org.springframework.web.socket.adapter.NativeWebSocketSession]  - Sending TextMessage payload=[a["CONNECT..], byteCount=53, last=true], StandardWebSocketSession[id=2, uri=/webSocketApiTest/anyUrlPattern/portfolio/249/elxmvdok/websocket]
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Scheduled heartbeat in session elxmvdok
+		 TRACE [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - Handling TextMessage payload=[SEND
+		desti..], byteCount=63, last=true] in WebSocketServerSockJsSession[id=elxmvdok]
+		 TRACE [org.springframework.web.socket.messaging.StompSubProtocolHandler]  - From client: SEND /app/greeting session=null
+		 DEBUG [org.springframework.messaging.simp.annotation.support.SimpAnnotationMethodMessageHandler]  - Searching methods to handle SEND /app/greeting session=elxmvdok
+		 DEBUG [org.springframework.messaging.simp.annotation.support.SimpAnnotationMethodMessageHandler]  - Invoking test.org.spring.websocket.api.controller.GreetingController#handle[1 args]
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Processing MESSAGE destination=/topic/greeting session=elxmvdok payload=[Sat Jul 11 07:39:12 CEST 2015:Hello, STOMP
+		
+		 -->
+
+	<!-- Simple Stomp Sample ==> to execute with simpleStompSample.jsp -->
+<!-- 	
+	<websocket:message-broker application-destination-prefix="/app">
+		<websocket:stomp-endpoint path="/portfolio" allowed-origins="*">
+			<websocket:sockjs name="simpleSockJs" />
+		</websocket:stomp-endpoint>
+		<websocket:simple-broker prefix="/queue, /topic" />
+	</websocket:message-broker>
+  -->
+  	
+  	<!-- This case is similar to the previous one, the only difference is that the stomp client uses the SUBSCRIBE frame to register to listen to a given destination (from the broker) 
+  		(stompClientDestination.subscribe('/topic/greeting', function (frame) { alert(frame); });). The process would be:
+  		The stompClientDestination sends a message and then is received by the StompSubProtocolHandler which pass the message to SimpAnnotationMethodMessageHandler 
+		which then pass the message to the annotated method for application handling in GreetingController. As this message-handling annotated method has a return type, its return type is sent 
+		as the payload of a Spring Message to the SimpleBrokerMessageHandler. (The controller adds the current time, and the return value is passed through the "brokerChannel" as a message 
+		to "/topic/greeting" (destination is selected based on a convention but can be overridden via @SendTo).). Then the broker in turn broadcasts the message to clients, 
+		in this case to the client stompClientDestination which in its subscribe callback method display an alert message with the message (frame) received.
+		This message-broker uses the default heartbeats from the sockjs (25 seconds by default).
+		
+		You need to take into account that in the process the clientInboundChannel, clientOutboundChannel and brokerChannel are being used.
+  		
+  		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - DispatcherServlet with name 'Multipart' processing GET request for [/webSocketApiTest/anyUrlPattern/simpleSubscriberStompSample]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Mapping [/simpleSubscriberStompSample] to HandlerExecutionChain with handler [org.springframework.web.servlet.mvc.UrlFilenameViewController@7844956e] and 1 interceptor
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Last-Modified value for [/webSocketApiTest/anyUrlPattern/simpleSubscriberStompSample] is: -1
+		 DEBUG [org.springframework.web.servlet.mvc.UrlFilenameViewController]  - Returning view name 'simpleSubscriberStompSample' for lookup path [/simpleSubscriberStompSample]
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Rendering view [org.springframework.web.servlet.view.InternalResourceView: name 'simpleSubscriberStompSample'; URL [/WEB-INF/jsp/simpleSubscriberStompSample.jsp]] in DispatcherServlet with name 'Multipart'
+		 DEBUG [org.springframework.web.servlet.view.InternalResourceView]  - Forwarding to resource [/WEB-INF/jsp/simpleSubscriberStompSample.jsp] in InternalResourceView 'simpleSubscriberStompSample'
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Successfully completed request
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - DispatcherServlet with name 'Multipart' processing GET request for [/webSocketApiTest/anyUrlPattern/portfolioSubscriber/info]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Matching patterns for request [/portfolioSubscriber/info] are [/portfolioSubscriber/**]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - URI Template variables for request [/portfolioSubscriber/info] are {}
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Mapping [/portfolioSubscriber/info] to HandlerExecutionChain with handler [org.springframework.web.socket.sockjs.support.SockJsHttpRequestHandler@22e2cd17] and 1 interceptor
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Last-Modified value for [/webSocketApiTest/anyUrlPattern/portfolioSubscriber/info] is: -1
+		 DEBUG [org.springframework.web.socket.sockjs.transport.handler.DefaultSockJsService]  - GET http://localhost:8080/webSocketApiTest/anyUrlPattern/portfolioSubscriber/info?t=1436614322709
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Null ModelAndView returned to DispatcherServlet with name 'Multipart': assuming HandlerAdapter completed request handling
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Successfully completed request
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - DispatcherServlet with name 'Multipart' processing GET request for [/webSocketApiTest/anyUrlPattern/portfolioSubscriber/102/q3jast3j/websocket]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Matching patterns for request [/portfolioSubscriber/102/q3jast3j/websocket] are [/portfolioSubscriber/**]
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - URI Template variables for request [/portfolioSubscriber/102/q3jast3j/websocket] are {}
+		 DEBUG [org.springframework.web.servlet.handler.SimpleUrlHandlerMapping]  - Mapping [/portfolioSubscriber/102/q3jast3j/websocket] to HandlerExecutionChain with handler [org.springframework.web.socket.sockjs.support.SockJsHttpRequestHandler@22e2cd17] and 1 interceptor
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Last-Modified value for [/webSocketApiTest/anyUrlPattern/portfolioSubscriber/102/q3jast3j/websocket] is: -1
+		 TRACE [org.springframework.web.socket.server.support.DefaultHandshakeHandler]  - Processing request http://localhost:8080/webSocketApiTest/anyUrlPattern/portfolioSubscriber/102/q3jast3j/websocket with headers={host=[localhost:8080], connection=[Upgrade], pragma=[no-cache], cache-control=[no-cache], upgrade=[websocket], origin=[http://localhost:8080], sec-websocket-version=[13], user-agent=[Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.132 Safari/537.36], accept-encoding=[gzip, deflate, sdch], accept-language=[en-US,en;q=0.8,es;q=0.6,ga;q=0.4,gl;q=0.2], sec-websocket-key=[OE3tcH7CH6WyfS7LOtM0Rw==], sec-websocket-extensions=[permessage-deflate; client_max_window_bits]}
+		 TRACE [org.springframework.web.socket.server.support.DefaultHandshakeHandler]  - Upgrading to WebSocket, subProtocol=null, extensions=[]
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Null ModelAndView returned to DispatcherServlet with name 'Multipart': assuming HandlerAdapter completed request handling
+		 DEBUG [org.springframework.web.servlet.DispatcherServlet]  - Successfully completed request
+		 DEBUG [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - New WebSocketServerSockJsSession[id=q3jast3j]
+		 TRACE [org.springframework.web.socket.adapter.NativeWebSocketSession]  - Sending TextMessage payload=[o], byteCount=1, last=true], StandardWebSocketSession[id=0, uri=/webSocketApiTest/anyUrlPattern/portfolioSubscriber/102/q3jast3j/websocket]
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Scheduled heartbeat in session q3jast3j
+		 TRACE [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - Handling TextMessage payload=[CONNECT
+		ac..], byteCount=56, last=true] in WebSocketServerSockJsSession[id=q3jast3j]
+		 TRACE [org.springframework.web.socket.messaging.StompSubProtocolHandler]  - From client: CONNECT session=null
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Processing CONNECT session=q3jast3j
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Cancelling heartbeat in session q3jast3j
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Preparing to write SockJsFrame content='a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]'
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Writing SockJsFrame content='a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]'
+		 TRACE [org.springframework.web.socket.adapter.NativeWebSocketSession]  - Sending TextMessage payload=[a["CONNECT..], byteCount=53, last=true], StandardWebSocketSession[id=0, uri=/webSocketApiTest/anyUrlPattern/portfolioSubscriber/102/q3jast3j/websocket]
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Scheduled heartbeat in session q3jast3j
+		 TRACE [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - Handling TextMessage payload=[SUBSCRIBE
+		..], byteCount=49, last=true] in WebSocketServerSockJsSession[id=q3jast3j]
+		 TRACE [org.springframework.web.socket.messaging.StompSubProtocolHandler]  - From client: SUBSCRIBE /topic/greeting id=sub-0 session=null
+		 TRACE [org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator]  - Handling TextMessage payload=[SEND
+		desti..], byteCount=73, last=true] in WebSocketServerSockJsSession[id=q3jast3j]
+		 TRACE [org.springframework.web.socket.messaging.StompSubProtocolHandler]  - From client: SEND /appSubscriber/greeting session=null
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Processing SUBSCRIBE /topic/greeting id=sub-0 session=q3jast3j
+		 DEBUG [org.springframework.messaging.simp.annotation.support.SimpAnnotationMethodMessageHandler]  - Searching methods to handle SEND /appSubscriber/greeting session=q3jast3j
+		 DEBUG [org.springframework.messaging.simp.annotation.support.SimpAnnotationMethodMessageHandler]  - Invoking test.org.spring.websocket.api.controller.GreetingController#handle[1 args]
+		 DEBUG [test.org.spring.websocket.api.controller.GreetingController]  - Handling message: 'Hello, STOMP'
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Processing MESSAGE destination=/topic/greeting session=q3jast3j payload=[Sat Jul 11 13:32:03 CEST 2015:Hello, STOMP
+		 DEBUG [org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler]  - Broadcasting to 1 sessions.
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Cancelling heartbeat in session q3jast3j
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Preparing to write SockJsFrame content='a["MESSAGE\ndestination:/topic/greeting\ncontent-type:text/plain;charset=UTF-8\n...(truncated)'
+		 TRACE [org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession]  - Writing SockJsFrame content='a["MESSAGE\ndestination:/topic/greeting\ncontent-type:text/plain;charset=UTF-8\n...(truncated)'
+		 TRACE [org.springframework.web.socket.adapter.NativeWebSocketSession]  - Sending TextMessage payload=[a["MESSAGE..], byteCount=195, last=true], StandardWebSocketSession[id=0, uri=/webSocketApiTest/anyUrlPattern/portfolioSubscriber/102/q3jast3j/websocket]  		
+  		
+  		 -->
+  
+  	<!-- Subscriber Stomp Sample ==> to execute with simpleSubscriberStompSample.jsp -->
+	<!-- 
+	<websocket:message-broker application-destination-prefix="/appSubscriber">
+		<websocket:stomp-endpoint path="/portfolioSubscriber">
+			<websocket:sockjs name="subscriberSockJs" />
+		</websocket:stomp-endpoint>
+		<websocket:simple-broker prefix="/queue, /topic" />
+	</websocket:message-broker>
+	 -->
+	
+	<!--  -->
+	<!-- 
+	<websocket:message-broker application-destination-prefix="/appBrokerRelay">
+		<websocket:stomp-endpoint path="/portfolioBrokerRelay">
+			<websocket:sockjs />
+		</websocket:stomp-endpoint>
+		<websocket:stomp-broker-relay prefix="/topic,/queue" relay-port="61613" />
+	</websocket:message-broker>
+   	-->
+   	
+   	<websocket:message-broker application-destination-prefix="/appChatRelay">
+   		<websocket:stomp-endpoint path="/chatRelay">
+<!-- 		<websocket:stomp-endpoint path="/chatRelay" allowed-origins="http://newwebsocketapitest.cfapps.io,https://newwebsocketapitest.cfapps.io"> -->
+<!-- 		<websocket:stomp-endpoint path="/chatRelay"> -->
+			<websocket:handshake-interceptors>
+			    <bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+			</websocket:handshake-interceptors>
+			<websocket:sockjs heartbeat-time="20000" />
+		</websocket:stomp-endpoint>
+<!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61614"  relay-host="baboon.rmq.cloudamqp.com" system-login="fwhtufvd" system-passcode="560YNbrTElUB8CA1ZDf-cPhwHwQixHyS" client-login="fwhtufvd" client-passcode="560YNbrTElUB8CA1ZDf-cPhwHwQixHyS " /> -->
+		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" />
+<!-- 			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" /> --><!-- Enable for execution in cloudfoundry -->
+<!-- 		<websocket:message-converters> -->
+<!-- 		    <bean class="org.springframework.messaging.converter.MappingJackson2MessageConverter" /> -->
+<!-- 		</websocket:message-converters> -->
+	</websocket:message-broker> 	
+  
+</beans>

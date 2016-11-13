@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-ip="http://www.springframework.org/schema/integration/ip" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:task="http://www.springframework.org/schema/task" xmlns:int-stomp="http://www.springframework.org/schema/integration/stomp"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:c="http://www.springframework.org/schema/c"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.1.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+		http://www.springframework.org/schema/integration/stomp http://www.springframework.org/schema/integration/stomp/spring-integration-stomp-4.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-4.2.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-4.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.1.xsd">
+
+	<!-- This is a simple demo of Stomp support. We have used a <int-stomp:outbound-channel-adapter to send messages to the stomp destination and a <int-stomp:inbound-channel-adapter to 
+		subscribe to the stomp destinations and receive messages from them. We have also configured a <int-event:inbound-channel-adapter to listen for Stomp Integration Events, in the logs 
+		you can see how StompReceiptEvents are received in response to the subscribe operation and send operations. 
+		
+		         
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+
+|00000000| 52 45 43 45 49 50 54 0a 72 65 63 65 69 70 74 2d |RECEIPT.receipt-|
+|00000010| 69 64 3a 30 0a 0a 00 0a                         |id:0....        |
+
+		
+		org.springframework.messaging.support.ExecutorSubscribableChannel]  - brokerChannel added StompBrokerRelay[127.0.0.1:61613]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'stompEventsChannel', message: GenericMessage [payload=StompReceiptEvent [source=simpleStompIChA], headers={id=156649b7-7696-f5f1-f4dd-7380b1260089, timestamp=1444973967108}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [ExpressionEvaluatingMessageProcessor for: [T(java.lang.System).out.println('*************** Received StompIntegrationEvent: ' + #this.payload.stompCommand + ' with Receipt Id: ' + #this.payload.receiptId)]] received message: GenericMessage [payload=StompReceiptEvent [source=simpleStompIChA], headers={id=156649b7-7696-f5f1-f4dd-7380b1260089, timestamp=1444973967108}]
+		 INFO  [org.springframework.messaging.simp.stomp.StompBrokerRelayMessageHandler]  - Connecting "system" session to 127.0.0.1:61613
+		 DEBUG [org.springframework.messaging.simp.stomp.StompBrokerRelayMessageHandler]  - Forwarding CONNECT session=_system_
+		 *************** Received StompIntegrationEvent: SUBSCRIBE with Receipt Id: 0
+ 	
+ 	      
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+
+|00000000| 52 45 43 45 49 50 54 0a 72 65 63 65 69 70 74 2d |RECEIPT.receipt-|
+|00000010| 69 64 3a 37 0a 0a 00 0a                         |id:6....        |
+
+ 		
+ 		
+ 		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'stompEventsChannel', message: GenericMessage [payload=StompReceiptEvent [source=org.springframework.integration.stomp.outbound.StompMessageHandler#0], headers={id=5eff4225-1720-1955-74b8-d35d0b5c881f, timestamp=1444974017157}]
+ DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [ExpressionEvaluatingMessageProcessor for: [T(java.lang.System).out.println('*************** Received StompIntegrationEvent: ' + #this.payload.stompCommand + ' with Receipt Id: ' + #this.payload.receiptId)]] received message: GenericMessage [payload=StompReceiptEvent [source=org.springframework.integration.stomp.outbound.StompMessageHandler#0], headers={id=5eff4225-1720-1955-74b8-d35d0b5c881f, timestamp=1444974017157}]
+ *************** Received StompIntegrationEvent: SEND with Receipt Id: 6
+ 		
+ 		
+ 		         
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+
+|00000000| 52 45 43 45 49 50 54 0a 72 65 63 65 69 70 74 2d |RECEIPT.receipt-|
+|00000010| 69 64 3a 37 0a 0a 00 0a                         |id:7....        |
+
+ DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'stompEventsChannel', message: GenericMessage [payload=StompReceiptEvent [source=org.springframework.integration.stomp.outbound.StompMessageHandler#0], headers={id=5e8cde34-a0e4-22e6-8224-9110ec4951f8, timestamp=1444974027168}]
+ DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [ExpressionEvaluatingMessageProcessor for: [T(java.lang.System).out.println('*************** Received StompIntegrationEvent: ' + #this.payload.stompCommand + ' with Receipt Id: ' + #this.payload.receiptId)]] received message: GenericMessage [payload=StompReceiptEvent [source=org.springframework.integration.stomp.outbound.StompMessageHandler#0], headers={id=5e8cde34-a0e4-22e6-8224-9110ec4951f8, timestamp=1444974027168}]
+ *************** Received StompIntegrationEvent: SEND with Receipt Id: 7
+		
+		
+		
+	-->
+
+	<int:channel id="stompInputChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int-stomp:inbound-channel-adapter id="simpleStompIChA" stomp-session-manager="stompSessionManager" channel="stompInputChannel"
+		destinations="/exchange/amq.direct/messages-dante-kelly" payload-type="test.org.spring.websocket.api.model.ChatMessage" />
+
+	<!-- <bean id="ptMessageConverter" class="org.springframework.integration.support.converter.PassThruMessageConverter" /> -->
+	<bean id="jMessageConverter" class="org.springframework.messaging.converter.MappingJackson2MessageConverter" />
+
+	<bean id="stompClient" class="org.springframework.messaging.simp.stomp.Reactor2TcpStompClient" c:host="127.0.0.1" c:port="61613" p:messageConverter-ref="jMessageConverter"
+		p:receiptTimeLimit="30000" p:taskScheduler-ref="myScheduler" />
+
+	<bean id="stompSessionManager" class="org.springframework.integration.stomp.Reactor2TcpStompSessionManager" c:reactor2TcpStompClient-ref="stompClient" p:autoReceipt="true" />
+
+	<int-stomp:outbound-channel-adapter id="simpleStompOChA" stomp-session-manager="stompSessionManager" channel="receivingChannel"
+		destination="/exchange/amq.direct/messages-dante-kelly"></int-stomp:outbound-channel-adapter>
+
+	<int:inbound-channel-adapter id="receivingChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new test.org.spring.websocket.api.model.ChatMessage('Hi Dantito 1', 'dante', 'keluchis')).setHeader('className', 'item').build():
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new test.org.spring.websocket.api.model.ChatMessage('Hi Danielito 1', 'dante', 'keluchis')).setHeader('className', 'item').build()"
+		auto-startup="true">
+		<int:poller fixed-rate="10000" />
+	</int:inbound-channel-adapter>
+
+	<int-event:inbound-channel-adapter event-types="org.springframework.integration.stomp.event.StompIntegrationEvent" channel="stompEventsChannel" />
+
+	<int:channel id="stompEventsChannel" />
+
+	<int:service-activator input-channel="stompEventsChannel"
+		expression="T(java.lang.System).out.println('*************** Received StompIntegrationEvent: ' + #this.payload.stompCommand + ' with Receipt Id: ' + #this.payload.receiptId)"
+		requires-reply="false" auto-startup="true" />
+</beans>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p" xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.1.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-4.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.1.xsd">
+
+	<import resource="classpath:websocket-context.xml" />
+<!-- 	<import resource="**/WEB-INF/applicationContext-security.xml" /> -->
+	<import resource="classpath:test-integration-context.xml"/>
+	
+	<context:component-scan base-package="test.org.spring.websocket.api" />
+
+	<bean class="org.springframework.web.socket.client.standard.WebSocketContainerFactoryBean">
+		<property name="maxBinaryMessageBufferSize" value="8192" />
+		<property name="maxTextMessageBufferSize" value="8192" />
+	</bean>
+	
+<!-- 
+	I wanted to use this for reading the heartbeats but it didn't work.
+	<int:channel id="combinedGatewayInboundGatewayRequestChannel" />
+
+	<int:channel id="combinedGatewayInboundGatewayReplyChannel" />
+
+	<int-ip:tcp-connection-factory id="combinedGatewayInboundGatewayServerConnectionFactory" type="client" host="localhost" port="8080" using-nio="true"
+		single-use="false" />
+
+	<int-ip:tcp-inbound-gateway id="combinedGatewayInboundGatewayTcpInboundGateway" request-channel="combinedGatewayInboundGatewayRequestChannel"
+		reply-channel="combinedGatewayInboundGatewayReplyChannel" client-mode="true" connection-factory="combinedGatewayInboundGatewayServerConnectionFactory" auto-startup="true" />
+
+	<int:service-activator id="combinedGatewayInboundGatewayServiceActivator" input-channel="combinedGatewayInboundGatewayRequestChannel" output-channel="combinedGatewayInboundGatewayReplyChannel"
+		expression="T(java.lang.System).out.println('*************** Received Message for service activator. Mensaje: ' + #this)" auto-startup="true" />
+ -->
+</beans>

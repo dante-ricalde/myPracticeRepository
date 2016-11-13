@@ -1,0 +1,45 @@
+http://databasefaq.com/index.php/answer/69808/java-spring-spring-websocket-websocketstompclient-wont-connect-to-sockjs-endpoint
+
+
+Function<StompSession, Receiptable> sendFunction = x -> x.send("/exchange/amq.direct/messages-keluchis-dante", new ChatMessage("keluchis. Directly to the queue", "dante", "keluchis"));
+				Function<Receiptable, String> afterSendFunction = x -> x.getReceiptId();
+afterSendFunction.
+//				LOGGER.debug("Receipt id is: " + sendFunction.andThen(afterSendFunction).apply(session));
+
+2/07/2016
+TO review if I need sth from this config (When the config is ok delete this):
+	<rabbit:queue id="anonymousNasdaqMarketDataQueue" name="/exchange/amq.direct/messages-anonymousNasdaqMarketDataQueue">
+		
+	</rabbit:queue>
+	
+	<rabbit:queue id="anonymousNasdaqMarketDataQueue" name="/exchange/amq.direct/messages-kk">
+		
+	</rabbit:queue>
+		
+	<rabbit:listener-container connection-factory="connectionFactory"  >
+    	<rabbit:listener ref="welcomeProcessor" method="welcome" queue-names="/exchange/amq.direct/messages-anonymousNasdaqMarketDataQueue" />
+	</rabbit:listener-container>	
+	
+	<rabbit:topic-exchange name="marketDataTopicExchange">
+		<rabbit:bindings>
+			<rabbit:binding pattern="messages-anonymousNasdaqMarketDataQueue" queue="anonymousNasdaqMarketDataQueue" />
+			<rabbit:binding pattern="messages-anonymousNyseMarketDateQueue" queue="anonymousNasdaqMarketDataQueue" />
+		</rabbit:bindings>
+	</rabbit:topic-exchange>
+	
+	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" mandatory="true" />
+	
+	<rabbit:admin connection-factory="connectionFactory" auto-startup="true"  />
+
+org.springframework.amqp.rabbit.core.RabbitAdmin#0
+
+
+I have left:
+	- I need to create persistent queues to store the messages.
+	- when the user is connect it would receive the message immediately
+	- if the user is not connected the first action to make it's to read the messages from their contacts queues and load them.
+	- The message would have states like read, delivered, pendingToDeliver, etc to manage better the checks
+	- model the user and their contacts (I would use mongo db for this). I would do this after I finish the persisten queues configuration.
+	
+
+	

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+<!-- 	<bean id="authenticationFilter" class="org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter"> -->
+<!-- 		<property name="authenticationManager" ref="authenticationManager" /> -->
+<!-- 		<property name="filterProcessesUrl" value="/anyUrlPattern/j_spring_security_check" /> -->
+<!-- 	</bean> -->
+
+<!-- 	<bean id="authenticationEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint"> -->
+<!-- 		<constructor-arg index="0" value="/anyUrlPattern/login" /> -->
+<!-- 	</bean> -->
+
+	<security:http auto-config="true" pattern="/anyUrlPattern/chat/*">
+		<security:intercept-url pattern="/anyUrlPattern/chat/myChat**" access="isAuthenticated()" />
+<!-- 		<security:custom-filter ref="authenticationFilter" before="LOGIN_PAGE_FILTER" /> -->
+		<security:form-login login-page="/anyUrlPattern/chat/login" login-processing-url="/anyUrlPattern/chat/j_spring_security_check" default-target-url="/anyUrlPattern/chat/myChat" />
+		<security:logout logout-success-url="/anyUrlPattern/chat/login" logout-url="/anyUrlPattern/chat/j_spring_security_logout" />
+		<security:session-management>
+			<security:concurrency-control max-sessions="5" session-registry-alias="sessionRegistry" />
+		</security:session-management>
+		<security:custom-filter ref="defaultLoginPageGeneratingFilter" before="BASIC_AUTH_FILTER" />
+	</security:http>
+	
+	<bean id="defaultLoginPageGeneratingFilter" class="org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter">
+		<property name="loginPageUrl" value="/anyUrlPattern/chat/login" />
+		<property name="formLoginEnabled" value="true" />
+		<property name="authenticationUrl" value="/anyUrlPattern/chat/j_spring_security_check" />
+		<property name="logoutSuccessUrl" value="/anyUrlPattern/chat/login" />
+		<property name="usernameParameter" value="username" />
+		<property name="passwordParameter" value="password" />
+	</bean>
+
+	<security:authentication-manager id="authenticationManager">
+		<security:authentication-provider>
+			<security:user-service>
+				<security:user name="dante" password="123" authorities="ROLE_USER" />
+				<security:user name="keluchis" password="123" authorities="ROLE_USER"/>
+				<security:user name="dantito" password="123" authorities="ROLE_USER"/>
+				<security:user name="danielito" password="123" authorities="ROLE_USER"/>
+			</security:user-service>
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+</beans>
