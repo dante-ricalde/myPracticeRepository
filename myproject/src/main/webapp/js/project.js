@@ -1,4 +1,4 @@
-angular.module('project', ['ngRoute','ngResource'])
+angular.module('project', ['ngRoute','ngResource','ngDialog'])
 	.constant('baseURL', '/')	
 	
 	.service('myAuthService', function ($q) {
@@ -31,9 +31,14 @@ angular.module('project', ['ngRoute','ngResource'])
 			return deferred.promise;
 		}
 	})
+    .service('projectFactory', function ($resource, baseURL) {
+        this.getProjResource = function () {
+            return $resource(baseURL+"edit/:id", null, {'update':{method:'PUT' }});
+        };
+    }) 
 	// I need to simulate the fbAuth to return a promise with an auth object created by me, to then return the list of projects that i am going to return from 
 	// res service Example.java
-    .service('Projects', function ($q, fbAuth, $http) {
+    .service('Projects', ['$q', 'fbAuth', '$http', 'ngDialog', 'projectFactory', function ($q, fbAuth, $http, ngDialog, projectFactory) {
     	var self = this;
     	console.log(this);
     	this.fetch = function () {
@@ -57,22 +62,31 @@ angular.module('project', ['ngRoute','ngResource'])
     				  });
     			return deferred.promise;
     		});
-    	}
-    })
-    
-    .service('projectFactory', function ($resource, baseURL) {
-    	this.getProjResource = function () {
-    		return $resource(baseURL+"edit/:id", null, {'update':{method:'PUT' }});
     	};
-    })
-    
+        this.get = function () {
+            return projectFactory.getProjResource().get({id:123}).$promise.then(function (project) {
+                    console.log(project);
+                }, function (err) {
+                    console.log(err);
+                    //$scope.message = {title: 'kk', message: 'kk'};
+                    ngDialog.open({template: 'template/message_popup.html', className: 'ngdialog-theme-default', data: {title:'kk', message:'kk'}
+                        });
+                });
+        }
+    }])   
 
     .config(function($routeProvider) {
         var resolveProjects = {
             projects: function (Projects) {
                 return Projects.fetch();
             }
-        }
+        };
+
+        var resolveProject = {
+            project: function (Projects) {
+                return Projects.get();
+            }
+        };
 
         $routeProvider
             .when ('/', {
@@ -83,29 +97,30 @@ angular.module('project', ['ngRoute','ngResource'])
             .when('/edit/:projectId', {
                 controller: 'EditProjectController as editProject',
                 templateUrl:'detail.html',
-                resolve:resolveProjects
+                resolve:resolveProject
             })
     })
 
-    .controller('ProjectListController', function(projects) {
+    .controller('ProjectListController', ['$scope', 'projects', function($scope, projects) {
         var projectList = this;
         projectList.projects = projects;
-    })
+    }])
 
-    .controller('EditProjectController', function($location, $routeParams, projects, projectFactory) {
+    .controller('EditProjectController', function($location, $routeParams, project, projectFactory) {
         var editProject = this;
-        var projectId = $routeParams.projectId, projectIndex;
+        //var projectId = $routeParams.projectId, projectIndex;
 
-        editProject.projects=projects;
+        //editProject.projects=projects;
         // indexFor is a method of Firebase, it's replaced by jquery each
         //projectIndex=editProject.projects.$indexFor(projectId);
-        $.each(editProject.projects, function (index, value) {
+        /*$.each(editProject.projects, function (index, value) {
             if (value.id === parseInt(projectId)){
                 projectIndex=index;
                 return false;
             }
-        });
-        editProject.project=editProject.projects[projectIndex];
+        });*/
+        //editProject.project=editProject.projects[projectIndex];
+        editProject.project=project;
         // We replace this firebase save method by using the angular resource 
         editProject.save = function () {
 //        	editProject.projects.$save(editProject.project).then(function(data){
