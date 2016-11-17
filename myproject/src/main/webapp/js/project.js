@@ -38,7 +38,7 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
     }) 
 	// I need to simulate the fbAuth to return a promise with an auth object created by me, to then return the list of projects that i am going to return from 
 	// res service Example.java
-    .service('Projects', ['$q', 'fbAuth', '$http', 'ngDialog', 'projectFactory', function ($q, fbAuth, $http, ngDialog, projectFactory) {
+    .service('Projects', ['$rootScope', '$q', 'fbAuth', '$http', 'ngDialog', 'projectFactory', function ($rootScope, $q, fbAuth, $http, ngDialog, projectFactory) {
     	var self = this;
     	console.log(this);
     	this.fetch = function () {
@@ -63,14 +63,12 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
     			return deferred.promise;
     		});
     	};
-        this.get = function () {
+        this.get = function (id) {
             return projectFactory.getProjResource().get({id:123}).$promise.then(function (project) {
                     console.log(project);
                 }, function (err) {
                     console.log(err);
-                    //$scope.message = {title: 'kk', message: 'kk'};
-                    ngDialog.open({template: 'template/message_popup.html', className: 'ngdialog-theme-default', data: {title:'kk', message:'kk'}
-                        });
+                    $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There was an error getting project.'});
                 });
         }
     }])   
@@ -100,6 +98,13 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
                 resolve:resolveProject
             })
     })
+
+    .run(['$rootScope', 'ngDialog', function ($rootScope, ngDialog) {
+        $rootScope.$on('popupMessage', function (event, data) {
+            $rootScope.message = data;
+            ngDialog.open({template: 'template/message_popup.html', className: 'ngdialog-theme-default', scope: $rootScope});
+        });
+    }])
 
     .controller('ProjectListController', ['$scope', 'projects', function($scope, projects) {
         var projectList = this;

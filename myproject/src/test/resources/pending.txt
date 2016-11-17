@@ -2,3 +2,7 @@
 	I left at: 10.3 Upgrading from an earlier version of Spring Boot
 1/12/2015
 	Part III. Using Spring Boot
+	
+16/11
+	
+	I left trying to show an error message when the rest call fails.
