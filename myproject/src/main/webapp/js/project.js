@@ -64,12 +64,15 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
     		});
     	};
         this.get = function (id) {
-            return projectFactory.getProjResource().get({id:123}).$promise.then(function (project) {
-                    console.log(project);
-                }, function (err) {
-                    console.log(err);
-                    $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There was an error getting project.'});
-                });
+            var deferred = $q.defer();
+            projectFactory.getProjResource().get({id:id}).$promise.then(function (project) {
+                if (project.id == undefined && project.id == null) { $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'Project not found.'}); }
+                deferred.resolve(project);
+            }, function (err) {
+                $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There was an error getting project.'});
+                deferred.resolve(err);
+            });
+            return deferred.promise;
         }
     }])   
 
@@ -81,8 +84,8 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
         };
 
         var resolveProject = {
-            project: function (Projects) {
-                return Projects.get();
+            project: function (Projects, $route) {
+                return Projects.get($route.current.params.projectId);
             }
         };
 

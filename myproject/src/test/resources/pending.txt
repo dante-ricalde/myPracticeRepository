@@ -4,5 +4,7 @@
 	Part III. Using Spring Boot
 	
 16/11
-	
 	I left trying to show an error message when the rest call fails.
+
+17/11
+	I need to configure to use the appropriate id to the make the get() method, I think it is recovered from the path param.
