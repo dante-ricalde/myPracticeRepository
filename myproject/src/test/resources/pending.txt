@@ -4,7 +4,12 @@
 	Part III. Using Spring Boot
 	
 16/11
-	I left trying to show an error message when the rest call fails.
+	I left trying to show an error message when the rest call fails. (100%)
 
 17/11
-	I need to configure to use the appropriate id to the make the get() method, I think it is recovered from the path param.
+	I need to configure to use the appropriate id to the make the get() method, I think it is recovered from the path param. (100%)
+
+23/11
+	I need to show the loading messages when a route changes. (100%)
+24/11
+	I need to configure a loading image to show the loading message (not neccessary)

@@ -102,10 +102,32 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
             })
     })
 
-    .run(['$rootScope', 'ngDialog', function ($rootScope, ngDialog) {
+    .run(['$rootScope', 'ngDialog', '$timeout', function ($rootScope, ngDialog, $timeout) {
+        // event handler for managing the display of messages
         $rootScope.$on('popupMessage', function (event, data) {
             $rootScope.message = data;
             ngDialog.open({template: 'template/message_popup.html', className: 'ngdialog-theme-default', scope: $rootScope});
+        });
+        // event handler for managing the display of the waiting block window
+        $rootScope.$on('$routeChangeStart', function (event) {
+            console.log('routeChangeStart fired');
+            $.blockUI({ css: { 
+                border: 'none', 
+                padding: '15px',
+                backgroundColor: '#000', 
+                '-webkit-border-radius': '10px', 
+                '-moz-border-radius': '10px', 
+                opacity: .5, 
+                color: '#fff',
+                'font-size': '12px'
+            },
+            // message displayed when blocking (use null for no message) 
+            //message:  '<img src="image/loading.gif" alt="Please Wait" style="position: absolute; top: -150px; z-index: -1;" />'});
+            message:  '<h5>Please wait...</h5>'});
+        });
+        $rootScope.$on('$routeChangeSuccess', function (event) {
+            console.log('routeChangeSuccess fired');
+            $timeout($.unblockUI, 200);
         });
     }])
 
