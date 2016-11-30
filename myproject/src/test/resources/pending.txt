@@ -12,4 +12,4 @@
 23/11
 	I need to show the loading messages when a route changes. (100%)
 24/11
-	I need to configure a loading image to show the loading message (not neccessary)
+	I need to configure a loading image to show the loading message (not necessary) (100%)

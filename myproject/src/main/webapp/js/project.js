@@ -120,10 +120,9 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
                 opacity: .5, 
                 color: '#fff',
                 'font-size': '12px'
-            },
-            // message displayed when blocking (use null for no message) 
-            //message:  '<img src="image/loading.gif" alt="Please Wait" style="position: absolute; top: -150px; z-index: -1;" />'});
-            message:  '<h5>Please wait...</h5>'});
+                },
+                message:'<div class="text-center"><strong><i>Please wait</i></strong><br /><img id="displayBox" width="35px" height="35px" src="image/img_loading.gif" /></div>'
+            });
         });
         $rootScope.$on('$routeChangeSuccess', function (event) {
             console.log('routeChangeSuccess fired');
