@@ -1,13 +1,17 @@
 package myproject;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -81,13 +85,29 @@ public class Example {
 	}
 	
 	@RequestMapping(value = "/project/{id}", method=RequestMethod.PUT)
-	public void edit(@PathVariable Long id, @RequestBody Project project) {
-		System.out.println("id: " + id + " and project: " + project);
+	public ModelMap edit(@PathVariable Long id, @RequestBody Project project) {
+		LOGGER.debug("Updating project: '{}' with id: '{}'", project, id);
+		ModelMap result = new ModelMap();
+		Optional<Project> projectOp = projects.stream().filter(x -> x.getId().equals(project.getId())).findFirst();
+		if (projectOp.isPresent()) {
+			BeanUtils.copyProperties(project, projectOp.get());
+			result.put("result", true);
+		} else {
+			result.put("result", false);			
+		}
+		return result;
 	}
 	
 	@RequestMapping(value = "/project", method=RequestMethod.POST)
-	public void save(@RequestBody Project project) {
+	public Project save(@RequestBody Project project) {
 		LOGGER.debug("Saving project" + project);
+//		projects.stream().max((p1, p2) -> Long.compare(p1.getId(), p2.getId()));
+		Optional<Project> max = projects.stream().max(Comparator.comparing(Project::getId));
+		if (max.isPresent()) {
+			project.setId(max.get().getId() + 1);
+			projects.add(project);
+		}
+		return project;
 	}
 	
 	public static void main(String[] args) {

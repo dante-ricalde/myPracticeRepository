@@ -146,7 +146,8 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
         projectList.projects = projects;
     }])
 
-    .controller('EditProjectController', function($location, $routeParams, project, projectFactory) {
+    .controller('EditProjectController', ['$scope', '$rootScope', '$location', '$routeParams', 'project', 'projectFactory', 
+        function($scope, $rootScope, $location, $routeParams, project, projectFactory) {
         var editProject = this;
         //var projectId = $routeParams.projectId, projectIndex;
 
@@ -167,10 +168,24 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
 //        		$location.path('/');
 //        	});
             // We update a project
-            if (editProject.project.id) {
-                projectFactory.getProjResource().update({id:editProject.project.id},editProject.project);
+            if (!(editProject.project.id == null || editProject.project.id == undefined)) {
+                projectFactory.getProjResource().update({id:editProject.project.id},editProject.project).$promise.then(function (data) {
+                    if (data.result) {
+                        $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There project has been updated.'});
+                    }
+                }, function (err) {
+                    $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There was an error updating the project.'});
+                });
             } else { // We create a new project
-                projectFactory.getProjResource().save(editProject.project);
+                projectFactory.getProjResource().save(editProject.project).$promise.then(function (project) {
+                    if (project.id) {
+                        editProject.project.id = project.id;
+                        $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'The Project has been created.'});
+                        $location.path('/');
+                    }
+                }, function (err) {
+                    $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There was an error creating the project.'});
+                });
             }
         };
-    })
+    }])
