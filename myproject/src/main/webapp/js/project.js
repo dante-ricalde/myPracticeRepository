@@ -33,7 +33,7 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
 	})
     .service('projectFactory', function ($resource, baseURL) {
         this.getProjResource = function () {
-            return $resource(baseURL+"edit/:id", null, {'update':{method:'PUT' }});
+            return $resource(baseURL+"project/:id", null, {'update':{method:'PUT' }});
         };
     }) 
 	// I need to simulate the fbAuth to return a promise with an auth object created by me, to then return the list of projects that i am going to return from 
@@ -89,6 +89,12 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
             }
         };
 
+        var resolve = {
+            project: function () {
+                return {};
+            }
+        };
+
         $routeProvider
             .when ('/', {
                 controller:'ProjectListController as projectList',
@@ -99,6 +105,11 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
                 controller: 'EditProjectController as editProject',
                 templateUrl:'detail.html',
                 resolve:resolveProject
+            })
+            .when('/new', {
+                controller: 'EditProjectController as editProject',
+                templateUrl: 'detail.html',
+                resolve: resolve
             })
     })
 
@@ -155,6 +166,11 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
 //        	editProject.projects.$save(editProject.project).then(function(data){
 //        		$location.path('/');
 //        	});
-        	projectFactory.getProjResource().update({id:editProject.project.id},editProject.project);
+            // We update a project
+            if (editProject.project.id) {
+                projectFactory.getProjResource().update({id:editProject.project.id},editProject.project);
+            } else { // We create a new project
+                projectFactory.getProjResource().save(editProject.project);
+            }
         };
     })

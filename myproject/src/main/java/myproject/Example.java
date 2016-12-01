@@ -70,7 +70,7 @@ public class Example {
 		return projects;
 	}
 	
-	@RequestMapping(value = "/edit/{id}", method=RequestMethod.GET)
+	@RequestMapping(value = "/project/{id}", method=RequestMethod.GET)
 	public Project get(@PathVariable Long id) {
 		LOGGER.debug("Getting the project with id '{}'", id);
 		Optional<Project> projectOp = projects.stream().filter(p -> p.getId().equals(id)).findFirst();
@@ -80,9 +80,14 @@ public class Example {
 		return null;
 	}
 	
-	@RequestMapping(value = "/edit/{id}", method=RequestMethod.PUT)
+	@RequestMapping(value = "/project/{id}", method=RequestMethod.PUT)
 	public void edit(@PathVariable Long id, @RequestBody Project project) {
 		System.out.println("id: " + id + " and project: " + project);
+	}
+	
+	@RequestMapping(value = "/project", method=RequestMethod.POST)
+	public void save(@RequestBody Project project) {
+		LOGGER.debug("Saving project" + project);
 	}
 	
 	public static void main(String[] args) {
