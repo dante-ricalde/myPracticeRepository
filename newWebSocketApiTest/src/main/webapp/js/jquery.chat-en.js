@@ -1,19 +1,19 @@
 (function ($) {
 	"use strict";
-	
-	if (!$.chat) {
+
+	if (!$.chat) {  
 		$.chat = {};
 	}
-	if (!$.chat.language) {
+	if (!$.chat.language) {  
 		$.chat.language = [];
-	}
-	$.chat.language['es'] = {
+	} 
+	$.chat.language['es'] = {  
 			messages: {
 				
 			}
 	};
 	$.chat.language['en'] = {
-			messages: {
+			messages: {   
 				"chat.window.button.defaultText" : "Send"
 			}
 	};
