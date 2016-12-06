@@ -1,6 +1,6 @@
 @CHARSET "UTF-8";
 .chat-window {
-	text-align: center;	
+	text-align: center;
 }
 
 .chat-window .chat-text-messages {
@@ -8,7 +8,7 @@
 	padding: 5px;
 	height: 56%;
 	font-size: 0.8em;
-	background-color: white;
+	background-color: #D9D3D0;
 	text-align: left;
 	overflow: scroll;
 }
@@ -21,21 +21,64 @@
 }
 
 .chat-window button {
-	
+
 }
+
+.message {
+	display: table;
+	width: 100%;
+}
+
+.chat-message {
+	padding: 4px !important;
+	margin: 4px !important;
+	color: black;
+	border-radius: 7.5px;
+	display: block;
+	max-width: 90%;
+}  
 
 .chat-received-message {
-	color: blue;
-	margin: 1px;
-}
-
-.chat-sent-message {	
-	color: maroon;
-	margin: 1px;
+	margin-left: -1px !important;
+ 	background-color: white;
+ 	float: left;
+ }
+  
+.chat-sent-message {
+	margin-right: -1px !important;
+	background-color: #D5F2D0;
+	float: right;
 }
 
 .chat-message-time {
 	color: gray;
-	font-size: 0.5em;
+	font-size: 0.7em;
 	margin-left: 3px;
+	margin-right: 3px;
+}
+
+.message > .tail-container {
+	width: 12px;
+	height: 19px;
+	content: '';
+	background-position: 50% 50%;
+	display: block;
+}
+
+.received-message > .tail-container {
+	background-image: url(' /public/tail-container-highlight-white.png');
+	float: left;
+}
+
+.sent-message > .tail-container {
+	background-image: url(" /public/tail-container-highlight.png");
+	float: right;
+}  
+
+.chat-message-tick.default {
+	color: gray;
+}
+
+.chat-message-tick.read {
+	color: #00BFFF;
 }
