@@ -22,6 +22,7 @@
 <script src="${jQueryUrl}"><!-- necessary to work --></script>
 <script src="../../js/jquery/jquery-ui-1.11.4.js"><!-- necessary to work --></script>
 
+<SCRIPT src="../../js/jquery/jquery.formatDateTime.min.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 <SCRIPT src="../../js/lib/underscore-min.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 <SCRIPT src="../../js/lib/moment-timezone.min.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 <SCRIPT src="../../js/general-util.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
