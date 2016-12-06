@@ -36,7 +36,7 @@ $(function () {
 					var messageResolver = new general.util.MessageResolver(language.messages);
 					var $ul = $('<ul>');
 					var defer = $.Deferred();
-					var socketDestination = newSockJS("/anyUrlPattern/chatRelay");
+					var socketDestination = new SockJS("/anyUrlPattern/chatRelay");
 					that.stompClientDestination = Stomp.over(socketDestination);
 					defer.promise(that.stompClientDestination);
 					that.stompClientDestination.connect({}, function (frame) {
