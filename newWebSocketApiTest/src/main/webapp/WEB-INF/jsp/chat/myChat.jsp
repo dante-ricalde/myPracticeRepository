@@ -21,6 +21,8 @@
 <script src="../../js/stomp-1.2.js" type="text/javascript"><!-- necessary to work --></script>
 <script src="${jQueryUrl}"><!-- necessary to work --></script>
 <script src="../../js/jquery/jquery-ui-1.11.4.js"><!-- necessary to work --></script>
+
+<SCRIPT src="../../js/lib/moment-timezone.min.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 <SCRIPT src="../../js/general-util.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 <SCRIPT src="../../js/chat-user-view.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 <SCRIPT src="../../js/jquery.chat.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
