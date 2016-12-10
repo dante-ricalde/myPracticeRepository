@@ -43,7 +43,7 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
     	console.log(this);
     	this.fetch = function () {
     		console.log("fetch:" + this);
-    		if (this.projects) return $q.when(this.projects);
+    		//if (this.projects) return $q.when(this.projects);// we comment this to not save the results in locals
     		return fbAuth().then(function (auth) {
     			console.log(auth);
     			var deferred = $q.defer();
@@ -77,6 +77,10 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
     }])   
 
     .config(function($routeProvider) {
+
+        var filter = {};
+        var filterF = function () { return filter; };
+
         var resolveProjects = {
             projects: function (Projects) {
                 return Projects.fetch();
@@ -99,12 +103,12 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
             .when ('/', {
                 controller:'ProjectListController as projectList',
                 templateUrl:'list.html',
-                resolve:resolveProjects
+                resolve: $.extend(resolveProjects, {"filter": filterF})
             })
             .when('/edit/:projectId', {
                 controller: 'EditProjectController as editProject',
                 templateUrl:'detail.html',
-                resolve:resolveProject
+                resolve: resolveProject
             })
             .when('/new', {
                 controller: 'EditProjectController as editProject',
@@ -141,9 +145,15 @@ angular.module('project', ['ngRoute','ngResource','ngDialog'])
         });
     }])
 
-    .controller('ProjectListController', ['$scope', 'projects', function($scope, projects) {
+    .controller('ProjectListController', ['$scope', 'projects', 'filter', function($scope, projects, filter) {
         var projectList = this;
         projectList.projects = projects;
+        projectList.filter = filter;
+        /*
+        $('#projects_search').keyup(function () {
+            console.log(projectList.filter.search);
+            console.log(filter);
+        });*/
     }])
 
     .controller('EditProjectController', ['$scope', '$rootScope', '$location', '$routeParams', 'project', 'projectFactory', 
