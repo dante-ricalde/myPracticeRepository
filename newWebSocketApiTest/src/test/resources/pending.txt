@@ -222,3 +222,6 @@ https://localhost:4443/anyUrlPattern/@websocketSpringIntegration
 CHAT URL in local: https://localhost:4443/anyUrlPattern/chat/myChat
 CHAT URL in local: http://localhost:8080/anyUrlPattern/chat/myChat
 CHAR URL in AWS: http://52.41.40.149:8080/webSocketApiTest/anyUrlPattern/chat/myChat
+
+6/12/2016
+I need to set https in this chat app
