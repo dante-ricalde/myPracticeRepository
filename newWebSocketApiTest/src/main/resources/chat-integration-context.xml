@@ -37,7 +37,14 @@
 	
 	<int:channel id="chatSubscribeChannel" />
 	
-	<int-event:inbound-channel-adapter event-types="org.springframework.web.socket.messaging.SessionSubscribeEvent" channel="chatSubscribeChannel" />
+	<int:channel id="chatSubscribeEventChannel" />
+	
+	<int:recipient-list-router id="chatSubscribeChannelRecipientListRouter" input-channel="chatSubscribeEventChannel"
+		apply-sequence="true" auto-startup="true" default-output-channel="chatSubscribeChannel">
+		<int:recipient channel="nullChannel" selector-expression="#this.payload.message.headers['simpDestination'].startsWith('/appChatRelay/chat/getMessages/')" />
+	</int:recipient-list-router>
+	
+	<int-event:inbound-channel-adapter event-types="org.springframework.web.socket.messaging.SessionSubscribeEvent" channel="chatSubscribeEventChannel" />
 	
 	<!--****************************************************** RabbitMQ Configuration ************************************************************ -->
 	
@@ -53,9 +60,19 @@
 	
 	<rabbit:queue id="messagesKeluchisNotificationQueue" name="messagesKeluchisNotificationQueue" />
 	
+	<rabbit:queue id="messagesKeluchisDanteQueue" name="messagesKeluchisDanteQueue" />
+	
+	<rabbit:queue id="messagesKeluchisDantitoQueue" name="messagesKeluchisDantitoQueue" />
+	
+	<rabbit:queue id="messagesKeluchisDanielitoQueue" name="messagesKeluchisDanielitoQueue" />
+	
 	<rabbit:direct-exchange name="chatDirectExchange">
 		<rabbit:bindings>
+			<!-- Queue bindings for keluchis -->
 			<rabbit:binding key="messages-keluchis-notification" queue="messagesKeluchisNotificationQueue" />
+			<rabbit:binding key="messages-keluchis-dante" queue="messagesKeluchisDanteQueue" />
+			<rabbit:binding key="messages-keluchis-dantito" queue="messagesKeluchisDantitoQueue" />
+			<rabbit:binding key="messages-keluchis-danielito" queue="messagesKeluchisDanielitoQueue" />
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 

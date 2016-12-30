@@ -9,10 +9,10 @@
 	<url>http://maven.apache.org</url>
 
 	<properties>
-		<spring-version>4.3.0.RELEASE</spring-version>
+		<spring-version>4.3.4.RELEASE</spring-version>
 		<spring-security-version>4.0.3.RELEASE</spring-security-version>
 		<tomcat-version>8.0.28</tomcat-version>
-		<spring-integration-version>4.3.0.RELEASE</spring-integration-version>
+		<spring-integration-version>4.3.5.RELEASE</spring-integration-version>
 	</properties>
 
 	<dependencyManagement>

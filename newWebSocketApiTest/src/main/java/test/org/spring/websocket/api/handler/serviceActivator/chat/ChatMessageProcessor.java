@@ -1,6 +1,7 @@
 package test.org.spring.websocket.api.handler.serviceActivator.chat;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -41,7 +42,11 @@ public class ChatMessageProcessor {
 	private AmqpAdmin amqpAdmin;
 	
 	@Autowired
-	private Queue anonymousNyseMarketDateQueue;
+	@Qualifier("messagesKeluchisNotificationQueue")
+	private Queue messagesKeluchisNotificationQueue;
+	
+	@Resource(name = "messagesKeluchisDanteQueue")
+	private Queue messagesKeluchisDanteQueue;
 
 	@ServiceActivator(inputChannel = "chatMessageProcessorChannel")
 	// @SendTo(value = "/exchange/amq.direct/messages}")
@@ -60,7 +65,8 @@ public class ChatMessageProcessor {
 //
 //		AmqpAdmin admin = new RabbitAdmin(connectionFactory);
 //		admin.declareQueue(new Queue("anonymousNyseMarketDateQueue"));
-		amqpAdmin.declareQueue(anonymousNyseMarketDateQueue);
+		amqpAdmin.declareQueue(messagesKeluchisNotificationQueue);
+		amqpAdmin.declareQueue(messagesKeluchisDanteQueue);
 	}
 
 }

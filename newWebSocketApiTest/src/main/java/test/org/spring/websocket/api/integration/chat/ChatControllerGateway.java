@@ -50,6 +50,6 @@ public interface ChatControllerGateway {
 
 	@SubscribeMapping("/getMessages/{queueName}")
 	@Gateway(requestChannel = "chatMessagesProcessorChannel")
-	public List<ChatMessage> getMessages(@DestinationVariable(value = "queueName") String queueName);
+	public List<ChatMessage> getMessages(@DestinationVariable(value = "queueName") String queueName, MessageHeaders headers);
 
 }
