@@ -13,3 +13,10 @@
 	I need to show the loading messages when a route changes. (100%)
 24/11
 	I need to configure a loading image to show the loading message (not necessary) (100%)
+
+18/12/2016
+	https://github.com/marceljuenemann/angular-drag-and-drop-lists
+	. When I drag the elements, the elements disappear from the origin and then appear in the destination.
+	. I need to implement the CTRL button to stop selecting all the element when I leave the button CTRL and I press in the blank part
+	  of the list or in any other element from the list.
+	. Only I select several elements from the list if I have pressed the CTRL button.
