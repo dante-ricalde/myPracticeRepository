@@ -206,10 +206,16 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
 
         $scope.onDropTrash = function(list, items, index) {
             console.log('onDropTrash invoked');
+            projectList.projectsToDelete = items;
+            var itemsIds = $.map(items, function(e) { return e.id; });
+            $scope.models[0].items = $.grep(list.items, function(e) { return $.inArray(e.id, itemsIds) === -1; });
             $scope.message = {title: 'Project Confirmation', message: 'do you want to delete the following projects?'};
             ngDialog.open({template: 'template/confirm_delete_projects.html', className: 'ngdialog-theme-default', scope: $scope});
         };
 
+        $scope.delete = function() {
+            console.log('deleting projects...');
+        }
 
         /**
          * Last but not least, we have to remove the previously dragged items in the
