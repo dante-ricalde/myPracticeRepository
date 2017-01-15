@@ -27,7 +27,7 @@ public class ChatMessagesProcessor {
 
 	@ServiceActivator(inputChannel = "chatMessagesProcessorChannel")
 	public List<ChatMessage> process(String queueName, MessageHeaders headers) {
-		LOGGER.debug("Getting messages from: '{queueName}'", queueName);
+		LOGGER.debug("Getting messages from: '{}'", queueName);
 		List<ChatMessage> messages = queueMessagesGateway.getMessages("messages-" + queueName);
 		return messages;
 	}

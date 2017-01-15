@@ -4,6 +4,7 @@
 	xmlns:p="http://www.springframework.org/schema/p" xmlns:task="http://www.springframework.org/schema/task" xmlns:util="http://www.springframework.org/schema/util" 
 	xmlns:int-stomp="http://www.springframework.org/schema/integration/stomp"
 	xmlns:int-websocket="http://www.springframework.org/schema/integration/websocket"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
 	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:c="http://www.springframework.org/schema/c"
 	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
 	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
@@ -14,6 +15,7 @@
 		http://www.springframework.org/schema/integration/stomp http://www.springframework.org/schema/integration/stomp/spring-integration-stomp-4.3.xsd
 		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-4.3.xsd
 		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-4.3.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-4.3.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.3.xsd
 		http://www.springframework.org/schema/integration/websocket http://www.springframework.org/schema/integration/websocket/spring-integration-websocket-4.3.xsd
 		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.6.xsd">
@@ -84,5 +86,29 @@
 <!-- 		</property> -->
 <!-- 	</bean> -->
 	
+<!-- 	<int:object-to-json-transformer input-channel="queueMessagesGatewayHttpJsonRequestChannel" output-channel="queueMessagesGatewayHttpRequestChannel" content-type="application/json" /> -->
+
+	<int:header-enricher input-channel="queueMessagesGatewayHttpJsonRequestChannel" output-channel="queueMessagesGatewayHttpRequestChannel">
+		<int:header name="Content-Type" value="application/json" />
+	</int:header-enricher>
 	
+	<int-http:outbound-gateway id="simpleHttpOutboundGatewayHttpOutboundGateway"
+		url="http://localhost:15672/api/queues/%2F/messagesKeluchisDanteQueue/get" request-channel="queueMessagesGatewayHttpRequestChannel" reply-channel="queueMessagesGatewayHttpReplyChannel"
+		http-method="POST" extract-request-payload="true" expected-response-type="java.lang.String" charset="UTF-8"
+		transfer-cookies="true" mapped-response-headers="HTTP_RESPONSE_HEADERS, X-myCookie" request-factory="customSimpleClientHttpRequestFactory" encode-uri="false" auto-startup="true">
+		<int-http:uri-variable name="queueName" expression="payload" />
+	</int-http:outbound-gateway>
+	
+<!-- 	<int:json-to-object-transformer input-channel="queueMessagesGatewayHttpReplyChannel" type="java.util.Map" output-channel="queueMessagesGatewayJsonReplyChannel"></int:json-to-object-transformer> -->
+<!-- 	<int:transformer input-channel="queueMessagesGatewayHttpReplyChannel" output-channel="queueMessagesGatewayJsonReplyChannel" expression="@jMessageConverter.getObjectMapper().readValue(new org.json.JSONArray(payload).toList().![payload].toString(), T(com.fasterxml.jackson.databind.type.TypeFactory).defaultInstance().constructCollectionType(new java.util.ArrayList().getClass(), new test.org.spring.websocket.api.model.ChatMessage().getClass()))" /> -->
+	<int:transformer input-channel="queueMessagesGatewayHttpReplyChannel" expression="@jMessageConverter.getObjectMapper().readValue(new org.json.JSONArray(payload).toList().![payload].toString(), T(com.fasterxml.jackson.databind.type.TypeFactory).defaultInstance().constructCollectionType(new java.util.ArrayList().getClass(), new test.org.spring.websocket.api.model.ChatMessage().getClass()))" />
+<!-- 	<int:json-to-object-transformer input-channel="queueMessagesGatewayJsonReplyChannel" type="java.util.ArrayList"></int:json-to-object-transformer> -->
+	<!-- 
+	<util:list id="messageConvertersList">
+		<bean id="jMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" />
+	</util:list>
+	 -->
+	<bean id="jMessageConverter" class="org.springframework.messaging.converter.MappingJackson2MessageConverter" />
+	 
+<!-- 	<int:channel id="queueMessagesGatewayChatMessageReplyChannel"></int:channel>  -->
 </beans>

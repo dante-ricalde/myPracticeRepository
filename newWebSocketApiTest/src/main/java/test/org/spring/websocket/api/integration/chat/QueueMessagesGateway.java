@@ -15,6 +15,7 @@ import test.org.spring.websocket.api.model.ChatMessage;
 @MessagingGateway
 public interface QueueMessagesGateway {
 
+	//@Gateway(requestChannel = "queueMessagesGatewayRequestChannel", replyChannel = "queueMessagesGatewayChatMessageReplyChannel")
 	@Gateway(requestChannel = "queueMessagesGatewayRequestChannel")
 	List<ChatMessage> getMessages(String queueName);
 }

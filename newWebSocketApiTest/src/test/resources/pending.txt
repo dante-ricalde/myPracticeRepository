@@ -21,7 +21,7 @@ and testing the app with a tyrus client: (OK --> I used standar web socket clien
 	
 	in websocket-context.xml
 	
-When I finish the test client I need to continue to:  For Jetty, you�ll need to supply a pre-configured Jetty
+When I finish the test client I need to continue to:  For Jetty, youï¿½ll need to supply a pre-configured Jetty
 
 I left at:
 
@@ -225,3 +225,15 @@ CHAR URL in AWS: http://52.41.40.149:8080/webSocketApiTest/anyUrlPattern/chat/my
 
 6/12/2016
 I need to set https in this chat app
+
+07/01/2017
+	curl -i -u guest:guest http://localhost:15672/api/queues/%2F/messagesKeluchisDanteQueue/get -d'{"count":5,"requeue":"true","encoding":"auto","truncate":"50000"}' -H "content-type:application/json"
+	
+	Analize Gson to make the transformation in the <int:transformer element. (100%) I did it using Jackson and JSONArray
+	Apparently the flow of the channels are ok. Review more in detail (100%)
+
+15/01/2017
+	I need to parameterize the queues for the messages obtained from /getMessages/{queueName}. the queue names are hardcoded and it's set to 1000 
+	the number of messages.
+	Review when I get the messages (/appChatRelay/chat/getMessages/) because the READ messages don't appear like Read, they appear like sent to server (✓) or received by the client (✓✓) but not
+	like read.
