@@ -150,7 +150,7 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
         });
     }])
 
-    .controller('ProjectListController', ['$scope', 'ngDialog', 'projects', 'filter', function($scope, ngDialog, projects, filter) {
+    .controller('ProjectListController', ['$scope', 'ngDialog', 'projectFactory', 'projects', 'filter', function($scope, ngDialog, projectFactory, projects, filter) {
         var projectList = this;
         projectList.projects = projects;
 
@@ -207,14 +207,23 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
         $scope.onDropTrash = function(list, items, index) {
             console.log('onDropTrash invoked');
             projectList.projectsToDelete = items;
-            var itemsIds = $.map(items, function(e) { return e.id; });
-            $scope.models[0].items = $.grep(list.items, function(e) { return $.inArray(e.id, itemsIds) === -1; });
+            $scope.itemsIdsToRemove = $.map(items, function(e) { return e.id; });
+            $scope.models[0].items = $.grep(list.items, function(e) { return $.inArray(e.id, $scope.itemsIdsToRemove) === -1; });
             $scope.message = {title: 'Project Confirmation', message: 'do you want to delete the following projects?'};
             ngDialog.open({template: 'template/confirm_delete_projects.html', className: 'ngdialog-theme-default', scope: $scope});
         };
 
         $scope.delete = function() {
-            console.log('deleting projects...');
+            console.log('deleting projects...' + $scope.itemsIdsToRemove);
+            projectFactory.getProjResource().delete({ids: $scope.itemsIdsToRemove}).$promise.then(function (project) {
+                if (project.id) {
+                    editProject.project.id = project.id;
+                    $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'The Project has been created.'});
+                    $location.path('/');
+                }
+            }, function (err) {
+                $rootScope.$broadcast('popupMessage', {title: 'Project Confirmation', message: 'There was an error creating the project.'});
+            });
         }
 
         /**
