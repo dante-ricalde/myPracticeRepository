@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,7 +33,7 @@ public class Example {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(Example.class);
 	
-	private List<Project> projects = new ArrayList<>();
+	private List<Project> projects;
 
 	@RequestMapping("/")
 	String home() {
@@ -47,7 +47,8 @@ public class Example {
 	
 	@RequestMapping("/angular/projects")
 	List<Project> getProjects() {
-		if (projects.isEmpty()) {
+		if (projects == null) {
+			projects = new ArrayList<>();
 			Project project1 = new Project(0L, "AngularJS", "HTML enhanced for web apps!", "http://angularjs.org");
 			projects.add(project1);
 			project1 = new Project(2L, "Backbone", "Models for your apps.", "http://documentcloud.github.com/backbone/");		
@@ -111,9 +112,12 @@ public class Example {
 		return project;
 	}
 	
-	@RequestMapping(value = "/project", method=RequestMethod.DELETE)
-	public void delete(@RequestParam(name = "ids") Long[] ids) {
-		LOGGER.debug("Deleting the following projects: " + ids);
+	@DeleteMapping(value = "/project")
+	public  ModelMap delete(@RequestParam(name = "ids") List<Long> ids) {
+		LOGGER.debug("Deleting the following projects: '{}'", ids);
+		ModelMap result = new ModelMap();
+		result.put("result", projects.removeIf(x -> ids.contains(x.getId())));
+		return result;
 	}
 	
 	public static void main(String[] args) {

@@ -23,8 +23,9 @@
 
 10/01/2017
 	I need to implement this: $scope.delete = function() {
-		. If I confirm delete, I call the rest server method delete to delete the projects and I reload the view calling @RequestMapping("/angular/projects") -> List<Project> getProjects(), so that all starts again
-		. If I cancel the deletion I need to add the elements to delete to the list, namely add to  $scope.models[0].items maintaining its position, I need to save the position in the element project or use sth like @index to restore in the appropriare position
+		. If I confirm delete, I call the rest server method delete to delete the projects and I reload the view calling @RequestMapping("/angular/projects") -> List<Project> getProjects(), so that all starts again (100%)
+		. If I cancel the deletion I need to add the elements to delete to the list, namely add to  $scope.models[0].items maintaining its position, I need to save the position in the element project or use sth like @index to restore 
+			in the appropriare position (PENDING)
 
 11/01/2017
 	Review the log4j configuration. 
