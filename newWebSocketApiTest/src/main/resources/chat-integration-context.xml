@@ -60,21 +60,36 @@
 		
 <!-- 	</bean> -->
 	
-	<rabbit:queue id="messagesKeluchisNotificationQueue" name="messagesKeluchisNotificationQueue" />
+	<!-- Queues for keluchis -->
+	<rabbit:queue id="messagesKeluchisNotificationQueue" name="messages-keluchis-notification-queue" />
 	
-	<rabbit:queue id="messagesKeluchisDanteQueue" name="messagesKeluchisDanteQueue" />
+	<rabbit:queue id="messagesKeluchisDanteQueue" name="messages-keluchis-dante-queue" />
 	
-	<rabbit:queue id="messagesKeluchisDantitoQueue" name="messagesKeluchisDantitoQueue" />
+	<rabbit:queue id="messagesKeluchisDantitoQueue" name="messages-keluchis-dantito-queue" />
 	
-	<rabbit:queue id="messagesKeluchisDanielitoQueue" name="messagesKeluchisDanielitoQueue" />
+	<rabbit:queue id="messagesKeluchisDanielitoQueue" name="messages-keluchis-danielito-queue" />
+	
+	<!-- Queues for dante -->
+	<rabbit:queue id="messagesDanteNotificationQueue" name="messages-dante-notification-queue" />
+	
+	<rabbit:queue id="messagesDanteKeluchisQueue" name="messages-dante-keluchis-queue" />
+	
+	<rabbit:queue id="messagesDanteDantitoQueue" name="messages-dante-dantito-queue" />
+	
+	<rabbit:queue id="messagesDanteDanielitoQueue" name="messages-dante-danielito-queue" />
 	
 	<rabbit:direct-exchange name="chatDirectExchange">
 		<rabbit:bindings>
 			<!-- Queue bindings for keluchis -->
-			<rabbit:binding key="messages-keluchis-notification" queue="messagesKeluchisNotificationQueue" />
-			<rabbit:binding key="messages-keluchis-dante" queue="messagesKeluchisDanteQueue" />
-			<rabbit:binding key="messages-keluchis-dantito" queue="messagesKeluchisDantitoQueue" />
-			<rabbit:binding key="messages-keluchis-danielito" queue="messagesKeluchisDanielitoQueue" />
+			<rabbit:binding key="messages-keluchis-notification" queue="messages-keluchis-notification-queue" />
+			<rabbit:binding key="messages-keluchis-dante" queue="messages-keluchis-dante-queue" />
+			<rabbit:binding key="messages-keluchis-dantito" queue="messages-keluchis-dantito-queue" />
+			<rabbit:binding key="messages-keluchis-danielito" queue="messages-keluchis-danielito-queue" />
+			<!-- Queue bindings for dante -->
+			<rabbit:binding key="messages-dante-notification" queue="messages-dante-notification-queue" />
+			<rabbit:binding key="messages-dante-keluchis" queue="messages-dante-keluchis-queue" />
+			<rabbit:binding key="messages-dante-dantito" queue="messages-dante-dantito-queue" />
+			<rabbit:binding key="messages-dante-danielito" queue="messages-dante-danielito-queue" />
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 
@@ -93,10 +108,10 @@
 	</int:header-enricher>
 	
 	<int-http:outbound-gateway id="simpleHttpOutboundGatewayHttpOutboundGateway"
-		url="http://localhost:15672/api/queues/%2F/messagesKeluchisDanteQueue/get" request-channel="queueMessagesGatewayHttpRequestChannel" reply-channel="queueMessagesGatewayHttpReplyChannel"
+		url="http://localhost:15672/api/queues/%2F/{queueName}/get" request-channel="queueMessagesGatewayHttpRequestChannel" reply-channel="queueMessagesGatewayHttpReplyChannel"
 		http-method="POST" extract-request-payload="true" expected-response-type="java.lang.String" charset="UTF-8"
 		transfer-cookies="true" mapped-response-headers="HTTP_RESPONSE_HEADERS, X-myCookie" request-factory="customSimpleClientHttpRequestFactory" encode-uri="false" auto-startup="true">
-		<int-http:uri-variable name="queueName" expression="payload" />
+		<int-http:uri-variable name="queueName" expression="payload.queueName" />
 	</int-http:outbound-gateway>
 	
 <!-- 	<int:json-to-object-transformer input-channel="queueMessagesGatewayHttpReplyChannel" type="java.util.Map" output-channel="queueMessagesGatewayJsonReplyChannel"></int:json-to-object-transformer> -->

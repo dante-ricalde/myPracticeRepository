@@ -44,6 +44,7 @@ public class RabbitMQQueueMessagesGateway {
         body.put("requeue", "true");
         body.put("encoding", "auto");
         body.put("truncate", "50000");
+        body.put("queueName", queueName + "-queue");
 		return body;
 	}
 	/*
