@@ -29,6 +29,8 @@ public class ChatMessage implements Serializable {
 	private Boolean receivedByClient;
 	
 	private String id;
+	
+	private ChatMessageState state;
 
 	public ChatMessage(String message) {
 		super();
@@ -201,6 +203,14 @@ public class ChatMessage implements Serializable {
 	 */
 	public void setReceivedByClient(Boolean receivedByClient) {
 		this.receivedByClient = receivedByClient;
+	}
+
+	public ChatMessageState getState() {
+		return state;
+	}
+
+	public void setState(ChatMessageState state) {
+		this.state = state;
 	}
 
 }

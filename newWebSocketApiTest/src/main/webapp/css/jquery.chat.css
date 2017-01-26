@@ -32,7 +32,9 @@
 .chat-message {
 	padding: 4px !important;
 	margin: 4px !important;
-	color: black;
+	color: rgba(38, 38, 38, 0.85);
+	font-family: 'Open Sans', sans-serif;
+	font-size: 13.6px;
 	border-radius: 7.5px;
 	display: block;
 	max-width: 90%;

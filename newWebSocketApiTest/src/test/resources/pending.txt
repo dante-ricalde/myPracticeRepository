@@ -236,4 +236,4 @@ I need to set https in this chat app
 	I need to parameterize the queues for the messages obtained from /getMessages/{queueName}. the queue names are hardcoded and it's set to 1000 
 	the number of messages. (100%)
 	Review when I get the messages (/appChatRelay/chat/getMessages/) because the READ messages don't appear like Read, they appear like sent to server (✓) or received by the client (✓✓) but not
-	like read.
+	like read. (100%) I had to create the enum ChatMessageState
