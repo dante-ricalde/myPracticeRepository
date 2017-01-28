@@ -60,6 +60,7 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
     				    // this callback will be called asynchronously
     				    // when the response is available
     					self.projects = response.data;
+                        //$.each(self.projects, function (index, value) { value.index = index; });
     					deferred.resolve(self.projects);
     				  }, function errorCallback(response) {
     				    // called asynchronously if an error occurs
@@ -198,11 +199,21 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
          * true, the dnd-list directive won't do the insertion itself.
          */
         $scope.onDrop = function(list, items, index) {
+            /*
           angular.forEach(items, function(item) { item.selected = false; });
+          var itemsIdsToRemove = $.map(items, function(e) { return e.id; });
+          var reducedItems = $.grep(list.items, function(e) { return $.inArray(e.id, itemsIdsToRemove) === -1; });
           list.items = list.items.slice(0, index)
                       .concat(items)
-                      .concat(list.items.slice(index));
-          return true;
+                      .concat(reducedItems.slice(index));
+          $scope.projectList.projects = list.items;
+          $scope.models[0].items = list.items;
+          $.each($scope.models[0].items, function (index, value) { delete value.selected; });
+          //console.log($scope.models[0].items);
+          */
+          // we comment the code above to deactive the drag and drop in the list, the drop would be only possible in
+          // the trash icon. We return false to do nothing.
+          return false;
         };
 
         $scope.onDropTrash = function(list, items, index) {
@@ -212,6 +223,12 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
             $scope.models[0].items = $.grep(list.items, function(e) { return $.inArray(e.id, $scope.itemsIdsToRemove) === -1; });
             $scope.message = {title: 'Project Confirmation', message: 'do you want to delete the following projects?'};
             ngDialog.open({template: 'template/confirm_delete_projects.html', className: 'ngdialog-theme-default', scope: $scope});
+        };
+
+        $scope.cancel = function() {
+            console.log('canceling the deletion of the projects: ' + $scope.itemsIdsToRemove);
+            $scope.models[0].items=$scope.projectList.projects;
+            ngDialog.close();
         };
 
         $scope.delete = function() {
