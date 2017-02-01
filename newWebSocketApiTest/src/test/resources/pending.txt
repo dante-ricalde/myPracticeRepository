@@ -219,12 +219,12 @@ https://localhost:4443/anyUrlPattern/@websocketSpringIntegration
 		so that the sender can mark all the messages that have not been marked as read as read.   
 		
 		
-CHAT URL in local: https://localhost:4443/anyUrlPattern/chat/myChat
+CHAT URL in local: https://localhost:8443/anyUrlPattern/chat/myChat
 CHAT URL in local: http://localhost:8080/anyUrlPattern/chat/myChat
 CHAR URL in AWS: http://52.41.40.149:8080/webSocketApiTest/anyUrlPattern/chat/myChat
 
 6/12/2016
-I need to set https in this chat app
+I need to set https in this chat app (100%)
 
 07/01/2017
 	curl -i -u guest:guest http://localhost:15672/api/queues/%2F/messagesKeluchisDanteQueue/get -d'{"count":5,"requeue":"true","encoding":"auto","truncate":"50000"}' -H "content-type:application/json"
