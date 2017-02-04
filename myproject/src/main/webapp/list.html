@@ -54,9 +54,9 @@
 		<div ng-repeat="list in models">
 			<br/><br/>
 			<div class="form-group has-feedback row" dnd-list dnd-drop="onDropTrash(list, item, index)">
-				<span class="glyphicon glyphicon-trash project-trash-icon pull-right col-xs-1" aria-hidden="true"></span>
+				<span class="glyphicon glyphicon-trash project-trash-icon pull-right col-xs-1 non-deselect-projects" aria-hidden="true"></span>
 			</div>
-			<ul dnd-list dnd-drop="onDrop(list, item, index)">
+			<ul dnd-list dnd-drop="onDrop(list, item, index)" class="projects-list">
 			    <li ng-repeat="item in list.items | filter:projectList.filter.search | orderBy:'name'"
 			        dnd-draggable="getSelectedItemsIncluding(list, item)"
 			        dnd-dragstart="onDragstart(list, event)"

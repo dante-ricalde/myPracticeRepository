@@ -268,6 +268,14 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
             $scope.modelAsJson = angular.toJson(model, true);
         }, true);
 
+        $(window).click(function (event) {
+            console.log('clicking on body, event: ', event);
+            // When I click in any part other than the project list We deselect all the projects selected from the list,
+            // except for the elements which has the class non-deselect-projects
+            if (!$(event.target).hasClass('non-deselect-projects')) {
+                $('li.ng-scope.selected', 'ul.projects-list').click();    
+            }
+        });
         
     }])
 
