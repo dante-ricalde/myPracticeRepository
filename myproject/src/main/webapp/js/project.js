@@ -268,8 +268,17 @@ angular.module('project', ['ngRoute','ngResource','ngDialog','dndLists'])
             $scope.modelAsJson = angular.toJson(model, true);
         }, true);
 
+        $scope.onDragOverHeading = function(index, external, type, callback) {
+            if (index === 0) {
+                // We disable dragging over the heading
+                console.log('dragging over the heading is not allowed');
+                return false;    
+            }
+            return true;;
+        }
+
         $(window).click(function (event) {
-            console.log('clicking on body, event: ', event);
+            //console.log('clicking on body, event: ', event);
             // When I click in any part other than the project list We deselect all the projects selected from the list,
             // except for the elements which has the class non-deselect-projects
             if (!$(event.target).hasClass('non-deselect-projects')) {

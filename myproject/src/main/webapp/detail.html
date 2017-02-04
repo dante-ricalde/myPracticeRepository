@@ -5,7 +5,7 @@
 			<div class="col-sm-4">
 				<input class="form-control" id="name" type="text" name="name" ng-model="editProject.project.name" required>
 				<span ng-show="myForm.name.$error.required && !myForm.name.$pristine" class="help-block">
-					Required {{myForm.name.$pristine}}
+					Required {{!myForm.name.$pristine}}
 				</span>
 			</div>			
 		</div>
@@ -13,7 +13,13 @@
 			<label for="site" class="control-label col-sm-2">Website</label>
 			<div class="col-sm-4">
 				<input class="form-control" id="site" type="url" name="site" ng-model="editProject.project.site" required>
-			</div>			
+				<span ng-show="myForm.site.$error.required && !myForm.site.$pristine" class="help-block">
+					Required {{!myForm.site.$pristine}}
+				</span>
+				<span ng-show="myForm.site.$error.url && !myForm.site.$pristine" class="help-block">
+					Not valid url!
+				</span>
+			</div>	
 		</div>
 		<div class="form-group">
 			<label for="description" class="control-label col-sm-2">Description</label>
@@ -23,9 +29,9 @@
 		</div>
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-sm-4">
-				<a href="#/" class="btn btn-default">Cancel</a>
+				<a href="#/" class="btn btn-default">Back</a>
 				<button ng-click="editProject.save()" ng-disabled="myForm.$invalid" class="btn btn-primary">Save</button>
-				<button ng-click="editProject.destroy()" ng-show="editProject.project.id" class="btn btn-danger">Delete</button>
+				<button ng-click="editProject.destroy()" ng-show="editProject.project.id || editProject.project.id === 0" class="btn btn-danger">Delete</button>
 			</div>
 		</div>
 	</form>
