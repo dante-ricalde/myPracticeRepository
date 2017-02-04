@@ -67,3 +67,9 @@
 .ngdialog-content {
     background-color: white !important;
 }
+
+.dndPlaceholder {
+    height: 0px;
+    padding-left: 0;
+    list-style: none;
+}
