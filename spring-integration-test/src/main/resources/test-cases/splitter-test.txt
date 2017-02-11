@@ -1,0 +1,17 @@
+Splitter
+
+	- test an splitter with a ref implementation returning a list of payload with a argument 
+	  of Message type (put correlationId, sequence number)
+	- test an splitter with a ref implementation returning a list of Message instance with a argument 
+	  of payload type (put correlationId, sequence number, etc)
+	- test an splitter without a ref implementation asuming that the message that arrived 
+	  to the input-channel is an implementation of Collection and the default splitting logic
+	  will be applied to the colecction incorporating each individual element into a Message
+	  and sending it to the output-channel
+	- Configure a splitter with annotations testing if the annotation may be applied in a method
+	  that does not return  a Collection
+	- Configure a splitter with annotations testing a method that returns collection 
+	  with messages instances
+	- Configure a splitter with annotations testing a method that returns collection 
+	  without messages instances (payload instances)
+	

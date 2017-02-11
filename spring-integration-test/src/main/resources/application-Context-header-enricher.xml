@@ -1,0 +1,52 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+	
+	<!-- In this case we are testing a simple Header Enricher, this header enricher is setting static values so as computed values using SpEL, this header
+		enricher is also setting values to a well-known header names like correlation-id, priority, error-channel, reply-channel. -->
+		
+	<int:inbound-channel-adapter id="simpleHeaderEnricherInboundChannelAdapter" channel="simpleHeaderEnricherInputQueueChannel" 
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="simpleHeaderEnricherInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel> 
+
+	<int:header-enricher id="simpleHeaderEnricher" input-channel="simpleHeaderEnricherInputQueueChannel" output-channel="simpleHeaderEnricherOutputQueueChannel"
+		 auto-startup="false">
+		<int:poller fixed-rate="1000" />
+		<int:header name="foo" value="123" />
+		<int:correlation-id value="123" />
+		<int:priority value="1" />
+		<int:error-channel ref="nullChannel" />
+		<int:reply-channel ref="simpleHeaderEnricherReplyChannel" />
+		<int:header name="computedHeader" expression="payload.toString().toUpperCase() + '_US'" />
+	</int:header-enricher>
+	
+	<int:channel id="simpleHeaderEnricherOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+	
+	<int:channel id="simpleHeaderEnricherReplyChannel" />
+	
+	<int:outbound-channel-adapter id="simpleHeaderEnricherOutboundChannelAdapter" channel="simpleHeaderEnricherOutputQueueChannel" ref="channelAdapterReceiver" 
+		method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+</beans>

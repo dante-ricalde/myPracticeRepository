@@ -1,0 +1,248 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a simple aggregator with its default implementation. The inbound channel adapter sends a message every 1 second to the splitter input direct channel. 
+		The splitter splits the message and sends each part (each element of the collection received as a payload) to the splitter output channel. Then the aggregator consumes each message 
+		(each element of the initial collection) of the splitter queue output channel every 5 seconds so that for the aggregator receives a complete message it must wait 25 seconds to aggregate 
+		a complete message that it went out from the inbound channel adapter initially. This aggregator uses its default implementation of the message group (DefaultAggregatorMessageGroupProcessor) 
+		which creates a single Message whose payload is a List of the payloads received for a given group (In this case the payloads of all parts of a message (parts of the original message 
+		that It went out of the inbound channel adapter) that they went out of the splitter). -->
+
+	<int:inbound-channel-adapter id="toTestASimpleAggregatorInboundChannelAdapter" channel="toTestASimpleAggregatorSplitterInputDirectChannel"
+		expression="T(java.util.Arrays).asList('message number 1', 'message number 2', 'message number 3', 'message number 4', 'message number 5')" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleAggregatorSplitterInputDirectChannel" />
+
+	<int:splitter id="toTestASimpleAggregatorSplitter" input-channel="toTestASimpleAggregatorSplitterInputDirectChannel" output-channel="toTestASimpleAggregatorSplitterOutputChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestASimpleAggregatorSplitterOutputChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:aggregator id="toTestASimpleAggregator" input-channel="toTestASimpleAggregatorSplitterOutputChannel" output-channel="toTestASimpleAggregatorOutputChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" max-messages-per-poll="1" />
+	</int:aggregator>
+
+	<int:channel id="toTestASimpleAggregatorOutputChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestASimpleAggregatorOutboundChannelAdapter" channel="toTestASimpleAggregatorOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an aggregator with a POJO that implements the aggregation algorithm. In this case the algorithm is very simple, it loops with the List<Message<?> and 
+		concatenates the payload of a message and the following message payload not and so on (i.e concatenates the payloads: message number 1, message number 3 and message number 5 to the 
+		final aggregated message payload). -->
+
+	<int:inbound-channel-adapter id="implementingTheAggregationAlgorithmInboundChannelAdapter"
+		expression="T(java.util.Arrays).asList('message number 1', 'message number 2', 'message number 3', 'message number 4', 'message number 5')" channel="implementingTheAggregationAlgorithmInputDirectChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" task-executor="aggregatorTaskExecutor" />
+	</int:inbound-channel-adapter>
+
+	<task:executor id="aggregatorTaskExecutor" pool-size="15" />
+
+	<int:channel id="implementingTheAggregationAlgorithmInputDirectChannel" />
+
+	<int:splitter id="implementingTheAggregationAlgorithmSplitter" input-channel="implementingTheAggregationAlgorithmInputDirectChannel" output-channel="implementingTheAggregationAlgorithmSplitterOutputDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="implementingTheAggregationAlgorithmSplitterOutputDirectChannel" />
+
+	<int:aggregator id="implementingTheAggregationAlgorithmAggregator" input-channel="implementingTheAggregationAlgorithmSplitterOutputDirectChannel" ref="aggregatorImplementingTheAggregationAlgorithm"
+		method="aggregatePayloads" output-channel="implementingTheAggregationAlgorithmOutputChannel" auto-startup="false" />
+
+	<int:channel id="implementingTheAggregationAlgorithmOutputChannel" />
+
+	<int:outbound-channel-adapter id="implementingTheAggregationAlgorithmOutboundChannelAdapter" channel="implementingTheAggregationAlgorithmOutputChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an aggregator with an implementation of a Released Strategy. The released strategy implemented in this case verify if each message of the message group 
+		that arrives ends with the text '4'. This is so because it is an example, when this happens the method returns true indicating that the messages of the message group can be released, 
+		removing the group from the message store, hence sending to the aggregate process only the four first messages whose are message parts of the complete original message that contains 
+		5 elements (message parts) ('number 1', 'number 2', 'number 3', 'number 4', 'number 5'), losing the last message part. It is supposed that when each message arrives to the aggregator 
+		is first clasified in a message group, this work is done by the correlation strategy by default. Then the messages already clasified in its respective message group are sent in a list 
+		to the released strategy, if you implements the ReleaseStrategy interface, the message group will arrive to the method canRelease. When the messages can be released are sent for the 
+		processing of the message group, in this case the aggregator uses the default implementation DefaultAggregatingMessageGroupProcessor, which creates a single Message whose payload is 
+		a List of the payloads received for a given group (In this case the 4 first payloads of all parts (5 parts) of a message (parts of the original message that It went out of the inbound 
+		channel adapter) that they went out of the splitter) -->
+
+	<int:inbound-channel-adapter id="implementingAReleaseStrategyInboundChannelAdapter" channel="implementingAReleaseStrategyInputDirectChannel"
+		expression="T(java.util.Arrays).asList('number 1', 'number 2', 'number 3', 'number 4', 'number 5')" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="implementingAReleaseStrategyInputDirectChannel" />
+
+	<int:splitter id="implementingAReleaseStrategySplitter" input-channel="implementingAReleaseStrategyInputDirectChannel" output-channel="implementingAReleaseStrategySplitterOutputDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="implementingAReleaseStrategySplitterOutputDirectChannel" />
+
+	<int:aggregator id="implementingAReleaseStrategyAggregator" input-channel="implementingAReleaseStrategySplitterOutputDirectChannel" release-strategy="myReleaseStrategy"
+		release-strategy-method="canMessagesBeReleased" auto-startup="false" output-channel="implementingAReleaseStrategyOutputChannel" />
+
+	<int:channel id="implementingAReleaseStrategyOutputChannel" />
+
+	<int:outbound-channel-adapter id="implementingAReleaseStrategyOutboundChannelAdapter" channel="implementingAReleaseStrategyOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an aggregator with an implementation of a Correlation Strategy. The correlation strategy in this case is going to group the messages that the aggregator 
+		consumes (it is a event driven consumer) from the splitter output channel by payload content. This aggregator also uses a Release Strategy customized by us specified in this case as 
+		a release-strategy-expression. This release strategy releases the message group as soon as possible there are more than 10 messages contained within it. The messages that the inbound 
+		channel adapter produces are lists from 5 elements whose list content are elements with the format 'Message'number between 0 and 100 generated randomly'', hence there will be a message 
+		group for all the messages 'Message0', another message group for the messages 'Message1', another message group for the messages 'Message2' and so on until the message group for the 
+		messages ...'Message100'. When each message group as soon as possible has more messages than 10 messages, the message group is released and the aggregator produces a message whose payload 
+		is a list with the 11 elements of each message group released. When a message group is released, there will never be more another message group for the same payload, notwithstanding 
+		the inbound channel adapter continues producing message list with elements with the same payload (elements with the same payload contained in previous message groups that were released). 
+		It is highly recommended that the correlation key for grouping messages in a message group must be unique, it may an id of a system application entity, e.g envioId. -->
+	<int:inbound-channel-adapter id="implementingACorrelationStrategyInboundChannelAdapter" channel="iimplementingACorrelationStrategyInputDirectChannel"
+		expression="T(java.util.Arrays).asList('Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)))"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="iimplementingACorrelationStrategyInputDirectChannel" />
+
+	<int:splitter id="implementingACorrelationStrategySplitter" input-channel="iimplementingACorrelationStrategyInputDirectChannel" output-channel="implementingACorrelationStrategySplitterOutputDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="implementingACorrelationStrategySplitterOutputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:aggregator id="implementingACorrelationStrategyAggregator" input-channel="implementingACorrelationStrategySplitterOutputDirectChannel" output-channel="implementingACorrelationStrategyOutputChannel"
+		correlation-strategy="myCorrelationStrategy" correlation-strategy-method="getCorrelationKey" release-strategy-expression="#this.size() > 10" auto-startup="false" send-timeout="60" />
+
+	<int:channel id="implementingACorrelationStrategyOutputChannel" />
+
+	<int:outbound-channel-adapter id="implementingACorrelationStrategyOutboundChannelAdapter" channel="implementingACorrelationStrategyOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an aggregator configured with a message store. The aggregator is configured in a transactional way. In this case we have simulated so that when the 
+		aggregator processes the comlete list to aggregate the messages finishes with an exception sometimes and in another ocassions finishes well with the messages aggregatted. When the aggregator 
+		process finishes with an exception the messages and its respective message group are not removed of the message store (the aggregator in the next execution of the aggregator tries process 
+		again the messages that they weren't sent because they finished with an exception, sometimes the process ends with an exception again and in other ocassiones finishes ok sending and 
+		removing the messages of the message store. I have seen that the aggregator tries sending three times as a maximal, but in some cases tries 2 times and even in some cases in those 2 
+		cases fails an it doesn't try back again nevermore). This aggregator has configured an MessageGroupStoreReaper to send the incomplete messages or the messages whose process of sending 
+		finished with an exception, this reaper has configured a timeout of 2 minutes (all the messages older than the current time minus this value will be expired and have the callbacks applied), 
+		the reaper is configured to run 10 seconds with an scheduler. In the process of sending the messages timeouted the aggragate process can fail, in this case the aggregator try to send 
+		them once more again, but if the process fails again the messages are removed from the message store anyway. We have also configured a message store for the splitter output queue channel 
+		so that we don't lose the message when the aggregator process fails (its three retries), so when the aggregator executes again will consume this message of the queue and it will start 
+		all its process again and it will be able to send the message aggregated with its 5 message parts in this case. I haven't been able to test the following about aggregators: "In addition to the reaper, 
+		the expiry callbacks are invoked when the application shuts down via a lifecycle callback in the CorrelatingMessageHandler. The CorrelatingMessageHandler registers its own expiry callback, 
+		and this is the link with the boolean flag send-partial-result-on-expiry in the XML configuration of the aggregator. If the flag is set to true, then when the expiry callback is invoked, 
+		any unmarked messages in groups that are not yet released can be sent on to the output channel." -->
+	<bean id="usingAMessageGroupStoreChannelAdapterSender" class="spring.integration.test.adapter.sender.ChannelAdapterSenderToTestAnAggregator" p:count="0" />
+
+	<int:inbound-channel-adapter id="usingAMessageGroupStoreInboundChannelAdapter" ref="usingAMessageGroupStoreChannelAdapterSender" method="createMessage"
+		channel="usingAMessageGroupStoreInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="usingAMessageGroupStoreInputDirectChannel" />
+
+	<int:splitter id="usingAMessageGroupStoreSplitter" input-channel="usingAMessageGroupStoreInputDirectChannel" output-channel="usingAMessageGroupStoreSplitterOutputDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="usingAMessageGroupStoreSplitterOutputDirectChannel">
+		<int:queue capacity="500" message-store="persistentMessageStore" />
+		<!-- <int:interceptors> -->
+		<!-- <int:ref bean="myChannelInterceptor" /> -->
+		<!-- </int:interceptors> -->
+	</int:channel>
+
+	<int:aggregator id="usingAMessageGroupStoreAggregator" input-channel="usingAMessageGroupStoreSplitterOutputDirectChannel" ref="customAggregatorImplementation"
+		method="aggregatePayloads" correlation-strategy="myCorrelationStrategy" correlation-strategy-method="getCorrelationKey" release-strategy-expression="#this.size() > 4"
+		output-channel="usingAMessageGroupStoreOutputChannel" message-store="persistentMessageStore" send-partial-result-on-expiry="true" auto-startup="false">
+		<int:poller fixed-rate="10">
+			<int:transactional />
+		</int:poller>
+	</int:aggregator>
+
+	<bean id="reaper" class="org.springframework.integration.store.MessageGroupStoreReaper">
+		<property name="messageGroupStore" ref="persistentMessageStore" />
+		<property name="timeout" value="120000" />
+	</bean>
+
+	<task:scheduler id="usingAMessageGroupStoreScheduler" />
+
+	<task:scheduled-tasks scheduler="usingAMessageGroupStoreScheduler">
+		<task:scheduled ref="reaper" method="run" fixed-rate="10000" />
+	</task:scheduled-tasks>
+
+	<int:channel id="usingAMessageGroupStoreOutputChannel" />
+
+	<int:outbound-channel-adapter id="usingAMessageGroupStoreOutboundChannelAdapter" channel="usingAMessageGroupStoreOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int-jdbc:message-store id="persistentMessageStore" data-source="dataSource" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->	
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="dataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/mymessagegroupdb" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="transactionManager" order="100" />
+
+</beans>

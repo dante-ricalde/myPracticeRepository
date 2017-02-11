@@ -1,0 +1,331 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:int-jpa="http://www.springframework.org/schema/integration/jpa"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd
+		http://www.springframework.org/schema/integration/jpa http://www.springframework.org/schema/integration/jpa/spring-integration-jpa-3.0.xsd">
+
+	<!-- In this case I am testing a simple jpa outbound channel adapter using an entity class. The adapter is configured to accept entities over the input channel 'entityJpaOutboundChannelAdapterChannel' 
+		and process them to persist it into the data source. In this case We haven't specified the transactional sub element of the jpa adapter because in this case it is optional to define 
+		this child element because we have a direct channel as an input channel to the adapter and we want the adapter to execute the operations in the same transaction context as the caller 
+		(The caller in this case is the endpoint <int:inbound-channel-adapter which generates the entities and this endpoint is which has configured the transactional handling starting the 
+		transaction in this case if none exists). 
+		
+		A snippet of the logs are: 
+		
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Creating new transaction with name [org.springframework.integration.endpoint.AbstractPollingEndpoint$1.call]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Opened new EntityManager [org.hibernate.ejb.EntityManagerImpl@2c5506e9] for JPA transaction
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Exposing JPA transaction as JDBC transaction [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@397ac94d]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload=StudentDomain [id=53dde848-f6c0-4c02-9c7a-c829a2cac33b, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395292378322, id=40eb29a3-ee43-5d90-684d-14f35cc548de}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'entityJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=53dde848-f6c0-4c02-9c7a-c829a2cac33b, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395292378323, id=fe430123-0a3b-118a-4ebe-272a4a8152e1, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - org.springframework.integration.jpa.outbound.JpaOutboundGateway@35b51c18 received message: [Payload=StudentDomain [id=53dde848-f6c0-4c02-9c7a-c829a2cac33b, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395292378323, id=fe430123-0a3b-118a-4ebe-272a4a8152e1, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.hibernate.event.internal.AbstractSaveEventListener]  - Generated identifier: 53dde848-f6c0-4c02-9c7a-c829a2cac33b, using strategy: org.hibernate.id.Assigned
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - handler 'org.springframework.integration.jpa.outbound.JpaOutboundGateway@35b51c18' produced no reply for request Message: [Payload=StudentDomain [id=53dde848-f6c0-4c02-9c7a-c829a2cac33b, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395292378323, id=fe430123-0a3b-118a-4ebe-272a4a8152e1, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'entityJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=53dde848-f6c0-4c02-9c7a-c829a2cac33b, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395292378323, id=fe430123-0a3b-118a-4ebe-272a4a8152e1, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Committing JPA transaction on EntityManager [org.hibernate.ejb.EntityManagerImpl@2c5506e9]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Processing flush-time cascades
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Dirty checking collections
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Flushed: 1 insertions, 0 updates, 0 deletions to 1 objects
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Flushed: 0 (re)creations, 0 updates, 0 removals to 0 collections
+		 DEBUG [org.hibernate.internal.util.EntityPrinter]  - Listing entities:
+		 DEBUG [org.hibernate.internal.util.EntityPrinter]  - spring.integration.test.var.StudentDomain{id=53dde848-f6c0-4c02-9c7a-c829a2cac33b, name=Kelly, rollNumber=null, firstName=Rivera Cordero}
+		 DEBUG [org.hibernate.SQL]  - insert into STUDENT (firstName, name, rollNumber, id) values (?, ?, ?, ?)
+		 Hibernate: insert into STUDENT (firstName, name, rollNumber, id) values (?, ?, ?, ?)
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Closing JPA EntityManager [org.hibernate.ejb.EntityManagerImpl@2c5506e9] after transaction
+		 DEBUG [org.springframework.orm.jpa.EntityManagerFactoryUtils]  - Closing JPA EntityManager
+		 DEBUG [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl]  - HHH000420: Closing un-released batch
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Creating new transaction with name [org.springframework.integration.endpoint.AbstractPollingEndpoint$1.call]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Opened new EntityManager [org.hibernate.ejb.EntityManagerImpl@5caa576b] for JPA transaction
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Exposing JPA transaction as JDBC transaction [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@67329cd8]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload=StudentDomain [id=00f886f4-8147-43ae-b262-4b8bb51aa8f8, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395298838306, id=ef2483c7-9649-d9ee-361e-d47ae0ace2dc}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'entityJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=00f886f4-8147-43ae-b262-4b8bb51aa8f8, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395298838306, id=2d1c83a3-b35c-3ce1-f4c0-da1654c6e3e3, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - org.springframework.integration.jpa.outbound.JpaOutboundGateway@207644dc received message: [Payload=StudentDomain [id=00f886f4-8147-43ae-b262-4b8bb51aa8f8, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395298838306, id=2d1c83a3-b35c-3ce1-f4c0-da1654c6e3e3, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.hibernate.event.internal.AbstractSaveEventListener]  - Generated identifier: 00f886f4-8147-43ae-b262-4b8bb51aa8f8, using strategy: org.hibernate.id.Assigned
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - handler 'org.springframework.integration.jpa.outbound.JpaOutboundGateway@207644dc' produced no reply for request Message: [Payload=StudentDomain [id=00f886f4-8147-43ae-b262-4b8bb51aa8f8, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395298838306, id=2d1c83a3-b35c-3ce1-f4c0-da1654c6e3e3, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'entityJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=00f886f4-8147-43ae-b262-4b8bb51aa8f8, rollNumber=null, name=Kelly, firstName=Rivera Cordero]][Headers={timestamp=1395298838306, id=2d1c83a3-b35c-3ce1-f4c0-da1654c6e3e3, history=entityJpaOutboundChannelAdapterInbundChannelAdapter,entityJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Committing JPA transaction on EntityManager [org.hibernate.ejb.EntityManagerImpl@5caa576b]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Processing flush-time cascades
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Dirty checking collections
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Flushed: 1 insertions, 0 updates, 0 deletions to 1 objects
+		 DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener]  - Flushed: 0 (re)creations, 0 updates, 0 removals to 0 collections
+		 DEBUG [org.hibernate.internal.util.EntityPrinter]  - Listing entities:
+		 DEBUG [org.hibernate.internal.util.EntityPrinter]  - spring.integration.test.var.StudentDomain{id=00f886f4-8147-43ae-b262-4b8bb51aa8f8, name=Kelly, rollNumber=null, firstName=Rivera Cordero}
+		 DEBUG [org.hibernate.SQL]  - insert into STUDENT (firstName, name, rollNumber, id) values (?, ?, ?, ?)
+		 Hibernate: insert into STUDENT (firstName, name, rollNumber, id) values (?, ?, ?, ?)
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Closing JPA EntityManager [org.hibernate.ejb.EntityManagerImpl@5caa576b] after transaction
+		 DEBUG [org.springframework.orm.jpa.EntityManagerFactoryUtils]  - Closing JPA EntityManager
+		 DEBUG [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl]  - HHH000420: Closing un-released batch
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 
+		  -->
+
+	<int:inbound-channel-adapter id="entityJpaOutboundChannelAdapterInbundChannelAdapter" channel="entityJpaOutboundChannelAdapterChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.StudentDomain(T(java.util.UUID).randomUUID().toString(), 'Kelly', 'Rivera Cordero') : new spring.integration.test.var.StudentDomain(T(java.util.UUID).randomUUID().toString(), 'Dantito', 'Ricalde Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="2000">
+			<int:transactional propagation="REQUIRED" transaction-manager="entityJpaOutboundChannelAdapterJpaTransactionManager" />
+		</int:poller>
+	</int:inbound-channel-adapter>
+
+	<int:channel id="entityJpaOutboundChannelAdapterChannel" />
+
+	<int-jpa:outbound-channel-adapter id="entityJpaOutboundChannelAdapter" channel="entityJpaOutboundChannelAdapterChannel" entity-class="spring.integration.test.var.StudentDomain"
+		persist-mode="PERSIST" entity-manager="entityJpaOutboundChannelAdapterEntityManager" auto-startup="false"></int-jpa:outbound-channel-adapter>
+
+	<!-- *************************** JPA (HIBERNATE) AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean id="entityJpaOutboundChannelAdapterEntityManager" class="org.springframework.orm.jpa.support.SharedEntityManagerBean">
+		<property name="entityManagerFactory" ref="entityJpaOutboundChannelAdapterEntityManagerFactoryBean" />
+	</bean>
+
+	<bean id="entityJpaOutboundChannelAdapterEntityManagerFactoryBean" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="entityJpaOutboundChannelAdapterDataSource" />
+		<property name="persistenceUnitName" value="spring-jpa" />
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+				<property name="showSql" value="true" />
+				<property name="generateDdl" value="false" />
+				<property name="database" value="MYSQL" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="entityJpaOutboundChannelAdapterDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/jpatest" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="entityJpaOutboundChannelAdapterJpaTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityJpaOutboundChannelAdapterEntityManagerFactoryBean" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="entityJpaOutboundChannelAdapterJpaTransactionManager" order="100" />
+
+	<!-- In this case I am testing a jpa Outbound Channel Adapter using JPA Query Language (JPA QL), basically the query is executing an sql update, though specifying
+	select is valid for JPA QL, it makes no sense as outbound channel adapters will not be returning any result and if you want to select some values, consider using the
+	outbound gateway instead. Regarding threads I have configured a inbound channel adapter which is the generator of the messages and in its poller I have configured
+	the transactional handling to wrap in a transaction the poll operation creating a new one if none exists. In the JPA Outbound channel adapter I have specified a direct
+	channel as its input channel and it is optional in this case to define the child element <int-jpa:transactional if we want this adapter to execute the operations in
+	the same transaction as the caller, but however We have configured to execute this JPA operation (jpa-query) in a new transaction and for that we have defined the
+	child element <int-jpa:transactional in this adapter specifying 'REQUIRES_NEW' to create a new transacion suspending the current transaction if one exists and in this
+	case it exists. The process is the following: For the poller operation a transaction is created and is opened an entity manager for that transaction, the poller operation
+	is executed and the message is sent, then when the jpa adapter is about to receive the message an entity thread-bound entity manager is found for the JPA transaction,
+	and then that transaction is suspended creating a new transaction (to wrap the handle opeation of this jpa adapter) an opening a new entity manager for this new
+	transaction, then the handle opeation is executed (the jpa-query) and then the transaction manager commits the jpa transaction, close the JPA entity manager and 
+	the JDBC connenction is released, after all this the first suspended transaction (inbound-channel-adapter's transaction) is resumed after the completion of inner 
+	transaction, the postSend method of the input channel 'jpaQLJpaOutboundChannelAdapterChannel' is executed and the transaction manager commits this resumed transaction, 
+	closing its entity manager after transaction and the JDBC connection is released.
+	
+	A snipet of the logs is:
+	
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Creating new transaction with name [org.springframework.integration.endpoint.AbstractPollingEndpoint$1.call]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Opened new EntityManager [org.hibernate.ejb.EntityManagerImpl@ebe02a4] for JPA transaction
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Exposing JPA transaction as JDBC transaction [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@1736168f]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload=StudentDomain [id=1, rollNumber=null, name=Dantito, firstName=Ricalde Rivera]][Headers={timestamp=1395297175145, id=3a1fe3fa-5cf2-6c58-4b0d-8310fe1a6fbe}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'jpaQLJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=1, rollNumber=null, name=Dantito, firstName=Ricalde Rivera]][Headers={timestamp=1395297175146, id=def93164-fc01-522e-ffbb-1ac30a0efa0e, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Found thread-bound EntityManager [org.hibernate.ejb.EntityManagerImpl@ebe02a4] for JPA transaction
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Suspending current transaction, creating new transaction with name [org.springframework.integration.jpa.outbound.JpaOutboundGateway.handleMessage]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Opened new EntityManager [org.hibernate.ejb.EntityManagerImpl@60031230] for JPA transaction
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Exposing JPA transaction as JDBC transaction [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@3baebe5f]
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - org.springframework.integration.jpa.outbound.JpaOutboundGateway@dbfba1 received message: [Payload=StudentDomain [id=1, rollNumber=null, name=Dantito, firstName=Ricalde Rivera]][Headers={timestamp=1395297175146, id=def93164-fc01-522e-ffbb-1ac30a0efa0e, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.integration.jpa.support.parametersource.ExpressionEvaluatingParameterSourceFactory]  - Resolved expression org.springframework.expression.spel.standard.SpelExpression@3129517 to 1
+		 DEBUG [org.springframework.integration.jpa.support.parametersource.ExpressionEvaluatingParameterSourceFactory]  - Resolved expression org.springframework.expression.spel.standard.SpelExpression@4da507be to Ricalde Rivera 731bccc7-c013-4870-a2aa-ca185730da34
+		 DEBUG [org.hibernate.SQL]  - update STUDENT set firstName=? where id=?
+		 Hibernate: update STUDENT set firstName=? where id=?
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - handler 'org.springframework.integration.jpa.outbound.JpaOutboundGateway@dbfba1' produced no reply for request Message: [Payload=StudentDomain [id=1, rollNumber=null, name=Dantito, firstName=Ricalde Rivera]][Headers={timestamp=1395297175146, id=def93164-fc01-522e-ffbb-1ac30a0efa0e, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Committing JPA transaction on EntityManager [org.hibernate.ejb.EntityManagerImpl@60031230]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Closing JPA EntityManager [org.hibernate.ejb.EntityManagerImpl@60031230] after transaction
+		 DEBUG [org.springframework.orm.jpa.EntityManagerFactoryUtils]  - Closing JPA EntityManager
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Resuming suspended transaction after completion of inner transaction
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'jpaQLJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=1, rollNumber=null, name=Dantito, firstName=Ricalde Rivera]][Headers={timestamp=1395297175146, id=def93164-fc01-522e-ffbb-1ac30a0efa0e, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Committing JPA transaction on EntityManager [org.hibernate.ejb.EntityManagerImpl@ebe02a4]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Closing JPA EntityManager [org.hibernate.ejb.EntityManagerImpl@ebe02a4] after transaction
+		 DEBUG [org.springframework.orm.jpa.EntityManagerFactoryUtils]  - Closing JPA EntityManager
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection		 
+		 
+		 
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Creating new transaction with name [org.springframework.integration.endpoint.AbstractPollingEndpoint$1.call]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Opened new EntityManager [org.hibernate.ejb.EntityManagerImpl@1d0de537] for JPA transaction
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Exposing JPA transaction as JDBC transaction [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@7e3c934b]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload=StudentDomain [id=2, rollNumber=null, name=Daniel Nicolás, firstName=Ricalde Rivera]][Headers={timestamp=1395297177246, id=a59f6306-32f6-64f6-9fff-7d9eaaa0a970}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'jpaQLJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=2, rollNumber=null, name=Daniel Nicolás, firstName=Ricalde Rivera]][Headers={timestamp=1395297177247, id=81c4882a-028c-af49-829c-9c46ac8b244b, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Found thread-bound EntityManager [org.hibernate.ejb.EntityManagerImpl@1d0de537] for JPA transaction
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Suspending current transaction, creating new transaction with name [org.springframework.integration.jpa.outbound.JpaOutboundGateway.handleMessage]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Opened new EntityManager [org.hibernate.ejb.EntityManagerImpl@3aea61ac] for JPA transaction
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Exposing JPA transaction as JDBC transaction [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@68c4aeb3]
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - org.springframework.integration.jpa.outbound.JpaOutboundGateway@dbfba1 received message: [Payload=StudentDomain [id=2, rollNumber=null, name=Daniel Nicolás, firstName=Ricalde Rivera]][Headers={timestamp=1395297177247, id=81c4882a-028c-af49-829c-9c46ac8b244b, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.integration.jpa.support.parametersource.ExpressionEvaluatingParameterSourceFactory]  - Resolved expression org.springframework.expression.spel.standard.SpelExpression@3129517 to 2
+		 DEBUG [org.springframework.integration.jpa.support.parametersource.ExpressionEvaluatingParameterSourceFactory]  - Resolved expression org.springframework.expression.spel.standard.SpelExpression@4da507be to Ricalde Rivera 8ac90969-77b6-400c-8752-f02a5a0dd1b6
+		 DEBUG [org.hibernate.SQL]  - update STUDENT set firstName=? where id=?
+		 Hibernate: update STUDENT set firstName=? where id=?
+		 DEBUG [org.springframework.integration.jpa.outbound.JpaOutboundGateway]  - handler 'org.springframework.integration.jpa.outbound.JpaOutboundGateway@dbfba1' produced no reply for request Message: [Payload=StudentDomain [id=2, rollNumber=null, name=Daniel Nicolás, firstName=Ricalde Rivera]][Headers={timestamp=1395297177247, id=81c4882a-028c-af49-829c-9c46ac8b244b, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Committing JPA transaction on EntityManager [org.hibernate.ejb.EntityManagerImpl@3aea61ac]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Closing JPA EntityManager [org.hibernate.ejb.EntityManagerImpl@3aea61ac] after transaction
+		 DEBUG [org.springframework.orm.jpa.EntityManagerFactoryUtils]  - Closing JPA EntityManager
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Resuming suspended transaction after completion of inner transaction
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'jpaQLJpaOutboundChannelAdapterChannel', message: [Payload=StudentDomain [id=2, rollNumber=null, name=Daniel Nicolás, firstName=Ricalde Rivera]][Headers={timestamp=1395297177247, id=81c4882a-028c-af49-829c-9c46ac8b244b, history=jpaQLJpaOutboundChannelAdapterInbundChannelAdapter,jpaQLJpaOutboundChannelAdapterChannel}]
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Committing JPA transaction on EntityManager [org.hibernate.ejb.EntityManagerImpl@1d0de537]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.jpa.JpaTransactionManager]  - Closing JPA EntityManager [org.hibernate.ejb.EntityManagerImpl@1d0de537] after transaction
+		 DEBUG [org.springframework.orm.jpa.EntityManagerFactoryUtils]  - Closing JPA EntityManager
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection	
+	-->
+
+
+	<int:inbound-channel-adapter id="jpaQLJpaOutboundChannelAdapterInbundChannelAdapter" channel="jpaQLJpaOutboundChannelAdapterChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.StudentDomain(1, 'Dantito', 'Ricalde Rivera') : new spring.integration.test.var.StudentDomain(2, 'Daniel Nicolás', 'Ricalde Rivera')"
+		auto-startup="false">
+		<int:poller fixed-delay="2000" >
+			<int:transactional propagation="REQUIRED" transaction-manager="jpaQLJpaOutboundChannelAdapterJpaTransactionManager" />
+		</int:poller>
+	</int:inbound-channel-adapter>
+
+	<int:channel id="jpaQLJpaOutboundChannelAdapterChannel" />
+
+	<int-jpa:outbound-channel-adapter id="jpaQLJpaOutboundChannelAdapter" channel="jpaQLJpaOutboundChannelAdapterChannel" entity-manager="jpaQLJpaOutboundChannelAdapterEntityManager"
+		jpa-query="update Student s set s.firstName = :firstName where s.id = :id " auto-startup="false">
+		<int-jpa:transactional propagation="REQUIRES_NEW" transaction-manager="jpaQLJpaOutboundChannelAdapterJpaTransactionManager" />
+		<int-jpa:parameter name="firstName" expression="payload['firstName'] + ' ' + T(java.util.UUID).randomUUID().toString()" />
+		<int-jpa:parameter name="id" expression="payload['id']" />
+	</int-jpa:outbound-channel-adapter>
+
+	<!-- *************************** JPA (HIBERNATE) AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean id="jpaQLJpaOutboundChannelAdapterEntityManager" class="org.springframework.orm.jpa.support.SharedEntityManagerBean">
+		<property name="entityManagerFactory" ref="jpaQLJpaOutboundChannelAdapterEntityManagerFactoryBean" />
+	</bean>
+
+	<bean id="jpaQLJpaOutboundChannelAdapterEntityManagerFactoryBean" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="jpaQLJpaOutboundChannelAdapterDataSource" />
+		<property name="persistenceUnitName" value="spring-jpa" />
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+				<property name="showSql" value="true" />
+				<property name="generateDdl" value="false" />
+				<property name="database" value="MYSQL" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="jpaQLJpaOutboundChannelAdapterDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/jpatest" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="jpaQLJpaOutboundChannelAdapterJpaTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="jpaQLJpaOutboundChannelAdapterEntityManagerFactoryBean" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="jpaQLJpaOutboundChannelAdapterJpaTransactionManager" order="100" />
+
+</beans>

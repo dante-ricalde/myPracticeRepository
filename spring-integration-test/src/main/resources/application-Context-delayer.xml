@@ -1,0 +1,186 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- In this case We are testing a simple delayer with its basic properties and a task-scheduler with its appropriate properties and its error-handler configured. The delayer by default 
+		has a default delay of 3 seconds but it also has a delay-header-name property set, used as a delay amount for the messages who specify a header with that name with its respective value, 
+		in this case the delayer consumes some messages that have that header with a value of 20 seconds. The delayer simply delays the message flow between two message channels by a certain 
+		interval. When a Message is delayed, the original sender will not block. Instead, the delayed Messages will be scheduled with an instance of org.springframework.scheduling.TaskScheduler 
+		to be sent to the output channel after the delay has passed. This approach is scalable even for rather long delays, since it does not result in a large number of blocked sender Threads. 
+		On the contrary, in the typical case a thread pool will be used for the actual execution of releasing the Messages. By default the delayer delegates to an instance of Spring's TaskScheduler 
+		abstraction. The default scheduler used by the delayer is the ThreadPoolTaskScheduler instance provided by Spring Integration on startup. In This case we have delegated to a different 
+		scheduler providing a reference through the delayer element's 'scheduler' attribute. In this case our external ThreadPoolTaskScheduler is named simpleDelayerTaskScheduler and in it 
+		we have set the property waitForTasksToCompleteOnShutdown to true to allow a successful completion of 'delay' tasks, which already in the execution state (releasing the Message) when 
+		the application is shutdown, we also have set in it a pool size of 3. In our external ThreadPoolTaskScheduler simpleDelayerTaskScheduler we have set the property error-handler which 
+		can be injected with some implementation of org.springframework.util.ErrorHandler. This handler allows to process an Exception from the thread of the scheduled task sending the delayed 
+		message. By default it uses an org.springframework.scheduler.support.TaskUtils$LoggingErrorHandler which logs a stack trace in the logs. In this case as we mentioned before we have 
+		used an org.springframework.integration.channel.MessagePublishingErrorHandler, which sends an ErrorMessage into an error-channel, either from the failed Message's header named errorChannel 
+		(MessageHeaders.ERROR_CHANNEL) or into the default error-channel, in this case this handler will send the message into the default error-channel. Our messagePublishingErrorHandler has 
+		by default set the default-error-channel property to the value 'error-channel', we can change it of course. Also we can define an error-channel, but in this case we are using the default 
+		error-channel (it is by default a publish-subscribe-channel) created behing the scenes whenever relying on Spring Integration's XML namespace support. In this case we have declared 
+		an OutboundChannelAdapter named simpleDelayerErrorOutboundChannelAdapter to receives the messages from this default error-channel, but this default error-channel by default has a logging 
+		handler registred with it to receive and log the errorMessages, namely there are two handlers to receive the ErrorMessage (the outbound channel adapter simpleDelayerErrorOutboundChannelAdapter 
+		and the ErrorHandler). We have managed to throw an exception from the delayer process to produce an ErrorMessage, we have done that intercepting the delayer output-channel and throwing 
+		the exception from the preSend method using the interceptor named simpleDelayerMyChannelInterceptor. One aspect very important that I have noticed is that the delayer's scheduler opens 
+		its 3 thread to dispatch their messages and that the delayer's poller opens its respective thread to consume the messages from its input queue channel, i.e that there are 2 groups of 
+		threads, the poller's thread group and the scheduler's thread group. -->
+
+	<int:inbound-channel-adapter id="simpleDelayerInboundChannelAdapter" channel="simpleDelayerInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.PaymentType('CASH') : T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('delay', 20000).build()"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleDelayerInputQueueChannel">
+		<int:queue capacity="500" />
+		<!-- <int:interceptors> -->
+		<!-- <int:ref bean="myChannelInterceptor"/> -->
+		<!-- </int:interceptors> -->
+	</int:channel>
+
+	<int:channel id="simpleDelayerOutputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="simpleDelayerMyChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<bean id="simpleDelayerMyChannelInterceptor" class="spring.integration.test.interceptor.MyChannelInterceptor" p:throwExceptionBeforeSending="true" />
+
+	<int:delayer id="simpleDelayer" input-channel="simpleDelayerInputQueueChannel" output-channel="simpleDelayerOutputDirectChannel" default-delay="3000"
+		delay-header-name="delay" scheduler="simpleDelayerTaskScheduler" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:delayer>
+
+	<bean id="simpleDelayerTaskScheduler" class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">
+		<property name="waitForTasksToCompleteOnShutdown" value="true" />
+		<property name="poolSize" value="3" />
+		<property name="errorHandler" ref="messagePublishingErrorHandler" />
+	</bean>
+
+	<bean id="messagePublishingErrorHandler" class="org.springframework.integration.channel.MessagePublishingErrorHandler">
+		<!-- <property name="defaultErrorChannel" ref="errorChannel" /> -->
+	</bean>
+
+	<!-- <int:publish-subscribe-channel id="errorChannel" /> -->
+
+	<int:outbound-channel-adapter id="simpleDelayerErrorOutboundChannelAdapter" channel="errorChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<int:outbound-channel-adapter id="simpleDelayerOutboundChannelAdapter" channel="simpleDelayerOutputDirectChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<!-- In this case We are testing a simple delayer with a message store to persist the delayed messages. A delayed message is removed from the MessageStore by the scheduled task just 
+		before the DelayHandler sends the Message to the output channel, as this message store is a persistent message store (JdbcMessageStore) the delayer provides the ability to not lose 
+		Messages on the application shutdown and after application startup, the DelayerHandler reads Messages from its Message Group in the MessageStore and reschedules them with a delay based 
+		on the original arrival time of the Message (if the delay is numeric). For messages where the delay header was a Date, that is used when rescheduling.( If a delayed Message remained 
+		in the MessageStore more than its 'delay', it will be sent immediately after startup). In this case we have configured an <advice-chain>, the list of this AOP advices is applied to 
+		the proxied internal DelayHandler.ReleaseMessageHandler, which has the responsibility to release the Message, after the delay, on a Thread of the scheduled task. We have configured 
+		an implementation of Advice what simply logs information. In this case we have forced so that the downstream message flow throws an Exception sometimes (we have done it in the preSend 
+		method to the delayer output-channel) and when this is exception is thrown the ReleaseMessageHandler's transaction rolled back hence the delayedMessage remains in the persistent MessageStore, 
+		for the delayed messages weren't sent (because a exception was thrown), they can be sent again executing the managed operation getDelayedMessageCount of the delayer (In this case we 
+		have invoked the method since the DelayHandler JMX MBean in the jconsole). We have to know that ReleaseMessageHandler is surrounded by a transaction by default when you use a message-store 
+		(Anyway we have specified the attribute transaction-manager to the <tx:advice to use the transaction manager that we have defined below and by if the transaction has not been set by 
+		default to the ReleaseMessageHandler only specifying the message-store). Another important point is that you can't configure a <int:transacional element and a <int:advice-chain element 
+		together. -->
+
+	<int:inbound-channel-adapter id="withAMessageStoreInboundChannelAdapter" channel="withAMessageStoreInputDirectChannel"
+		expression="T(org.springframework.integration.support.MessageBuilder).withPayload(T(java.util.UUID).randomUUID().toString()).setHeader('delay', 500).build()" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="withAMessageStoreInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="withAMessageStoreOutputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="delayerWithAMessageStoreMyChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<bean id="delayerWithAMessageStoreMyChannelInterceptor" class="spring.integration.test.interceptor.MyChannelInterceptor" p:throwExceptionBeforeSending="true" />
+
+	<int:delayer id="withAMessageStoreDelayer" input-channel="withAMessageStoreInputDirectChannel" output-channel="withAMessageStoreOutputQueueChannel" default-delay="3000"
+		delay-header-name="delay" scheduler="simpleDelayerTaskScheduler" message-store="withAMessageStoreMessageStore" auto-startup="false">
+		<!-- <int:transactional /> -->
+		<int:advice-chain>
+			<ref bean="customDelayerAdviceBean" />
+			<tx:advice transaction-manager="delayerWithAMessageStoreTransactionManager">
+				<tx:attributes>
+					<tx:method name="get*" read-only="true" />
+					<tx:method name="*" />
+				</tx:attributes>
+			</tx:advice>
+		</int:advice-chain>
+	</int:delayer>
+
+	<int:outbound-channel-adapter id="withAMessageStoreErrorOutboundChannelAdapter" channel="errorChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<int:outbound-channel-adapter id="withAMessageStoreOutboundChannelAdapter" channel="withAMessageStoreOutputQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<int-jdbc:message-store id="withAMessageStoreMessageStore" data-source="delayerWithAMessageStoreDataSource" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="delayerWithAMessageStoreDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/delayermessagegroupdb" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="delayerWithAMessageStoreSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="delayerWithAMessageStoreDataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="delayerWithAMessageStoreTransactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="delayerWithAMessageStoreSessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="delayerWithAMessageStoreTransactionManager" order="100" />
+
+</beans>

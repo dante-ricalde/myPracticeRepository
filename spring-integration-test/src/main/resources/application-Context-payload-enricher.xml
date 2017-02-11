@@ -1,0 +1,201 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a simple payload enricher with static values, as in this case we are enriching the payload with static values, we don't have to provide the request-channel 
+		attribute. We are using SpEL to set the static value to the property called name. -->
+
+	<int:inbound-channel-adapter id="simpleHeaderEnricherInboundChannelAdapter" channel="simplePayloadEnricherInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simplePayloadEnricherInputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:enricher id="simplePayloadEnricher" input-channel="simplePayloadEnricherInputQueueChannel" output-channel="simplePayloadEnricherOutputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+		<int:property name="name" expression="payload.name == 'Dante' ? payload.name + ' Ricalde': payload.name + ' Rivera'" />
+	</int:enricher>
+
+	<int:channel id="simplePayloadEnricherOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="simplePayloadEnricherOutboundChannelAdapter" channel="simplePayloadEnricherOutputQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing a payload enricher with a request channel. The process is the following: A User object is passed as the payload of the message to
+		the payload enricher. The User has several properties but only the userName is set initially. The enricher's request-channel attribute below is configured
+		to pass the User on to the simplePayloadEnricherWithRequestChannelFindUserServiceChannel request channel, after the message has arrived to this request channel is 
+		received by the service activator, the service activator returns a new message with a new User payload with the password and the email of the user set, the service
+		activator only receives the message with the payload User with the userName property set, then the service activator searches the user by this userName and returns
+		a new message with the new User payload but with the additional properties (email, password) set. Through the explicitly set reply-channel a User object is 
+		returned to this channel (the service activator sends the message to this reply channel when finish its process) and using the property sub-element, properties from 
+		the reply are extracted and used to enrich the original payload (the email and the password). When the enricher finishes to process the messsage, the message is 
+		sent to the simplePayloadEnricherWithRequestChannelOutputDirectChannel and then received by the outbound channel adapter.-->
+	<int:inbound-channel-adapter id="simplePayloadEnricherWithRequestChannelInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.User('dante.ricalde') : new spring.integration.test.var.User('kelly.rivera')" channel="simplePayloadEnricherWithRequestChannelInputDirectChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:enricher id="simplePayloadEnricherWithRequestChannelEnricher" input-channel="simplePayloadEnricherWithRequestChannelInputDirectChannel" request-channel="simplePayloadEnricherWithRequestChannelFindUserServiceChannel"
+		reply-channel="simplePayloadEnricherWithRequestChannelReplyChannel" output-channel="simplePayloadEnricherWithRequestChannelOutputDirectChannel" auto-startup="false">
+		<int:property name="email" expression="payload.email" />
+		<int:property name="password" expression="payload.password" />
+	</int:enricher>
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelFindUserServiceChannel" />
+
+<!-- 	<int:service-activator id="simplePayloadEnricherWithRequestChannelRequestServiceActivator" input-channel="simplePayloadEnricherWithRequestChannelFindUserServiceChannel" -->
+<!-- 		expression="payload.userName.equalsIgnoreCase('dante.ricalde') ? payload.setEmailAndPassword('dante.ricalde@hotmail.com', 'pescadito') : payload.setEmailAndPassword('kelly.rivera@hotmail.com', 'chatiboris')" -->
+<!-- 		output-channel="simplePayloadEnricherWithRequestChannelReplyChannel" requires-reply="true" auto-startup="true" /> -->
+		
+	<int:service-activator id="simplePayloadEnricherWithRequestChannelRequestServiceActivator" input-channel="simplePayloadEnricherWithRequestChannelFindUserServiceChannel"
+		ref="serviceActivatorForUser" output-channel="simplePayloadEnricherWithRequestChannelReplyChannel" requires-reply="true" auto-startup="false" />
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelReplyChannel" />
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="simplePayloadEnricherWithRequestChannelOutboundChannelAdapter" channel="simplePayloadEnricherWithRequestChannelOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+		
+	<!-- This case is the same as the previous one, the only difference is that we are using a request-payload-expression to pass a single property of the payload (userName)
+	on to the request channel instead of the full message (it passes a string containing the userName as payload to the request channel), then the service activator receives
+	the string payload containing the userName and searches the user by this userName and returns a new message with a User payload but with all the additional 
+	properties (email, password) set. Through the explicitly set reply-channel a User object is returned to this channel (the service activator sends the message to this 
+	reply channel when finish its process) and using the property sub-element, properties from the reply are extracted and used to enrich the original payload (the email 
+	and the password). When the enricher finishes to process the messsage, the message is sent to the simplePayloadEnricherWithRequestChannelOutputDirectChannel and then 
+	received by the outbound channel adapter.-->
+	<int:inbound-channel-adapter id="simplePayloadEnricherWithRequestChannelInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.User('dante.ricalde', 'pescadito', 'dante.ricalde@hotmail.com') : new spring.integration.test.var.User('kelly.rivera', 'chatiboris', 'kelly.rivera@hotmail.com')" 
+		channel="simplePayloadEnricherWithRequestChannelInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:enricher id="simplePayloadEnricherWithRequestChannelEnricher" input-channel="simplePayloadEnricherWithRequestChannelInputDirectChannel" request-channel="simplePayloadEnricherWithRequestChannelFindUserServiceChannel"
+		request-payload-expression="payload.userName" reply-channel="simplePayloadEnricherWithRequestChannelReplyChannel" 
+		output-channel="simplePayloadEnricherWithRequestChannelOutputDirectChannel" auto-startup="false">
+		<int:property name="email" expression="payload.email" />
+		<int:property name="password" expression="payload.password" />
+	</int:enricher>
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelFindUserServiceChannel" />
+		
+	<int:service-activator id="simplePayloadEnricherWithRequestChannelRequestServiceActivator" input-channel="simplePayloadEnricherWithRequestChannelFindUserServiceChannel"
+		ref="serviceActivatorForUser" output-channel="simplePayloadEnricherWithRequestChannelReplyChannel" requires-reply="true" auto-startup="false" />
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelReplyChannel" />
+
+	<int:channel id="simplePayloadEnricherWithRequestChannelOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="simplePayloadEnricherWithRequestChannelOutboundChannelAdapter" channel="simplePayloadEnricherWithRequestChannelOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+		
+	<!-- This case is similar to the previous one, the only difference is that instead of a User object, a Map is passed in to input channel of the payload enricher,
+	The map contains the userName under the map key "userName". Only the userName is passed on to request channel. The reply (the message generated by the service
+	activator) contains a full User object, which is ultimately added to the Map under the "user" key. -->
+	<int:inbound-channel-adapter id="payloadEnricherWithAMapAsAPayloadInboundChannelAdapter" ref="channelAdapterMapSender" method="createMessage"
+	channel="payloadEnricherWithAMapAsAPayloadInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="payloadEnricherWithAMapAsAPayloadInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:enricher id="payloadEnricherWithAMapAsAPayloadEnricher" input-channel="payloadEnricherWithAMapAsAPayloadInputDirectChannel" request-channel="payloadEnricherWithAMapAsAPayloadFindUserServiceChannel"
+		request-payload-expression="payload.userName" reply-channel="payloadEnricherWithAMapAsAPayloadReplyChannel" 
+		output-channel="payloadEnricherWithAMapAsAPayloadOutputDirectChannel" auto-startup="false">
+		<int:property name="user" expression="payload" />
+	</int:enricher>
+
+	<int:channel id="payloadEnricherWithAMapAsAPayloadFindUserServiceChannel" />
+		
+	<int:service-activator id="payloadEnricherWithAMapAsAPayloadServiceActivator" input-channel="payloadEnricherWithAMapAsAPayloadFindUserServiceChannel"
+		ref="serviceActivatorForUser" output-channel="payloadEnricherWithAMapAsAPayloadReplyChannel" requires-reply="true" auto-startup="false" />
+
+	<int:channel id="payloadEnricherWithAMapAsAPayloadReplyChannel" />
+
+	<int:channel id="payloadEnricherWithAMapAsAPayloadOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="payloadEnricherWithAMapAsAPayloadOutboundChannelAdapter" channel="payloadEnricherWithAMapAsAPayloadOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+		
+	<!-- This case is similar to the previous one. The difference in this case is that we are using the "should-clone-payload" property set to true. This property
+	indicates that any payload that implements Cloneable should be cloned prior to sending the message to the request channel for acquiring the enriching data (We have
+	implemented the clone method of the User object). The cloned version would be used as the target payload for the ultimate reply, namely prior to sending the message 
+	to the request channel, we cloned the user object, that same object cloned is used as the main object (target payload object) for the enricher, that object
+	is sent for the enricher to the enricher output channel. The service activator finds a user with the username and returns it to the reply channel, then properties 
+	from the reply message are extracted and used to enrich the original payload (in this case the cloned payload).  -->
+	<int:inbound-channel-adapter id="payloadEnricherWithStaticInformation" channel="payloadEnricherWithStaticInformationInputDirectChannel" 
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.User('dante.ricalde') : new spring.integration.test.var.User('kelly.rivera')" 
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="payloadEnricherWithStaticInformationInputDirectChannel" />
+	
+	<int:enricher id="payloadEnricherWithStaticInformationEnricher" input-channel="payloadEnricherWithStaticInformationInputDirectChannel" 
+		request-channel="payloadEnricherWithStaticInformationRequestChannel" output-channel="payloadEnricherWithStaticInformationOutputDirectChannel"
+		reply-channel="payloadEnricherWithStaticInformationReplyChannel" should-clone-payload="true" auto-startup="false">
+		<int:property name="password" expression="payload.password" />
+		<int:property name="email" expression="payload.email" />
+	</int:enricher>
+	
+	<int:channel id="payloadEnricherWithStaticInformationRequestChannel" />
+	
+	<int:service-activator id="payloadEnricherWithStaticInformationServiceActivator" input-channel="payloadEnricherWithStaticInformationRequestChannel"
+		ref="serviceActivatorForUser" output-channel="payloadEnricherWithStaticInformationReplyChannel" requires-reply="true" auto-startup="false" />
+	
+	<int:channel id="payloadEnricherWithStaticInformationReplyChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+	
+	<int:channel id="payloadEnricherWithStaticInformationOutputDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+	
+	<int:outbound-channel-adapter id="payloadEnricherWithStaticInformationOutboundChannelAdapter" channel="payloadEnricherWithStaticInformationOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+</beans>

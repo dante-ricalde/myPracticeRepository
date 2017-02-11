@@ -1,0 +1,288 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- -->
+	<int:gateway id="cafeServiceGateway" service-interface="spring.integration.test.service.Cafe" default-request-channel="cafeServiceRequestChannel"
+		default-reply-channel="cafeServiceReplyChannel" />
+
+	<int:channel id="cafeServiceRequestChannel" />
+
+	<int:publish-subscribe-channel id="cafeServiceReplyChannel" />
+
+	<!-- In this case we're testing an inbound messaging gateway. Spring Integration provides a GatewayProxyFactoryBean that generates a proxy for the service interface; this proxy can 
+		safely interact with the Spring Integration framework. In this case a ticketIssueGateway messaging gateway is configured based on the interface TicketIssuer. The default request and 
+		reply channels are set to the channels request and reply, respectively. A reply channel is not required when configuring a gateway, since the gateway will create a temporary point-to-point 
+		reply channel; this channel is anonymous, and is added to the message header with the name replyChannel. If a publish-subscribe-channel is required, for example because there are other 
+		interested listeners, the reply channel needs to be explicitly defined. The reason the request and reply channel are prefixed with default is because there is a mechanism to specify 
+		these channels on a per-method basis using the @Gateway annotation. In the TicketIssuer interface, the request and reply channels are overwritten with the ticketRequests and ticketReplies 
+		channels, respectively. The service activator named ticketServiceActivator is used to receive the request message from the gateway, the TicketIssuerService will take an incoming ticketId, 
+		create a Ticket instance, and send it to the reply channel. This gateway example is tested using the TickerIssuerGatewayTest, this test obtains a reference to the ticketIssueGateway 
+		gateway. The ticketIssueGateway method issueTicket is called, resulting in a message sent to the ticketRequestChannel. The ticketIssuerService service activator receives the incoming 
+		message, creates the Ticket instance, and sends it to the ticketReplies channel. The ticketIssueGateway receives an incoming Ticket message and logs its information. This represents 
+		a full integration with Spring Integration using only a simple method invocation. The functionality of this gateway regarding to the threads is the following. The thread of the TickerIssuerGatewayTest 
+		class executes the gateway method, a request message is sent to the ticketRequests channel by the gateway, the service activator receives the message and sends it to the ticketReplies 
+		channel, there the message is stored in that queue channel. On the another way there is another thread started by the gateway to consume the message from the reply channel, in this 
+		case the ticketReplies channel. The gateway consumes the message from this reply channel using a bridge, this bridge consumes the message from the reply channel ticketReplies and sends 
+		the message to the temporary channel created by default by the gateway, of this way the gateway receives an incoming Ticket message. When the service activator sends a message to the 
+		reply queue channel, its queue capacity grows in 1, then when the message is consumed (received) by the gateway (using the bridge) the size of this reply queue channel decrease in 1. -->
+
+	<bean id="ticketMyChannelInterceptor" class="spring.integration.test.interceptor.MyChannelInterceptor" p:channelToMonitoring="ticketReplies" />
+
+	<int:channel id="ticketRequests">
+		<int:interceptors>
+			<int:ref bean="ticketMyChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="ticketReplies">
+		<int:queue capacity="100" />
+		<int:interceptors>
+			<int:ref bean="ticketMyChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="request" />
+
+	<int:channel id="reply" />
+
+	<int:gateway id="ticketIssueGateway" default-request-channel="request" default-reply-channel="reply" service-interface="spring.integration.test.gateway.client.TicketIssuer" />
+
+	<int:service-activator id="ticketServiceActivator" input-channel="ticketRequests" output-channel="ticketReplies" ref="ticketIssuerService" auto-startup="false" />
+
+	<!-- In this case we are passing values to be interpreted as Message headers on the Message that is created and sent to the request channel by using the @Header annotation. Regarding 
+		the threads there are two ways. The first way is the thread of the FileWriterGatewayTest, in this thread you call the gateway method write, sending a message to the request queue channel 
+		filesOut, in this case the message sent has a header called file_name, the header is sent using the @Header annotation in the gateway method. When the message has arrived to the request 
+		queue channel, the message is stored there waiting being consumed. The another way is the thread opened by the service activator to consume the messages from the request queue channel, 
+		the service activator consumes 1 message every 1 second from the request queue channel. The service activator writes the payload content to a file using the header attribute as file 
+		name. The service activator method is of void type (the gateway method), hence no messages are sent to gateway reply channel. -->
+
+	<bean id="fileWriterMyChannelInterceptor" class="spring.integration.test.interceptor.MyChannelInterceptor" p:channelToMonitoring="filesOut" />
+
+	<int:channel id="filesOut">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="fileWriterMyChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="fileWriterReplyChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="fileWriterMyChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:gateway id="fileWriterGateway" default-reply-channel="fileWriterReplyChannel" service-interface="spring.integration.test.gateway.client.FileWriter" />
+
+	<int:service-activator id="fileWriterServiceActivator" input-channel="filesOut" output-channel="fileWriterReplyChannel" ref="fileWriterService" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:service-activator>
+
+	<!-- In this case we are testing a gateway, in the gateway configuration we have provided individual headers per method invocation via XML. This could be very useful if the headers 
+		you want to set are static in nature and you don't want to embed them in the gateway's method signature via @Header annotations. In this case you can clearly see how a different value 
+		will be set for the RESPONSE_TYPE header based on the gateway's method. In this case when you call for example the gateway method getLoanQuote, the message is sent to the loanBrokerPreProcessingChannel 
+		direct channel, then the service activator with the method getLoanQuote handles the message and sends it to the loanBrokerReplyChannel, then the two subscribers of this channel handles 
+		the message (you can see that the service activator with the same method (in this case getLoanQuote) is executed and not the another service activator with the method getAllLoanQuotes, 
+		this must be so because the gateway sends to its request direct channel information about which service activator with the same method (in this case getLoanQuote) should executing). 
+		On the other hand if you change the loanBrokerPreProcessingChannel to be queue channel, when you call a gateway method, a service activator with a different method may consume the message 
+		(for example if you call the gateway method getLoanQuote, the service activator with the method getAllLoanQuotes may be executed to consume (receive) the message). -->
+	<int:channel id="loanBrokerPreProcessingChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:publish-subscribe-channel id="loanBrokerReplyChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:publish-subscribe-channel>
+
+	<int:gateway id="loanBrokerGateway" service-interface="spring.integration.test.gateway.client.LoanBrokerGateway" default-reply-channel="loanBrokerReplyChannel">
+		<int:method name="getLoanQuote" request-channel="loanBrokerPreProcessingChannel">
+			<int:header name="RESPONSE_TYPE" value="BEST" />
+		</int:method>
+		<int:method name="getAllLoanQuotes" request-channel="loanBrokerPreProcessingChannel">
+			<int:header name="RESPONSE_TYPE" value="ALL" />
+		</int:method>
+	</int:gateway>
+
+	<int:service-activator id="loanBrokerForGetLoanQuoteServiceActivator" input-channel="loanBrokerPreProcessingChannel" output-channel="loanBrokerReplyChannel"
+		ref="loanBrokerGatewayService" method="getLoanQuote" auto-startup="false" />
+
+	<int:service-activator id="loanBrokerForGetAllLoanQuotesServiceActivator" input-channel="loanBrokerPreProcessingChannel" output-channel="loanBrokerReplyChannel"
+		ref="loanBrokerGatewayService" method="getAllLoanQuotes" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="loanBrokerOutboundChannelAdapter" channel="loanBrokerReplyChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<int:outbound-channel-adapter id="anotherLoanBrokerOutboundChannelAdapter" channel="loanBrokerReplyChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<!-- In this case we are testing a gateway, between the gateway we are invoking a method that doesn't have any arguments, in this case we are using the payload annotation to generate 
+		a payload (you can use the payload-expression attribute as well) because method parameters on the interface are not necessary to generate a payload. I have a service activator to receive 
+		the message of the gateway request channel, then the service activator sends a reply message to the gateway reply channel (to do that the service activator method has to return a value), 
+		and as this channel is a publish-subscribe-channel the message is received by the gateway (this is checked when the invocation of the gateway method in the CafeGatewayRest returns a 
+		message and then is printed with the LOGGER.info) and the outbound channel adapter named cafeOutboundChannelAdapter. As you can see, in this case you have only used a interface to be 
+		the gateway and send the message invoking its gateway method without parameters (We haven't needed a implementation of this interface). -->
+
+	<int:channel id="cafeDefaultRequestDirectChannel" />
+
+	<int:publish-subscribe-channel id="cafeDefaultReplyDirectChannel" />
+
+	<int:gateway id="cafeGateway" service-interface="spring.integration.test.gateway.client.Cafe" default-request-channel="cafeDefaultRequestDirectChannel"
+		default-reply-channel="cafeDefaultReplyDirectChannel" default-reply-timeout="1000" />
+
+	<int:service-activator id="cafeServiceActivator" input-channel="cafeDefaultRequestDirectChannel" output-channel="cafeDefaultReplyDirectChannel" ref="cafeService"
+		auto-startup="false" />
+
+	<int:outbound-channel-adapter id="cafeOutboundChannelAdapter" channel="cafeDefaultReplyDirectChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<!-- In this case we are testing a gateway where the gateway method invocation results in error, for this case it hasn't been necessary to return an exception downstream (in the service 
+		activator in this case); to throw a MessagingException (RuntimeException)(in this case a ReplyRequiredException: No reply produced by handler 'whereTheInvocationResultsInErrorsServiceActivator', 
+		and its 'requiresReply' property is set to true) upon the gateway method invocation we have returned a null value (downstream) in the service activator method and set the service activator's 
+		requires-reply property to true, when this property is specified to true a ReplyRequiredException is thrown in the service activator and when that occurs the exception is thrown back 
+		to the gateway (in this case for a null reply)(theory says: if a downstream component throws a RuntimeException, it will be sent back to the gateway as an error message and rethrown 
+		by the gateway). In this case the exception is rethrown to the caller (GatewayWhereTheInvocationResultsInErrorsTest) by the gateway, as you can see no message arrives to the reply channel 
+		and hence to the outbound channel adapter. -->
+
+	<int:channel id="whereTheInvocationResultsInErrorsRequestDirectChannel" />
+
+	<int:publish-subscribe-channel id="whereTheInvocationResultsInErrorsReplyDirectChannel" />
+
+	<int:gateway id="whereTheInvocationResultsInErrorsGateway" service-interface="spring.integration.test.gateway.client.Cafe" default-request-channel="whereTheInvocationResultsInErrorsRequestDirectChannel"
+		default-reply-channel="whereTheInvocationResultsInErrorsReplyDirectChannel" default-reply-timeout="1000" />
+
+	<int:service-activator id="whereTheInvocationResultsInErrorsServiceActivator" input-channel="whereTheInvocationResultsInErrorsRequestDirectChannel"
+		output-channel="whereTheInvocationResultsInErrorsReplyDirectChannel" ref="serviceActivatorThatReturnsNull" requires-reply="true" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="whereTheInvocationResultsInErrorsOutboundChannelAdapter" channel="whereTheInvocationResultsInErrorsReplyDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- -In this case we are testing a gateway with a transformer (to create the expected Error response objects and then the object created will then be the payload that is sent back 
+		to the caller) and an error-channel attribute. When an error occurs a message containing the exception is sent to the channel specified in the error-channel property, then the transformer 
+		returns the Error object created, that object is sent by the transformer to the gateway temporary reply channel, hence the gateway receives the message but no the outbound channel adapter 
+		because the message never was sent to the channel withAnErrorChannelAndATransformerReplyPublishSubscribeChannel, in the test in the line "List<Order> openOrders = withAnErrorChannelAndATransformerGateway.retrieveOpenOrders()" 
+		instead of receiving a List<Order> receives a List<Error> when an error occurs and the result is printed by the test GatewayWithAnErrorChannelAndATransformerTest. In this test we have 
+		simulated the OK case, when the Ok case happens the service activator sends a result Message to the withAnErrorChannelAndATransformerReplyPublishSubscribeChannel reply channel and then 
+		the message is received by the gateway (in this case the test GatewayWithAnErrorChannelAndATransformerTest logs the response of the gateway method invocation) and the outbound channel 
+		adapter. All this configuration with the transformer is possible because the channel withAnErrorChannelAndATransformerRequestDirectChannel is a direct channel, if the channel withAnErrorChannelAndATransformerRequestDirectChannel 
+		were a queue channel the service activator when throws an error doesn't know where to send the message because it doesn't have still contact with the gateway (and the exception is thrown 
+		to the caller and not arrives to the gateway and hence to the error-channel being not processed by the transformer) and if the exception doesn't arrives to the gateway, the gateway 
+		can't sent the exception to the error-channel (the service activator maintains the contact with the gateway when the request channel is a direct channel and hence when the service activator 
+		throws an exception the exception arrives the gateway to then be sent to the error-channel), the transformer knows that has to send the Error object to the gateway temporary reply channel 
+		because is connected with the gateway. To use a gateway request queue channel all the process has to execute OK. -->
+	<int:channel id="withAnErrorChannelAndATransformerRequestDirectChannel" />
+
+	<int:publish-subscribe-channel id="withAnErrorChannelAndATransformerReplyPublishSubscribeChannel" />
+
+	<int:channel id="withAnErrorChannelAndATransformerErrorDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:gateway id="withAnErrorChannelAndATransformerGateway" service-interface="spring.integration.test.gateway.client.Cafe" default-request-channel="withAnErrorChannelAndATransformerRequestDirectChannel"
+		default-reply-channel="withAnErrorChannelAndATransformerReplyPublishSubscribeChannel" default-reply-timeout="1000" error-channel="withAnErrorChannelAndATransformerErrorDirectChannel" />
+
+	<int:transformer id="withAnErrorChannelAndATransformerTransformer" input-channel="withAnErrorChannelAndATransformerErrorDirectChannel"
+		expression="T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Error(payload.class, payload.message)).build()" auto-startup="false" />
+
+	<int:service-activator id="withAnErrorChannelAndATransformerServiceActivator" input-channel="withAnErrorChannelAndATransformerRequestDirectChannel"
+		output-channel="withAnErrorChannelAndATransformerReplyPublishSubscribeChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(java.util.Arrays).asList(new spring.integration.test.service.api.Order('1', 'Order 1'), new spring.integration.test.service.api.Order('2', 'Order 2'), new spring.integration.test.service.api.Order('3', 'Order 3')): null"
+		requires-reply="true" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="withAnErrorChannelAndATransformerOutboundChannelAdapter" channel="withAnErrorChannelAndATransformerReplyPublishSubscribeChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing a gateway that is completely suppressing the exceptions using the global channel "nullChannel" as an error-channel attribute. When an exception is 
+		thrown by the service activator (for the null value returned by the service activator method), the service activator send the exception to the gateway and then this send it to the nullChannel 
+		to be silently suppressed, when this occurs the gateway returns null to the gateway method caller, namely the instruction "List<Order> openOrders = withANullChannelGateway.retrieveOpenOrders();" 
+		returns null in the GatewayWithANullChanneToSuppressExceptionsTest test. When the service activator returns a value, all the rest of the process continues normally. -->
+
+	<int:channel id="withANullChannelRequestDirectChannel" />
+
+	<int:publish-subscribe-channel id="withANullChannelReplyPublishSubscribeChannel" />
+
+	<int:gateway id="withANullChannelGateway" service-interface="spring.integration.test.gateway.client.Cafe" default-request-channel="withANullChannelRequestDirectChannel"
+		default-reply-channel="withANullChannelReplyPublishSubscribeChannel" error-channel="nullChannel" default-reply-timeout="1000" />
+
+	<int:service-activator id="withANullChannelServiceActivator" input-channel="withANullChannelRequestDirectChannel" output-channel="withANullChannelReplyPublishSubscribeChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(java.util.Arrays).asList(new spring.integration.test.service.api.Order('1', 'Order 1'), new spring.integration.test.service.api.Order('2', 'Order 2'), new spring.integration.test.service.api.Order('3', 'Order 3')): null"
+		requires-reply="true" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="withANullChannelOutboundChannelAdapter" channel="withANullChannelReplyPublishSubscribeChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing a gateway with a one-way flow, the gateway method signature is a void method. The implementation of the service activator is done with a SpEL returning 
+		none in some times namely being a void method, and in another cases returning an RuntimeException namely not being a void method. When all the process is OK, namely the service activator 
+		executes its method well not returning none, none is sent back to the caller because nothing was sent to the gateway (because it is a one-way flow). When the service activator method 
+		(downstream) returns my RuntimeException, the service activator throws an exception saying "org.springframework.integration.support.channel.ChannelResolutionException: no output-channel 
+		or replyChannel header available" (and this is so because the service activator was configured to work in an one-way flow, namely not having output channel), that exception is propagated 
+		to the gateway, the gateway sends the error message to its error-channel (if it wouldn't have error-channel the exception would be sent to the caller by the gateway and besides the 
+		theory says "if no "error-channel" is defined at all, then the Exceptions will propagate as usual") and it arrives to the transformer, the transformer transforms the error message but 
+		it can't send it to the gateway because the gateway is a one-way gateway and hence doesn't has a default temporary reply channel, then the transformer throws an exception that is sent 
+		to the caller: org.springframework.integration.support.channel.ChannelResolutionException: no output-channel or replyChannel header available and is printed by the test GatewayWithAOnewayFlowWhereAnExceptionOccursTest 
+		in the following line: LOGGER.info("Exception that has been thrown back to the gateway for an exception thrown in the downstream (service activator)...:", e); -->
+	<int:channel id="withAOnewayFlowWhereAnExceptionOccursRequestDirectChannel" />
+
+	<int:publish-subscribe-channel id="withAOnewayFlowWhereAnExceptionOccursReplyPublishSubscribeChannel" />
+
+	<int:channel id="withAOnewayFlowWhereAnExceptionOccursErrorDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:gateway id="withAOnewayFlowWhereAnExceptionOccursGateway" service-interface="spring.integration.test.gateway.client.GenericFileWriter" default-request-channel="withAOnewayFlowWhereAnExceptionOccursRequestDirectChannel"
+		default-reply-timeout="1000" error-channel="withAOnewayFlowWhereAnExceptionOccursErrorDirectChannel" />
+
+	<int:transformer id="withAOnewayFlowWhereAnExceptionOccursTransformer" input-channel="withAOnewayFlowWhereAnExceptionOccursErrorDirectChannel"
+		expression="T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Error(payload.class, payload.message)).build()" auto-startup="false" />
+
+	<int:service-activator id="withAOnewayFlowWhereAnExceptionOccursServiceActivator" input-channel="withAOnewayFlowWhereAnExceptionOccursRequestDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.apache.commons.io.FileUtils).writeByteArrayToFile(new java.io.File('tmp/' +headers.file_name), payload): new RuntimeException('This is a runtime exception')"
+		auto-startup="false" />
+
+	<int:outbound-channel-adapter id="withAOnewayFlowWhereAnExceptionOccursOuboundChannelAdapter" channel="withAOnewayFlowWhereAnExceptionOccursReplyPublishSubscribeChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an Asynchronous Gateway. Configuring an asynchronous gateway is similar to configuring a regular gateway, the only difference is that you have to return 
+		an instance of Future in the gateway interface method. In the test MathServiceGatewayTest you only have to call the method, when the downstream process (service activator) finishes, 
+		the response is automatically sent to the reply channel by the service activator and the response arrives to the gateway and the outbound channel adapter. We have seen noticed in this 
+		test that when we invoke the gateway method in the test, the method returns immediately (this is correct because the call to such a method always returns immediately with a Future instance). 
+		Then you can notice that all the calls to the gateway method (300 in this case) finish their execution at the same time (the implementation of the gateway method has a Thread.sleep(5000) 
+		to last 5 seconds in its execution) and this is so because by default the GatewayProxyFactoryBean uses org.springframework.core.task.SimpleAsyncTaskExecutor when submitting internal 
+		AsyncInvocationTask instances for any gateway method whose return type is Future.class ( However the async-executor attribute in the <gateway/> element's configuration allows you to 
+		provide a reference to any implementation of java.util.concurrent.Executor available within the Spring application context) and the SimpleAsyncTaskExecutor fires up a new Thread for 
+		each Task, executing it asynchronously not reusing threads and by default the number of current threads is unlimited, although this class supports limiting concurrent threads through 
+		the "concurrencyLimit" bean property; it's for this reason that you must consider a thread-pooling TaskExecutor implementation instead, in particular for executing a large number of 
+		short-lived tasks. -->
+	<int:channel id="mathAsyncRequestDirectChannel" />
+
+	<int:publish-subscribe-channel id="mathAsyncReplyPublishSusbcribeChannel" />
+
+	<int:gateway id="mathAsyncGateWay" service-interface="spring.integration.test.gateway.client.MathServiceGateway" default-request-channel="mathAsyncRequestDirectChannel"
+		default-reply-channel="mathAsyncReplyPublishSusbcribeChannel" />
+
+	<int:service-activator id="mathAsyncServiceActivator" input-channel="mathAsyncRequestDirectChannel" output-channel="mathAsyncReplyPublishSusbcribeChannel"
+		ref="mathServiceGatewayImpl" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="mathAsyncOutboundChannelAdapter" channel="mathAsyncReplyPublishSusbcribeChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+</beans>

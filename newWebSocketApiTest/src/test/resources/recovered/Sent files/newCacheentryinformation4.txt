@@ -1,0 +1,47 @@
+(function ($) {.
+  ."use strict
+";   if (!win
+dow.general) { 
+ window.general
+= {}; .} .if
+(!general.util)
+{  general.uti
+l = {     }
+ .}   if (!g
+eneral.util.Mess
+ageResolver) { 
+ general.util.M
+essageResolver =
+function (messa
+ges) {  .this.
+messages = messa
+ges;     /*
+*  . * code, a
+rg1, arg2,  .,
+argN  . */  
+.this.getMessage
+= function (cod
+e) {   var me
+ssage = null; .
+ .var rawMessag
+e = messages[cod
+e];   if (raw
+Message || rawMe
+ssage === "") {.
+   var args =
+arguments;  .
+ message = rawM
+essage.replace(/
+\{(\d)\}/g, func
+tion (match, p1,
+offset, string)
+{    var in
+dex = parseInt(p
+1, 10);    r
+eturn args[index
++ 1] || "";  
+ .});   } .
+ .return messag
+e;  .}  } .
+}  .})(jQuery)
+;

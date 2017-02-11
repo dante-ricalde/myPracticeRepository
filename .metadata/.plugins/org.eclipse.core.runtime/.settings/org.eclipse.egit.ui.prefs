@@ -1,0 +1,6 @@
+StagingView_Presentation=COMPACT_TREE
+StagingView_Presentation_Changed=true
+commit_dialog_history_messages=<?xml version\="1.0" encoding\="UTF-8"?>\r\n<messages>\r\n<message>up to date pending.txt</message>\r\n<message>several improvements.</message>\r\n<message>When I click in any part other than the projects list I deselect the&\#x0A;projects selected from the list.</message>\r\n<message>https config.</message>\r\n<message>last changes.</message>\r\n<message>last changes</message>\r\n<message>config of log4j with spring boot.</message>\r\n<message>last comments.</message>\r\n<message>I have started to implement the getMessages operation.</message>\r\n<message>improvements.</message>\r\n</messages>
+eclipse.preferences.version=1
+resourcehistory_graph_split=500,500
+resourcehistory_rev_split=244,752

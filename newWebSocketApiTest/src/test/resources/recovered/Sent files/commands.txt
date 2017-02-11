@@ -1,0 +1,2 @@
+cut -d " " -f 18- Cacheentryinformation1.tx/t > newCacheentryinformation1.txt # cut the first 18 columns using a space as separator   
+sed -i -e 's/\.\./ /g' newCacheentryinformation1.txt #replace two dots together by a space 

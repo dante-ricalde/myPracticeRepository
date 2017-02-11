@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a simple splitter, the splitter partitions the message by the ' ' character and each part of the message it send it to the output channel. The splitter 
+		add the message headers (CORRELATION_ID, SEQUENCE_SIZE, SEQUENCE_NUMBER) to each message that is produced from each part of the message that arrived to its input channel. -->
+	<int:inbound-channel-adapter id="toTestAsimpleSplitterInboundChannelAdapter" expression="'This message is going out through wall'" channel="toTestAsimpleSplitterInputChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestAsimpleSplitterInputChannel" />
+
+	<int:splitter id="simpleSplitter" input-channel="toTestAsimpleSplitterInputChannel" ref="simpleSplitterBean" output-channel="toTestAsimpleSplitterOutputChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestAsimpleSplitterOutputChannel" />
+
+	<int:outbound-channel-adapter id="toTestAsimpleSplitterOutboundChannelAdapter" channel="toTestAsimpleSplitterOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing a simple splitter which uses a POJO that implements the splitting algorithm. The method of the POJO is named 'splitPayload' and receives as a payload 
+		type as a parameter and returns a Collection of Messages objects. The splitter endpoint add the message headers (CORRELATION_ID, SEQUENCE_SIZE, SEQUENCE_NUMBER) to each message that 
+		is produced from each part of the message that arrived to its input channel. The splitter consumes 1 message of a input queue channel every 5 seconds and sends the message parts split 
+		to the output queue channel, then the outbound channel adapter of this channel consumes its message every 5 seconds, and that is why the split message part appears every 5 seconds on 
+		the console. -->
+	<int:inbound-channel-adapter id="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgInboundChannelAdapter" expression="'This method is going  through wall'"
+		channel="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgInputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:splitter id="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgSplitter" input-channel="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgInputQueueChannel"
+		ref="simpleSplitterBeanToTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArg" method="splitPayload"
+		output-channel="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgOutputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="5000" max-messages-per-poll="1" />
+	</int:splitter>
+
+	<int:channel id="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgOutboundChannelAdapter" channel="toTestASplitterWhoseMethodReturnsMessageListAndReceivesAPayloadArgOutputQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="5000" max-messages-per-poll="1" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing a splitter without a ref implementation. In this case is assumed that the payload of the Message that arrives on the input channel is an implementation 
+		of java.util.Collection and the default splitting logic will be applied to the Colecction, incorporating each individual element into a Message and sent to the output channel. -->
+	<int:inbound-channel-adapter id="toTestASimpleSpliiterWithoutARefBeanInboundChannelAdapter" expression="T(java.util.Arrays).asList('a','b','c','d','e')"
+		channel="toTestASimpleSpliiterWithoutARefBeanInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleSpliiterWithoutARefBeanInputDirectChannel" />
+
+	<int:splitter id="toTestASimpleSpliiterWithoutARefBeanSplitter" input-channel="toTestASimpleSpliiterWithoutARefBeanInputDirectChannel" output-channel="toTestASimpleSpliiterWithoutARefBeanOutputDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestASimpleSpliiterWithoutARefBeanOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="toTestASimpleSpliiterWithoutARefBeanOutboundChannelAdapter" channel="toTestASimpleSpliiterWithoutARefBeanOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing a splitter with a ref implementation. The implementation returns a Message instance instead of returning a Collection instance, therefore the splitter 
+		in this case returns the same message received as parameter. We have noticed that when The inbound channel adapter expression returns a null, the inbound channel adapter doesn't send 
+		it to the input queue channel, and this is so because the inbound channel adapter always send a not null return value to a MessageChannel. -->
+
+	<int:inbound-channel-adapter id="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionInboundChannelAdapter" expression="T(java.lang.Math).random() > 0.5 ? 'This message is going through wall' : null"
+		channel="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionInputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:splitter id="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionSplitter" input-channel="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionInputQueueChannel"
+		output-channel="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionOutputDirectChannel" ref="plitterToTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollection"
+		method="splitMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:splitter>
+
+	<int:channel id="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionOutputDirectChannelOutboundChannelAdapter"
+		channel="toTestASimpleSplitterWithAnnotationsTestingIfTheMethodCantReturnACollectionOutputDirectChannel" ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing a splitter with a ref implementation with annotations. The method of implementations returns a Collection of Message objects. In this case the inbound 
+		channel adapter executes each poll every 3 seconds, where in each poll executes polling task as many times as possible for consuming many messages as possible, but in this case the 
+		method returns null to the 10th message returned (the 10th polling task invoked), when this happens the inbound channel adapter stops executing the polling task and nevermore executes 
+		the poller (every 3 seconds) -->
+	<bean id="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsChannelAdapterSender" class="spring.integration.test.adapter.sender.ChannelAdapterSender"
+		p:count="1" />
+
+	<int:inbound-channel-adapter id="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsInboundChannelAdapter" channel="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsInputDirectChannel"
+		ref="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsChannelAdapterSender" method="createMessage" auto-startup="false">
+		<int:poller fixed-rate="3000" max-messages-per-poll="-1" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsInputDirectChannel" />
+
+	<int:splitter id="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsSplitter" input-channel="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsInputDirectChannel"
+		ref="splitterToTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjects" output-channel="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsOutputDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsOutboundChannelAdapter" channel="toTestASimpleSplitterWithAnnotationsThatReturnsACollectionOfMessageObjectsOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+</beans>

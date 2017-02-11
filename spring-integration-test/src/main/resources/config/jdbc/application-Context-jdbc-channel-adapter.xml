@@ -1,0 +1,134 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd">
+
+	<!-- In this case I am testing a jdbc-inbound-channel-adapter and a jdbc-outbound-channel-adapter. In the jdbc-inbound-channel-adapter I have configured a poller wrapping the poll 
+		operation in a transaction, I am using the HibernateTransactionManager for transactions and Hibernate is using JdbcTemplate to execute the queries. In this endpoint I am simulating 
+		a rollback throwing sometimes an exception in the service-activator, then I can probe that a rollback has ocurred because the row(s) has(have) not changed its(their) status to '0' and 
+		then later this row(s) are queried again by this endpoind. Regarding jdbc-outbound-channel-adapter I am using a SqlParameterSourceFactory to pass parameters from the input message using 
+		SpEL Expressions instead of using bean property expressions on the incoming message since this behavior is part of the SqlParameterSource which is the default source created by the 
+		outbound adapter. I think that this endpoint in this case is simply making an insert atomically also using JdbcTemplate. In both endpoints I have set a datasource and the JdbcMessageHandler 
+		(jdbc-outbound-channel-adapter) and JdbcPollingChannelAdaper (jdbc-inbound-channel-adapter) are building a JdbcTemplate with this datasource for using it. -->
+
+	<int-jdbc:inbound-channel-adapter query="select * from item where status = 2" channel="jdbcInboundChannelAdapterTargetChannel" data-source="jdbcDataSource"
+		update="update item set status = 0 where id in (:id)" auto-startup="true">
+		<int:poller fixed-rate="10000" error-channel="jdbcInboundChannelAdapterErrorChannel">
+			<int:transactional transaction-manager="jdbcTransactionManager" />
+		</int:poller>
+	</int-jdbc:inbound-channel-adapter>
+
+	<int:channel id="jdbcInboundChannelAdapterErrorChannel" />
+
+	<int:channel id="jdbcInboundChannelAdapterTargetChannel" />
+
+	<int:service-activator id="jdbcInboundChannelAdapterServiceActivator" input-channel="jdbcInboundChannelAdapterTargetChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('*************** Received Message for service activator. Mensaje: ' + #this) :  new RuntimeException('This is a runtime exception')"
+		auto-startup="true" />
+
+	<int:outbound-channel-adapter id="jdbcInboundChannelAdapterOutboundChannelAdapter" channel="jdbcInboundChannelAdapterErrorChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="true" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="jdbcDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/jdbcinboundchanneladapter" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="jdbcSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="jdbcDataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="jdbcTransactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="jdbcSessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="jdbcTransactionManager" order="100" />
+
+	<!-- -->
+	<int:inbound-channel-adapter id="jdbcOutboundChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload('Dantito Ricalde Rivera').setHeader('myId', T(java.util.UUID).randomUUID().toString()).setHeader('anotherPaymentType', 'DEBIT').setHeader('status', 1).build(): 
+    		T(org.springframework.integration.support.MessageBuilder).withPayload('Danielito Ricalde Rivera').setHeader('myId', T(java.util.UUID).randomUUID().toString()).setHeader('anotherPaymentType', 'PERSONAL CHECK').setHeader('status', 2).build()"
+		channel="jdbcOutboundChannelAdapterInputChannel" auto-startup="true">
+		<int:poller fixed-rate="10000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="jdbcOutboundChannelAdapterInputChannel">
+		<!-- <int:interceptors> -->
+		<!-- <ref bean="myChannelInterceptor" /> -->
+		<!-- </int:interceptors> -->
+	</int:channel>
+
+	<int-jdbc:outbound-channel-adapter id="myJdbcOutboundChannelAdapter"
+		query="insert into item(id, status, code, description, created_date, message_bytes) values (:id, :status, :code, :description, :created_date, :message_bytes)" jdbc-operations="jdbcDataSource"
+		channel="jdbcOutboundChannelAdapterInputChannel" sql-parameter-source-factory="spelSource" auto-startup="true" />
+
+	<bean id="spelSource" class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
+		<property name="parameterExpressions">
+			<map>
+				<entry key="id" value="headers['myId']" />
+				<entry key="code" value="payload" />
+				<entry key="status" value="headers['status']" />
+				<entry key="description" value="payload" />
+				<entry key="created_date" value="new java.util.Date()" />
+				<entry key="message_bytes" value="#this" />
+			</map>
+		</property>
+	</bean>
+
+</beans>

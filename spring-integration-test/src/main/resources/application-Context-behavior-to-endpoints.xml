@@ -1,0 +1,320 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- ************************************************ REQUESTHANDLERRETRYADVICE *********************************************** -->
+
+	<!-- SIMPLE STATELESS RETRY -->
+
+	<!-- In this case we are testing a Simple Stateless Retry. This example uses the default Retry Template which has a SimpleRetryPolicy which retries 3 times. There is no BackoffPolice 
+		so the 3 attempts are made back-to-back-to-back with no delay between attempts. There is no RecoveryCallback so, the result is to throw the exception to the caller after the final failed 
+		retry occurs (namely the send method that makes the call to the "simpleStatelessRetryInputDirectChannel" input channel finishes with a exception (it receives an exception)). In a Spring 
+		Integration Environment, this final exception might be handled using an error-channel on the inbound endpoint. -->
+
+	<int:inbound-channel-adapter id="simpleStatelessRetryInbundChannelAdapter" channel="simpleStatelessRetryInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('Dantito', 'Ricalde', 'Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleStatelessRetryInputDirectChannel" />
+
+	<int:service-activator input-channel="simpleStatelessRetryInputDirectChannel" ref="fallingServiceActivator" auto-startup="false">
+		<int:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice" />
+		</int:request-handler-advice-chain>
+	</int:service-activator>
+
+
+	<!-- SIMPLE STATELESS RETRY WITH RECOVERY -->
+
+	<!-- This example adds a RecoveryCallback (a strategy to determine the action to take when retries are exhausted) to the above example; it uses a ErrorMessageSendingRecoverer to send 
+		an ErrorMessage to a channel. In this case the caller method finished ok (because the 'send' method of the 'simpleStatelessRetryWithRecoveryInputDirectChannel' input channel finished 
+		ok because the error was delivered to an error channel using the RecoveryCallback, namely it treated the exception and the 'send' method of the 'simpleStatelessRetryWithRecoveryInputDirectChannel' 
+		input channel finished ok). An important aspect to notice is that the RecoveryCallback (the class ErrorMessageSendingRecoverer) sent the message to a queue channel and then the service 
+		activator call returned to the 'simpleStatelessRetryWithRecoveryInputDirectChannel' input direct channel call finishing well the method 'send' of this channel and also finishing before 
+		(because the current thread leaves the message in the error queue channel and returns), hence the message of the error queue channel is consumed by another thread using the outbound 
+		channel adapter. -->
+	<int:inbound-channel-adapter id="simpleStatelessRetryWithRecoveryInbundChannelAdapter" channel="simpleStatelessRetryWithRecoveryInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('Dantito', 'Ricalde', 
+		'Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleStatelessRetryWithRecoveryInputDirectChannel" />
+
+	<int:channel id="simpleStatelessRetryWithRecoveryErrorQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:service-activator input-channel="simpleStatelessRetryWithRecoveryInputDirectChannel" ref="fallingServiceActivator" auto-startup="false">
+		<int:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice">
+				<property name="recoveryCallback">
+					<bean class="org.springframework.integration.handler.advice.ErrorMessageSendingRecoverer">
+						<constructor-arg ref="simpleStatelessRetryWithRecoveryErrorQueueChannel" />
+					</bean>
+				</property>
+			</bean>
+		</int:request-handler-advice-chain>
+	</int:service-activator>
+
+	<int:outbound-channel-adapter id="simpleStatelessRetryWithRecoveryOutboundChannelAdapter" channel="simpleStatelessRetryWithRecoveryErrorQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="3000" />
+	</int:outbound-channel-adapter>
+
+	<!-- STATELESS RETRY WITH CUSTOMIZED POLICIES, AND RECOVERY -->
+
+	<!-- This case is the same as the previous one, the difference is that in this example for more sophistication, we are providing the advice with a customized RetryTemplate. This example 
+		continues to use the SimpleRetryPolicy but it increases the attempts to 4. It also adds an ExponentialBackoffPolicy where the first retry waits 1 second, the second waits 5 seconds 
+		and the third waits 25 (for 4 attempts in all). This example continues using the RecoveryCallback as the previous one (a strategy to determine the action to take when retries are exhausted); 
+		it uses a ErrorMessageSendingRecoverer to send an ErrorMessage to a channel. In this case the caller method finished ok (because the 'send' method of the 'statelessRetryWithCustomizedPoliciesAndRecoveryInputDirectChannel' 
+		input channel finished ok because the error was delivered to an error channel using the RecoveryCallback, namely it treated the exception and the 'send' method of the 'statelessRetryWithCustomizedPoliciesAndRecoveryInputDirectChannel' 
+		input channel finished ok). -->
+
+	<int:inbound-channel-adapter id="statelessRetryWithCustomizedPoliciesAndRecoveryInboundChannelAdapter" channel="statelessRetryWithCustomizedPoliciesAndRecoveryInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="statelessRetryWithCustomizedPoliciesAndRecoveryInputDirectChannel" />
+
+	<int:channel id="statelessRetryWithCustomizedPoliciesAndRecoveryErrorQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:service-activator id="statelessRetryWithCustomizedPoliciesAndRecoveryServiceActivator" input-channel="statelessRetryWithCustomizedPoliciesAndRecoveryInputDirectChannel"
+		ref="fallingServiceActivator" auto-startup="false">
+		<int:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice">
+				<property name="recoveryCallback">
+					<bean class="org.springframework.integration.handler.advice.ErrorMessageSendingRecoverer">
+						<constructor-arg ref="statelessRetryWithCustomizedPoliciesAndRecoveryErrorQueueChannel" />
+					</bean>
+				</property>
+				<property name="retryTemplate" ref="statelessRetryWithCustomizedPoliciesAndRecoveryRetryTemplate" />
+			</bean>
+		</int:request-handler-advice-chain>
+	</int:service-activator>
+
+
+	<bean id="statelessRetryWithCustomizedPoliciesAndRecoveryRetryTemplate" class="org.springframework.retry.support.RetryTemplate">
+		<property name="retryPolicy">
+			<bean class="org.springframework.retry.policy.SimpleRetryPolicy">
+				<property name="maxAttempts" value="4" />
+			</bean>
+		</property>
+		<property name="backOffPolicy">
+			<bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+				<property name="initialInterval" value="1000" />
+				<property name="multiplier" value="5" />
+			</bean>
+		</property>
+	</bean>
+
+	<int:outbound-channel-adapter id="statelessRetryWithCustomizedPoliciesAndRecoveryOutboundChannelAdapter" channel="statelessRetryWithCustomizedPoliciesAndRecoveryErrorQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="3000" />
+	</int:outbound-channel-adapter>
+
+	<!-- SIMPLE STATEFUL RETRY WITH RECOVERY -->
+
+	<!-- In this case we are testing a simple stateful retry with recovery. To make retry stateful, we need to provide the Advice with a RetryStateGenerator implementation. This class 
+		is used to identify a message as being a resubmission so that the RetryTemplate can determine the current state of retry for this message. The framework provides a SpelExpressionRetryStateGenerator 
+		which determines the message identifier using a SpEL expression. This is shown below; this example again uses the default policies (3 re-attempts with no back off (the retry is made 
+		immediately)); of course, as with stateless retry, these policies can be customized. The concept of a Stateful retry is : "Stateful retry is the case where the retry state is managed 
+		within the advice, but where an exception is thrown and the caller resubmits the request. An example for stateful retry is when we want the message originator (e.g. JMS) to be responsible 
+		for resubmitting, rather than performing it on the current thread. Stateful retry needs some mechanism to detect a retried submission.". In this case we can see that when a attempt 
+		fails, it throws an error (a exception to the caller), which is sent to the error-channel by default and consumed by the ErrorHandler by default to log the error message. This process 
+		happens on each attempt, but when the attempts are exhausted the last error is sent to the simpleStatefulRetryWithRecoveryErrorQueueChannel by the RecoveryCallback (a strategy to determine 
+		the action to take when retries are exhausted). Namely that comparing with the stateless examples, you can see that with stateful retry, the exception is thrown to the caller on each 
+		failure. -->
+
+	<int:inbound-channel-adapter id="simpleStatefulRetryWithRecoveryInboundChannelAdapter" channel="simpleStatefulRetryWithRecoveryInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="20000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleStatefulRetryWithRecoveryInputDirectChannel" />
+
+	<int:channel id="simpleStatefulRetryWithRecoveryErrorQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:service-activator id="simpleStatefulRetryWithRecoveryServiceActivator" input-channel="simpleStatefulRetryWithRecoveryInputDirectChannel" ref="fallingServiceActivator"
+		auto-startup="false">
+		<int:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.RequestHandlerRetryAdvice">
+				<property name="retryStateGenerator">
+					<bean class="org.springframework.integration.handler.advice.SpelExpressionRetryStateGenerator">
+						<constructor-arg value="headers['jms_messageId']" />
+					</bean>
+				</property>
+				<property name="recoveryCallback">
+					<bean class="org.springframework.integration.handler.advice.ErrorMessageSendingRecoverer">
+						<constructor-arg ref="simpleStatefulRetryWithRecoveryErrorQueueChannel" />
+					</bean>
+				</property>
+			</bean>
+		</int:request-handler-advice-chain>
+	</int:service-activator>
+
+	<int:outbound-channel-adapter id="simpleStatefulRetryWithRecoveryOutboundChannelAdapter" channel="simpleStatefulRetryWithRecoveryErrorQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="3000" />
+	</int:outbound-channel-adapter>
+
+	<!-- CIRCUIT BREAKER ADVICE -->
+
+	<!-- We are testing a Circuit Breaker Advice. In this case the threshold is set to 2 and halfOpenAfter is set to 12 seconds; a new request from the inbound channel adapter arrives 
+		every 5 seconds. You can see that the first two attempts invoked the service; the third and fourth failed with an exception indicating the circuit breaker is open. The fifth request 
+		was attempted because the request was 15 seconds after the last failure; the sixth attempt fails immediately because the breaker immediately went to open. -->
+
+	<int:inbound-channel-adapter id="circuitBreakerAdviceInboundDirectChannel" channel="circuitBreakerAdviceInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="circuitBreakerAdviceInputDirectChannel" />
+
+	<int:service-activator id="circuitBreakerAdviceServiceActivator" input-channel="circuitBreakerAdviceInputDirectChannel" ref="fallingServiceActivator"
+		auto-startup="false">
+		<int:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.RequestHandlerCircuitBreakerAdvice">
+				<property name="threshold" value="2" />
+				<property name="halfOpenAfter" value="12000" />
+			</bean>
+		</int:request-handler-advice-chain>
+	</int:service-activator>
+
+	<!-- EXPRESSION EVALUATING ADVICE -->
+
+	<!-- We are testing a Expression Evaluating Advice. We are testing a typical use of the advice with an <ftp:outbound-channel-adapter to move the file to one directory if the transfer 
+		was successful, or to another directory if it fails. In this case our ftp-outbound-channel-adapter is configured with a org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice 
+		advice, In this advice separate expressions are available to be evaluated, either after success, or failure. This Advice has properties to set an expression when successful, an expression 
+		for failures, and corresponding channels for each. For the successful case, the message sent to the successChannel is an AdviceMessage, with the payload being the result of the expression 
+		evaluation, and an additional property inputMessage which contains the original message sent to the handler (In this case I have set the property <property name="onSuccessExpression" 
+		value="#this" /> and the message that arrives to the successChannel is a instance of GenericMessage with its own headers and a payload of type GenericMessage because this is the message 
+		that arrived to this ftp-oubound-channel-adapter and resolved by the expression #this). A message sent to the failureChannel (when the handler throws an exception) is an ErrorMessage 
+		with a payload of MessageHandlingExpressionEvaluatingAdviceException. Like all MessagingExceptions, this payload has failedMessage and cause properties, as well as an additional property 
+		evaluationResult, containing the result of the expression evaluation (In this case the result of the expression evaluation is the message that arrived to this ftp-outbound-channel-adapter 
+		as I set the property <property name="onFailureExpression" value="#this" /> so). In this case when the the failure channel "expressionEvaluationAdviceErrorChannel" receives the messages, 
+		it's also received by a transfomer and finally by a <int-file:outbound-channel-adapter>, the transformer is used to extract the message from the MessageHandlingExpressionEvaluatingAdviceException 
+		payload, specifically from the property evaluationResult, because is in this property where is stored the result of the failure expression evaluation that it's the message that arrives 
+		to this ftp-outbound-adapter (#this). Then the message is processed by the <int-file:outbound-channel-adapter to write it to the local directory, remember that the payload received 
+		by this endpoint is an array of bytes (what is the original message generated by the inbound-channel-adapter (it's the complete message serialized by the first transformer before to 
+		send it to this ftp-outbound-adapter)) and the headers received also contains the original header 'relative' that was also generated by the inbound-channel-adapter. -->
+
+	<bean id="expressionEvaluationAdviceFtpClientFactory" class="org.springframework.integration.ftp.session.DefaultFtpSessionFactory">
+		<property name="host" value="ftp-dantericalde.egnyte.com" />
+		<!-- <property name="port" value="22" /> -->
+		<property name="username" value="dante.ricalde@dantericalde" />
+		<property name="password" value="Pescadito1" />
+		<property name="clientMode" value="2" />
+		<property name="fileType" value="2" />
+		<property name="bufferSize" value="100000" />
+	</bean>
+
+	<int:inbound-channel-adapter id="expressionEvaluationAdviceInboundChannelAdapter" channel="expressionEvaluationAdviceInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero')).setHeader('relative', 'DanteRicalde').build() : T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')).setHeader('relative', 'DanteRicalde').build()"
+		auto-startup="false">
+		<int:poller fixed-rate="3000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="expressionEvaluationAdviceInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:transformer id="expressionEvaluationAdviceTransformer" input-channel="expressionEvaluationAdviceInputQueueChannel" expression="T(org.apache.commons.lang3.SerializationUtils).serialize(#this)"
+		output-channel="expressionEvaluationAdviceOutputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:transformer>
+
+	<int:channel id="expressionEvaluationAdviceOutputDirectChannel" />
+
+	<int-ftp:outbound-channel-adapter id="expressionEvaluationAdviceFtpOutboundChannelAdapter" channel="expressionEvaluationAdviceOutputDirectChannel"
+		session-factory="expressionEvaluationAdviceFtpClientFactory" charset="UTF-8" remote-file-separator="/" auto-create-directory="true"
+		remote-directory-expression="'/Private/dante.ricalde/mainDir/' + headers.relative" temporary-remote-directory-expression="'/Private/dante.ricalde/temp/' + headers.relative"
+		remote-filename-generator-expression="headers.relative + '_' + new java.text.SimpleDateFormat('yyyyMMddHHmmssSSS').format(new java.util.Date()) + '.txt'" auto-startup="false">
+		<int-ftp:request-handler-advice-chain>
+			<bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="#this" />
+				<property name="successChannel" ref="expressionEvaluationAdviceSuccessChannel" />
+				<property name="onFailureExpression" value="#this" />
+				<property name="failureChannel" ref="expressionEvaluationAdviceErrorChannel" />
+				<property name="trapException" value="true" />
+			</bean>
+		</int-ftp:request-handler-advice-chain>
+	</int-ftp:outbound-channel-adapter>
+
+	<int:channel id="expressionEvaluationAdviceSuccessChannel" />
+
+	<int:channel id="expressionEvaluationAdviceErrorChannel" />
+
+	<int:outbound-channel-adapter id="expressionEvaluationAdviceSuccessOutboundChannelAdapter" channel="expressionEvaluationAdviceSuccessChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- <int:outbound-channel-adapter id="expressionEvaluationAdviceErrorOutboundChannelAdapter" channel="expressionEvaluationAdviceErrorChannel" ref="channelAdapterReceiver" -->
+	<!-- method="receiveMessage" auto-startup="true" /> -->
+
+	<int:transformer id="ftpOuboundChannelAdapterExpressionEvaluationAdviceTransformer" input-channel="expressionEvaluationAdviceErrorChannel" expression="payload.evaluationResult"
+		output-channel="expressionEvaluationAdviceTransformerOutputDirectChannel" auto-startup="false" />
+
+	<int:channel id="expressionEvaluationAdviceTransformerOutputDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-file:outbound-channel-adapter id="expressionEvaluationAdviceFileOutboundChannelAdapter" channel="expressionEvaluationAdviceTransformerOutputDirectChannel"
+		directory-expression="'notSent' + T(java.io.File).separator + headers.relative" auto-create-directory="true"
+		filename-generator-expression="headers.relative + '_' + new java.text.SimpleDateFormat('yyyyMMddHHmmssSSS').format(new java.util.Date()) + '.txt'" auto-startup="false" />
+
+	<!-- In this case I am testing a simple Custom Advice implemented by myself. While you can provide any implementation of org.aopalliance.aop.Advice, it is generally recommended that 
+		you subclass org.springframework.integration.handler.advice.AbstractRequestHandlerAdvice. This has the benefit of avoiding writing low-level Aspect Oriented Programming code as well 
+		as providing a starting point that is specifically tailored for use in this environment. In this simple test I only have logged a message before and after invoking the handler. -->
+
+	<int:inbound-channel-adapter id="myCustomAdviceInbundChannelAdapter" channel="myCustomAdviceInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('Dantito', 'Ricalde', 'Rivera')"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="myCustomAdviceInputDirectChannel" />
+
+	<int:service-activator id="myCustomAdviceServiceActivator" input-channel="myCustomAdviceInputDirectChannel" output-channel="myCustomAdviceOutputDirectChannel"
+		ref="genericServiceActivator" auto-startup="false">
+		<int:request-handler-advice-chain>
+			<bean class="spring.integration.test.advice.MyCustomAdvice" />
+		</int:request-handler-advice-chain>
+	</int:service-activator>
+
+	<int:channel id="myCustomAdviceOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="myCustomAdviceOutboundChannelAdapter" channel="myCustomAdviceOutputDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+</beans>

@@ -1,0 +1,118 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a single resequencer. In this case the resequencer symply releases the messages of a message group in the descendant orden of their SEQUENCE_NUMBER 
+		(the sequencer uses the CORRELATION_ID to store the messages in groups). In this case the resequencer has configured a message store (with transactionality) with is backed by its own 
+		data base "resequencerMessageStore", the splitter output channel also uses it to store their messages. I have tested that it is better to have each message store pointing to a different 
+		data base (namely to a different data source with different session factory and different transaction manager). You should have messageStoreX -> dataSourceX -> sessionFactoryX -> transactionManagerX 
+		...., messageStoreY -> dataSourceY -> sessionFactoryY -> transactionManagerY and so on if you have several message stores. -->
+
+	<int:inbound-channel-adapter id="toTestASimpleResequencerInboundChannelAdapter" channel="toTestASimpleResequencerInputDirectChannel"
+		expression="T(java.util.Arrays).asList('number 1', 'number 2', 'number 3', 'number 4', 'number 5')" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleResequencerInputDirectChannel" />
+
+	<int:splitter id="toTestASimpleResequencerSplitter" input-channel="toTestASimpleResequencerInputDirectChannel" output-channel="toTestASimpleResequencerSplitterOutputQueueChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestASimpleResequencerSplitterOutputQueueChannel">
+		<int:queue capacity="500" message-store="toTestASimpleResequencerPersistentMessageStore" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+<!-- the comparator property is not supported by the resequencer in spring integration 2.2.0. Until the 2.1.4 version this property was supported by the resequencer  -->
+<!-- 	<int:resequencer id="toTestASimpleResequencer" input-channel="toTestASimpleResequencerSplitterOutputQueueChannel" output-channel="toTestASimpleResequencerOutputChannel" -->
+<!-- 		comparator="descendantComparator" message-store="toTestASimpleResequencerPersistentMessageStore" send-partial-result-on-expiry="true" -->
+<!-- 		release-partial-sequences="true" auto-startup="false"> -->
+<!-- 		<int:poller fixed-rate="10000" max-messages-per-poll="20"> -->
+<!-- 			<int:transactional /> -->
+<!-- 		</int:poller> -->
+<!-- 	</int:resequencer> -->
+	
+	<int:resequencer id="toTestASimpleResequencer" input-channel="toTestASimpleResequencerSplitterOutputQueueChannel" output-channel="toTestASimpleResequencerOutputChannel"
+		message-store="toTestASimpleResequencerPersistentMessageStore" send-partial-result-on-expiry="true"
+		release-partial-sequences="true" auto-startup="false">
+		<int:poller fixed-rate="10000" max-messages-per-poll="20">
+			<int:transactional />
+		</int:poller>
+	</int:resequencer>
+
+	<int:channel id="toTestASimpleResequencerOutputChannel" />
+
+	<int:outbound-channel-adapter id="toTestASimpleResequencerOutboundChannelAdapter" channel="toTestASimpleResequencerOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<bean id="toTestASimpleResequencerReaper" class="org.springframework.integration.store.MessageGroupStoreReaper">
+		<property name="messageGroupStore" ref="toTestASimpleResequencerPersistentMessageStore" />
+		<property name="timeout" value="360000" />
+	</bean>
+
+	<task:scheduler id="toTestASimpleResequencerScheduler" />
+
+	<task:scheduled-tasks scheduler="toTestASimpleResequencerScheduler">
+		<task:scheduled ref="toTestASimpleResequencerReaper" method="run" fixed-rate="180000" />
+	</task:scheduled-tasks>
+
+	<int-jdbc:message-store id="toTestASimpleResequencerPersistentMessageStore" data-source="resequencerDataSource" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="resequencerDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/resequencermessagestore" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="resequencerSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="resequencerDataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="resequencerTransactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="resequencerSessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="resequencerTransactionManager" order="100" />
+
+</beans>

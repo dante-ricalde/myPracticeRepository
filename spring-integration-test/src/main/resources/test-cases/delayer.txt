@@ -1,0 +1,2 @@
+1. to test a simple delayer with its basic properties and with a task-scheduler with its appropriate properties and error-handler configured
+2. to test a simple delayer with a message store (the delayer must have at least all the configuration used in the previous case)

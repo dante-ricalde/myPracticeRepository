@@ -1,0 +1,200 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- In this case We are testing FTP Adapters. First we have created a FTP Session Factory with a regular bean definition where the implementation class is org.springframework.integration.ftp.session.DefaultFtpSessionFactory. 
+		Then We have injected this session factory in the ftp-outbound-channel-adapter and ftp-inbound-channel-adapter (Obviously the protocol (FTP or FTPS) that an adapter will use depends 
+		on the type of session factory that has been injected into the adapter, in this case we are using the FTP Protocol). To configure this FTP Session Factory I am connecting to a remote 
+		directory created at Egnyte and I am connecting using the default port. To start the process first I am generating the messages using an inbound-channel-adapter, then I am serializing 
+		to bytes the complete message to then write them in the remote directory using the ftp-outbound-channel-adapter, in this adapter I am using the header named 'relative' to generate the 
+		remote directory and remote file name. Then I am using a ftp-inbound-channel-adapter to consume the files of the remote directory, with this adapter I am using a CompositeFileListFilter 
+		to specify two filters: AcceptOnceFileListFilter and CustomRegexPatternFileListFilter (this to filter files with a regExp) to accept only files once and that are ready. In this adapter 
+		I am also specifying a local directory to store the files (the files names are changed to uppercase), the remote source files are deleted after copying to avoid to download them again 
+		by this adapter if the applications is restarted. In this adapter I have specified the sub-directory '/Private/dante.ricalde/mainDir/DanteRicalde' directly because I haven't been able 
+		to specify a scanner (a RecursiveLeafOnlyDirectoryScanner (neither a file locker with this scanner)) in the ftp-inbound-channel-adapter to look for files in all the sub-directories 
+		of the remote-directory specified (This is a problem because the last part of the directy name is 'DanteRicalde' and that part is computed using the header 'relative' of the message 
+		by the ftp-outbound-channel-adapter at writing). Then the ftp-inbound-channel-adapter sends the message to a file-to-bytes-transformer transformer to convert the File payload to an 
+		array of bytes (We have specified the delete-files option on this transformer so that to delete the inbound File after the transformation is complete. With this behaviour we avoid the 
+		ftp-inbound-channel-adapter to create messages for the files that are in the local directory and they are already been processed by this adapter (In a normal scenary the messages that 
+		are being saved in the local directory are not processed again to send messages while the server is running and has not been restarted, because the adapter knows that those files have 
+		been recently processed, I think that the adapter knows it by its internal process or by the filter AcceptOnceFileListFilter. But if the server is restarted and those files stay in 
+		the local directory, then when the ftp-inbound-channel-adapter starts processes them again because doesn't know if they have already been processed and sent as messages)), for this 
+		reason is a good idea to delete the local messages, if we wouldn't want to delete them, we could use a file:outbound-gateway to move them to another directory and generating a reply 
+		Message containing the newly written File as its payload, but the files in the local directory would have to be deleted anyway. Finally the file-to-bytes-transformer sends the message 
+		to a payload-deserializing-transformer to convert it to an object, this transformer converts it to a Message instance with a Payload of type Person and all their headers. Then this 
+		same message is finally sent to an oubound channel adapter. -->
+
+	<bean id="ftpClientFactory" class="org.springframework.integration.ftp.session.DefaultFtpSessionFactory">
+		<property name="host" value="ftp-dantericalde.egnyte.com" />
+		<!-- <property name="port" value="22" /> -->
+		<property name="username" value="dante.ricalde@dantericalde" />
+		<property name="password" value="Pescadito1" />
+		<property name="clientMode" value="2" />
+		<property name="fileType" value="2" />
+		<property name="bufferSize" value="100000" />
+	</bean>
+
+	<int:inbound-channel-adapter id="simpleFtpOutboundChannelAdapterInboundChannelAdapter" channel="simpleFtpOutboundChannelAdapterInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero')).setHeader('relative', 'DanteRicalde').build() : T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')).setHeader('relative', 'DanteRicalde').build()"
+		auto-startup="false">
+		<int:poller fixed-rate="3000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleFtpOutboundChannelAdapterInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:transformer id="simpleFtpOutboundChannelAdapterTransformer" input-channel="simpleFtpOutboundChannelAdapterInputQueueChannel" expression="T(org.apache.commons.lang3.SerializationUtils).serialize(#this)"
+		output-channel="simpleFtpOutboundChannelAdapterTransformerOutputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:transformer>
+
+	<int:channel id="simpleFtpOutboundChannelAdapterTransformerOutputDirectChannel" />
+
+	<int-ftp:outbound-channel-adapter id="simpleFtpOutboundChannelAdapter" channel="simpleFtpOutboundChannelAdapterTransformerOutputDirectChannel"
+		session-factory="ftpClientFactory" charset="UTF-8" remote-file-separator="/" auto-create-directory="true" remote-directory-expression="'/Private/dante.ricalde/mainDir/' + headers.relative"
+		temporary-remote-directory-expression="'/Private/dante.ricalde/temp/' + headers.relative" remote-filename-generator-expression="headers.relative + '_' + new java.text.SimpleDateFormat('yyyyMMddHHmmssSSS').format(new java.util.Date()) + '.txt'"
+		auto-startup="false" />
+
+	<int-ftp:inbound-channel-adapter id="simpleFtpInboundChannelAdapter" session-factory="ftpClientFactory" filter="ftpCompositeFilter" charset="UTF-8"
+		auto-create-local-directory="true" local-directory="myLocalDir" remote-directory="/Private/dante.ricalde/mainDir/DanteRicalde" remote-file-separator="/"
+		local-filename-generator-expression="#this.toUpperCase()" channel="simpleFtpInboundChannelAdapterOutputChannel" delete-remote-files="true" auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int-ftp:inbound-channel-adapter>
+
+	<bean id="ftpNioFileLocker" class="org.springframework.integration.file.locking.NioFileLocker" />
+
+	<bean id="ftpCompositeFilter" class="org.springframework.integration.file.filters.CompositeFileListFilter">
+		<constructor-arg>
+			<list>
+				<bean class="org.springframework.integration.file.filters.AcceptOnceFileListFilter" />
+				<bean class="spring.integration.test.config.ftp.CustomRegexPatternFileListFilter">
+					<constructor-arg value="^Dante.*\.txt$" />
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<bean id="ftpCustomDirectoryScanner" class="org.springframework.integration.file.RecursiveLeafOnlyDirectoryScanner" p:filter-ref="ftpCompositeFilter" p:locker-ref="ftpNioFileLocker" />
+
+	<int-file:file-to-bytes-transformer id="simpleFtpInboundChannelAdapterFileToBytesTransformer" input-channel="simpleFtpInboundChannelAdapterOutputChannel"
+		output-channel="simpleFtpInboundChannelAdapterFileToBytesTransformerOutputDirectChannel" delete-files="true" />
+
+	<int:payload-deserializing-transformer id="simpleFtpInboundChannelAdapterPayloadDeserializingTransformer" input-channel="simpleFtpInboundChannelAdapterFileToBytesTransformerOutputDirectChannel"
+		output-channel="simpleFtpInboundChannelAdapterPayloadDeserializingTransformerOutputDirectChannel" auto-startup="false" />
+
+	<int:channel id="simpleFtpInboundChannelAdapterPayloadDeserializingTransformerOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="simpleFtpInboundChannelAdapterOutboundChannelAdapter" channel="simpleFtpInboundChannelAdapterPayloadDeserializingTransformerOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- This test is the same as the previous one, the only difference is that we are using in this case FTPS as protocol to transfer our files. As theory says: for FTPS connections all 
+		you need to do is use org.springframework.integration.ftp.session.DefaultFtpsSessionFactory instead. Below is the complete configuration sample for this bean; In this bean we have specified 
+		as protocol TLS version 1 (TLS is based on the earlier SSL specifications (SSL is its predecessor)) (The string TLSv1 is got from the class sun.security.ssl.ProtocolVersion), for encryption 
+		we have specified: Require explicit FTP over TLS ('implicit' property to false). It hasn't been necessary to specify keyManager and trustManager properties, the FTPSClient class of 
+		the project commons-net creates by default a trustManager (A TrustManager that checks server certificates for validity, but otherwise performs no checks (TrustManagerUtils.getValidateServerCertificateTrustManager())), 
+		this default trust manager does the same when I accept the server certificate when I connect to the FTP Server using FilleZilla, namely it accepts and trust the server certificate. 
+		In the ftp-inbound-channel-adapter's poller I have specified the property ftp:inbound-channel-adapter to -1, with this option, on each poll, the adapter will attempt to generate as 
+		many Messages as it possibly can. In other words, it will process everything in the local directory, and then it will connect to the remote directory to transfer everything that is 
+		available there to be processed locally. Only then is the poll operation considered complete, and the poller will wait for the next execution time. Spring Integration defines a FTP 
+		Session Caching by default, but in this case we have defined explicitly the CachingSessionFactory instance. This bean provides the sessionCacheSize and sessionWaitTimeout properties.As 
+		its name suggests, the sessionCacheSize property controls how many active sessions this adapter will maintain in its cache (the DEFAULT is unbounded). If the sessionCacheSize threshold 
+		has been reached, any attempt to acquire another session will block until either one of the cached sessions becomes available or until the wait time for a Session expires (the DEFAULT 
+		wait time is Integer.MAX_VALUE). The sessionWaitTimeout property enables configuration of that value.In the above example you see a CachingSessionFactory created with the sessionCacheSize 
+		set to 10 and the sessionWaitTimeout set to 1 second (its value is in milliseconds). -->
+
+	<bean id="ftpsClientFactory" class="org.springframework.integration.ftp.session.DefaultFtpsSessionFactory">
+		<property name="host" value="ftp-dantericalde.egnyte.com" />
+		<!-- <property name="port" value="22" /> -->
+		<property name="username" value="dante.ricalde@dantericalde" />
+		<property name="password" value="Pescadito1" />
+		<property name="clientMode" value="2" />
+		<property name="fileType" value="2" />
+		<property name="bufferSize" value="100000" />
+		<property name="useClientMode" value="true" />
+		<!-- <property name="cipherSuites" value="a,b.c" /> -->
+		<!-- <property name="keyManager" ref="keyManager" /> -->
+		<property name="protocol" value="TLSv1" />
+		<!-- <property name="trustManager" ref="trustManager" /> -->
+		<property name="prot" value="P" />
+		<property name="needClientAuth" value="true" />
+		<!-- <property name="authValue" value="oleg" /> -->
+		<property name="sessionCreation" value="true" />
+		<property name="protocols" value="TLSv1" />
+		<property name="implicit" value="false" />
+	</bean>
+
+	<bean id="cachingSessionFactory" class="org.springframework.integration.file.remote.session.CachingSessionFactory">
+		<constructor-arg ref="ftpsClientFactory" />
+		<constructor-arg value="10" />
+		<property name="sessionWaitTimeout" value="1000" />
+	</bean>
+
+	<int:inbound-channel-adapter id="simpleFtpsOutboundChannelAdapterInboundChannelAdapter" channel="simpleFtpsOutboundChannelAdapterInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero')).setHeader('relative', 'DanteRicalde').build() : T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')).setHeader('relative', 'DanteRicalde').build()"
+		auto-startup="true">
+		<int:poller fixed-rate="3000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleFtpsOutboundChannelAdapterInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:transformer id="simpleFtpsOutboundChannelAdapterTransformer" input-channel="simpleFtpsOutboundChannelAdapterInputQueueChannel" expression="T(org.apache.commons.lang3.SerializationUtils).serialize(#this)"
+		output-channel="simpleFtpsOutboundChannelAdapterTransformerOutputDirectChannel" auto-startup="true">
+		<int:poller fixed-rate="1000" />
+	</int:transformer>
+
+	<int:channel id="simpleFtpsOutboundChannelAdapterTransformerOutputDirectChannel" />
+
+	<int-ftp:outbound-channel-adapter id="simpleFtpsOutboundChannelAdapter" channel="simpleFtpsOutboundChannelAdapterTransformerOutputDirectChannel"
+		session-factory="ftpsClientFactory" charset="UTF-8" remote-file-separator="/" auto-create-directory="true" remote-directory-expression="'/Private/dante.ricalde/mainDir/' + headers.relative"
+		temporary-remote-directory-expression="'/Private/dante.ricalde/temp/' + headers.relative" remote-filename-generator-expression="headers.relative + '_' + new java.text.SimpleDateFormat('yyyyMMddHHmmssSSS').format(new java.util.Date()) + '.txt'"
+		auto-startup="true" />
+
+	<int-ftp:inbound-channel-adapter id="simpleFtpsInboundChannelAdapter" session-factory="ftpsClientFactory" filter="ftpsCompositeFilter" charset="UTF-8"
+		auto-create-local-directory="true" local-directory="myLocalDir" remote-directory="/Private/dante.ricalde/mainDir/DanteRicalde" remote-file-separator="/"
+		local-filename-generator-expression="#this.toUpperCase()" channel="simpleFtpsInboundChannelAdapterOutputChannel" delete-remote-files="true" auto-startup="true">
+		<int:poller fixed-delay="5000" max-messages-per-poll="-1" />
+	</int-ftp:inbound-channel-adapter>
+
+	<bean id="ftpsCompositeFilter" class="org.springframework.integration.file.filters.CompositeFileListFilter">
+		<constructor-arg>
+			<list>
+				<bean class="org.springframework.integration.file.filters.AcceptOnceFileListFilter" />
+				<bean class="spring.integration.test.config.ftp.CustomRegexPatternFileListFilter">
+					<constructor-arg value="^Dante.*\.txt$" />
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<int-file:file-to-bytes-transformer id="simpleFtpInboundChannelAdapterFileToBytesTransformer" input-channel="simpleFtpsInboundChannelAdapterOutputChannel"
+		output-channel="simpleFtpsInboundChannelAdapterFileToBytesTransformerOutputDirectChannel" delete-files="true" />
+
+	<int:payload-deserializing-transformer id="simpleFtpsInboundChannelAdapterPayloadDeserializingTransformer" input-channel="simpleFtpsInboundChannelAdapterFileToBytesTransformerOutputDirectChannel"
+		output-channel="simpleFtpsInboundChannelAdapterPayloadDeserializingTransformerOutputDirectChannel" auto-startup="true" />
+
+	<int:channel id="simpleFtpsInboundChannelAdapterPayloadDeserializingTransformerOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="simpleFtpsInboundChannelAdapterOutboundChannelAdapter" channel="simpleFtpsInboundChannelAdapterPayloadDeserializingTransformerOutputDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="true" />
+</beans>

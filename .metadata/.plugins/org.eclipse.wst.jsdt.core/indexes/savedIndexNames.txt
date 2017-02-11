@@ -1,0 +1,6 @@
+INDEX VERSION 1.3+F:\misPracticas\myPracticeRepository\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
+3085336416.index
+902626920.index
+1484772628.index
+2361208426.index
+2781458264.index

@@ -1,0 +1,163 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a simple message handler chain. This chain has configured as a first handler to a filter which only accepts messages whose payload type is CASH. If 
+		this filter (which is a selective consumer) accepts the message, it's then process by a header enricher and then by a service activator which send it to the output channel of the chain. 
+		In this case as the chain has configured an output channel, then the service activator needs to have configured an output channel, the service activator output channel is configured 
+		in the annotation @ServiceActivator (Because of this setup all handlers except the last required to implement the MessageProducer interface (which provides a 'setOutputChannel()' method). 
+		The last handler only needs an output channel if the outputChannel on the MessageHandlerChain is set). If the filter rejects the message, then this is not going to be processed by the 
+		rest of the handlers of the chain and simply will be deleted (this is made by the property "throw-exception-on-rejection" of the filter). -->
+
+	<int:inbound-channel-adapter id="toTestASimpleChainInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.PaymentType('CASH') : new spring.integration.test.var.PaymentType('CREDIT')" channel="toTestASimpleChainInputDirectChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleChainInputDirectChannel" />
+
+	<int:chain id="simpleChain" input-channel="toTestASimpleChainInputDirectChannel" output-channel="toTestASimpleChainOutputQueueChannel" auto-startup="false">
+		<int:filter expression="payload.paymentType.equalsIgnoreCase('CASH')" throw-exception-on-rejection="true" />
+		<int:header-enricher>
+			<int:header name="foo" value="bar" />
+		</int:header-enricher>
+		<int:service-activator ref="serviceActivatorWithAnOutputChannel" />
+	</int:chain>
+
+	<int:channel id="toTestASimpleChainOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestASimpleChainOutboundChannelAdapter" ref="channelAdapterReceiver" method="receiveMessage" channel="toTestASimpleChainOutputQueueChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- This test is the same as the previous one, the only difference is that filter doesn't have the "throw-exception-on-rejection" property, which is false by default. Like the previous 
+		test the rejected messages (whose payload type is CREDIT) are not processed by the rest of the chain handlers. The messages whose payload type is CASH are processed by all chain handlers 
+		and the result is sent to the chain output channel. -->
+	<int:inbound-channel-adapter id="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.PaymentType('CASH') : new spring.integration.test.var.PaymentType('CREDIT')" channel="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyInputDirectChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyInputDirectChannel" />
+
+	<int:chain id="simpleChain" input-channel="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyInputDirectChannel" output-channel="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyOutputQueueChannel"
+		auto-startup="false">
+		<int:filter expression="payload.paymentType.equalsIgnoreCase('CASH')" />
+		<int:header-enricher>
+			<int:header name="foo" value="bar" />
+		</int:header-enricher>
+		<int:service-activator ref="serviceActivatorWithAnOutputChannel" />
+	</int:chain>
+
+	<int:channel id="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyOutboundChannelAdapter" ref="channelAdapterReceiver"
+		method="receiveMessage" channel="toTestASimpleChainWithAFilterWithoutThrow-exception-on-rejectionPropertyOutputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- This test is the same as the first test, the only difference is that chain have two filters with the property "throw-exception-on-rejection" set. The filters work same as in the 
+		first test, namely as selective consumers. In the first filter pass on the messages whose payload type is not 'CASH', in the second filter the messages whose payload is not 'CREDIT', 
+		namely only the messages whose payload is 'DEBIT'get to the last handler (in this case the service activator), the another messages with different payload ('CASH','CREDIT') are deleted 
+		in the first and second filter respectively. In this case we have discovered that the service activator inherits the output channel of the chain, because this sends the message to this 
+		output channel without a explicit property, with this characteristic we accomplish the following premise: (Because of this setup all handlers except the last required to implement the 
+		MessageProducer interface (which provides a 'setOutputChannel()' method). The last handler only needs an output channel if the outputChannel on the MessageHandlerChain is set), with 
+		the difference that the service activator output channel is implicitly specified (inherited from the chain). You can notice than the chain is consuming from a queue channel and it doesn't 
+		have a poller configured, I think that this is so because the chain is only a delegator to a chain of other handlers. -->
+	<int:inbound-channel-adapter id="toTestASimpleChainWithTwoFiltersInboundChannelAdapter"
+		expression="T(java.util.Arrays).asList(new spring.integration.test.var.PaymentType('CASH'), new spring.integration.test.var.PaymentType('CREDIT'), new spring.integration.test.var.PaymentType('DEBIT'))"
+		channel="toTestASimpleChainWithTwoFiltersInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestASimpleChainWithTwoFiltersInputDirectChannel" />
+
+	<int:splitter id="toTestASimpleChainWithTwoFiltersSplitter" input-channel="toTestASimpleChainWithTwoFiltersInputDirectChannel" output-channel="toTestASimpleChainWithTwoFiltersSplitterOutputChannel"
+		auto-startup="false" />
+
+	<int:channel id="toTestASimpleChainWithTwoFiltersSplitterOutputChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:chain id="toTestASimpleChainWithTwoFiltersChain" input-channel="toTestASimpleChainWithTwoFiltersSplitterOutputChannel" output-channel="toTestASimpleChainWithTwoFiltersOutputQueueChannel"
+		auto-startup="false">
+		<int:filter expression="!payload.paymentType.equalsIgnoreCase('CASH')" throw-exception-on-rejection="true" />
+		<int:filter expression="!payload.paymentType.equalsIgnoreCase('CREDIT')" throw-exception-on-rejection="true" />
+		<int:header-enricher>
+			<int:header name="foo" value="bar" />
+		</int:header-enricher>
+		<int:service-activator ref="serviceActivatorCustomizable" />
+		<!-- <int:poller fixed-rate="1000" /> -->
+	</int:chain>
+
+	<int:channel id="toTestASimpleChainWithTwoFiltersOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestASimpleChainWithTwoFiltersOutboundChannelAdapter" ref="channelAdapterReceiver" method="receiveMessage"
+		channel="toTestASimpleChainWithTwoFiltersOutputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case We are testing a chain with nested chains. Before to enter to a nested chain, the current chain simple takes the message in its current state and places it on the 
+		channel defined via the request-channel attribute. When the downstream flow initiated by that gateway completes, a Message will be returned to the gateway and continue its journey within 
+		the current chain. -->
+	<int:inbound-channel-adapter id="withNestedChainsInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.PaymentType('CASH') : new spring.integration.test.var.PaymentType('CREDIT')" channel="withNestedChainsInputDirectChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="withNestedChainsInputDirectChannel" />
+
+	<int:chain id="withNestedChainsChain" input-channel="withNestedChainsInputDirectChannel" output-channel="withNestedChainsOutputQueueChannel" auto-startup="false">
+		<int:header-enricher>
+			<int:header name="name" value="Many" />
+		</int:header-enricher>
+		<int:service-activator ref="serviceActivatorCustomizable" />
+		<int:gateway request-channel="inputA" />
+	</int:chain>
+
+	<int:chain id="nested-chain-a" input-channel="inputA" auto-startup="false">
+		<int:header-enricher>
+			<int:header name="name" value="Moe" overwrite="true" />
+		</int:header-enricher>
+		<int:gateway request-channel="inputB" />
+		<int:service-activator ref="serviceActivatorCustomizable" />
+	</int:chain>
+
+	<int:chain id="nested-chain-b" input-channel="inputB" auto-startup="false">
+		<int:header-enricher>
+			<int:header name="name" value="Jack" overwrite="true" />
+		</int:header-enricher>
+		<int:service-activator ref="serviceActivatorCustomizable" />
+	</int:chain>
+
+	<int:channel id="withNestedChainsOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="withNestedChainsOutboundChannelAdapter" ref="channelAdapterReceiver" method="receiveMessage" channel="withNestedChainsOutputQueueChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+</beans>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing 2 filters connected as subscribers to a publish subscribe channel which receives every 1 second a message from the inbound channel adapter. This filter 
+		only accepts messages whose payment type is CASH. Every time the publish subscribe channel receives a message, it send it to the two filters. When the message arrives to the two filters, 
+		each one send it to the service activator if the message payment type is CASH, on the other hand, they send it to the discard channel. Both the output channel and the discard channel 
+		receives two messages per each one that the publish subscribe channel received. -->
+
+	<int:inbound-channel-adapter id="toTestAfilterConntectedToASubscribeChannelInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.PaymentType('CASH') : new spring.integration.test.var.PaymentType('CREDIT')" channel="toTestAfilterConntectedToASubscribeChannelPublishSubscribeChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:publish-subscribe-channel id="toTestAfilterConntectedToASubscribeChannelPublishSubscribeChannel" apply-sequence="true" />
+
+	<int:filter id="toTestAfilterConntectedToASubscribeChannel1Filter" input-channel="toTestAfilterConntectedToASubscribeChannelPublishSubscribeChannel" ref="myFilterWithAnnotations"
+		output-channel="outputChanneltoTestAfilterConntectedToASubscribeChannelChannel" discard-channel="discarChannelToTestAfilterConntectedToASubscribeChannelChannel" auto-startup="false" />
+
+	<int:filter id="toTestAfilterConntectedToASubscribeChannel2Filter" input-channel="toTestAfilterConntectedToASubscribeChannelPublishSubscribeChannel" ref="myFilterWithAnnotations"
+		output-channel="outputChanneltoTestAfilterConntectedToASubscribeChannelChannel" discard-channel="discarChannelToTestAfilterConntectedToASubscribeChannelChannel" auto-startup="false" />
+
+	<int:channel id="outputChanneltoTestAfilterConntectedToASubscribeChannelChannel" />
+
+	<int:service-activator id="toTestAfilterConntectedToASubscribeChannelServiceActivator" input-channel="outputChanneltoTestAfilterConntectedToASubscribeChannelChannel"
+		ref="myExecutorChannelHandler" auto-startup="false"  />
+
+	<int:channel id="discarChannelToTestAfilterConntectedToASubscribeChannelChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestAfilterConntectedToASubscribeChannel" channel="discarChannelToTestAfilterConntectedToASubscribeChannelChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1" />
+	</int:outbound-channel-adapter>
+
+	<!-- Filter with an expression whose key is in a expression source bundle. The resource bundle check for modifications every a day and if there are changes it reloads. In this case 
+		the poller of the filter is configured to consume 7 messages per pool from the queue channel; when the application starts the filter starts to consume from the queue channel and it 
+		has to execute (it has to wait) until it consumes the 7 messages (and this is so because the queue only keeps in memory 1 message, besides of receiving 1 message every second (default 
+		max-messages-per-poll is one for the inbound channel adapter) from its inbound channel adapter). For the rest of executions, when the filter reacts to consume the 7 messages, it consumes 
+		them immediately without waiting and this is so because when the filter was sleeping the inbound channel adapter's pooler's task executor's threads were executing but as the queue only 
+		has a capacity of 1, the treads were blocked, so when the filter reacted, started to consume, and it consumed the message from the queue (and continued consuming) and the threads were 
+		unblocked, for this reason the 7 messages were consumed immediately. -->
+
+	<int:inbound-channel-adapter id="toTestAFilterWithAnExpressionFromAnExpressionSourceInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new NullPointerException('This is a null pointer exception: ' + T(java.lang.Math).random()) : new IllegalArgumentException('This is an illegal argument exception: ' + T(java.lang.Math).random())"
+		channel="toTestAFilterWithAnExpressionFromAnExpressionSourceQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestAFilterWithAnExpressionFromAnExpressionSourceQueueChannel">
+		<int:queue capacity="1" />
+	</int:channel>
+
+	<int:filter id="toTestAFilterWithAnExpressionFromAnExpressionSourceFilter" input-channel="toTestAFilterWithAnExpressionFromAnExpressionSourceQueueChannel"
+		output-channel="outputChanneltoTestAFilterWithAnExpressionFromAnExpressionSourceQueueChannel" discard-channel="discardChanneltoTestAFilterWithAnExpressionFromAnExpressionSourceChannel"
+		auto-startup="false">
+		<int:expression key="filterPatterns.toTestAFilterWithAnExpressionFromAnExpressionSourceExpression" source="expressionSource" />
+		<int:poller fixed-rate="10000" max-messages-per-poll="7" />
+	</int:filter>
+
+	<bean id="expressionSource" class="org.springframework.integration.expression.ReloadableResourceBundleExpressionSource">
+		<property name="basename" value="META-INF/spring/expressions" />
+		<property name="cacheSeconds" value="86400" />
+	</bean>
+
+	<int:channel id="discardChanneltoTestAFilterWithAnExpressionFromAnExpressionSourceChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestAFilterWithAnExpressionFromAnExpressionSourceForDiscardChannelOutboundChannelAdapter" channel="discardChanneltoTestAFilterWithAnExpressionFromAnExpressionSourceChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="outputChanneltoTestAFilterWithAnExpressionFromAnExpressionSourceQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="toTestAFilterWithAnExpressionFromAnExpressionSourceForOutputChannelOutboundChannelAdapter" channel="outputChanneltoTestAFilterWithAnExpressionFromAnExpressionSourceQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+</beans>

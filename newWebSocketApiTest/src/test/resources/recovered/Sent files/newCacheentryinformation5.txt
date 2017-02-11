@@ -1,0 +1,20 @@
+(function ($) {.
+ "use strict";.
+  .if (!$.chat
+) {  $.chat =
+{}; .} .if (!$
+.chat.language)
+{  $.chat.lang
+uage = []; .} 
+.$.chat.language
+['es'] = {  .m
+essages: {   
+  .} .}; .$.
+chat.language['e
+n'] = {  .mess
+ages: {   "ch
+at.window.button
+.defaultText" :
+"Send"  .} .}
+;  .})(jQuery)
+;

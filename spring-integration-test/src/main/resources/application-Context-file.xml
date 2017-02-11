@@ -1,0 +1,115 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- 12. FILE SUPPORT -->
+
+	<!-- This is a complete example about File Support that Spring Integration offers. I am testing the main components of File Support. First I have used the File Oubound Channel Adapter 
+		but previously I have serialized the complete message produced by the Inbound Channel Adapter to byte array, then this File Outbound Channel Adapter writes each message serialized to 
+		the disc. Then I have used the File Inbound Channel Adapter to consume the files that are under the 'newTemp' directory, in this File Inbound Channel Adapter I have made reference to 
+		a CompositeFileListFilter to combine two filters: The AcceptOnceFileListFilter to ensure files are picked up only once from the directory and the RegexPatternFileListFilter to accept 
+		only files that are ready, besides to filter a listing of files by qualifying their 'name' against a regular expression. Besides in the File Inbound Channel Adapter I have made reference 
+		to a custom directory scanner (RecursiveLeafOnlyDirectoryScanner) to list all files inside a directory and sub-directories, without limit (I needed this because the previous File Outbound 
+		Channel Adapter saved the files in sub-directories taking the names of the sub-directories from the 'relative header'. When the transformer serialized the complete message to byte array, 
+		that byte array was the payload and the headers were added to the outgoing message of the transformer, is for that that the File Outbound Channel Adapter could use the header named 
+		'relative'). Then I connected the File Inbound Channel Adapter to the File Outbound Gateway to move the file to a different directory and then send it (the File (his newly File as payload)) 
+		to a "file-to-bytes-transformer" transformer to convert the File payload to an array of bytes, then that byte array is sent to "payload-deserializing-transformer" to convert the byte 
+		array to an object, when that "payload-deserializing-transformer" transformer deserializes the byte array gets a Message with a Payload of type Person and headers, but this transformer 
+		builds a message with the payload and add the headers and send it to a queue channel to be consumed by a outbound channel adapter, it's for this that when the oubound channel adapter 
+		receives the message receives the header named 'relative' because that header was added (to the outcoming message) by the 'int:payload-deserializing-transformer' transformer when deserialized 
+		the message to the object. If you don't serialize the complete Message by the first transformer to be written to the disc as a File (by the File Outbound Channel Adapter) you won't 
+		receive the 'relative' header in the last outbound channel adapter because that header (named 'relative') is not saved in the file and it loses on the way. -->
+
+	<int:inbound-channel-adapter id="simpleFileInboundChannelAdapterInboundChannelAdapter" channel="simpleFileInboundChannelAdapterInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('1', 'Kelly', 'Rivera', 'Cordero')).setHeader('relative', 'DanteRicalde').build() : T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Person('2', 'Dantito', 'Ricalde', 'Rivera')).setHeader('relative', 'DanteRicalde').build()"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleFileInboundChannelAdapterInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:transformer id="simpleFileInboundChannelAdapterTransformer" input-channel="simpleFileInboundChannelAdapterInputQueueChannel" expression="T(org.apache.commons.lang3.SerializationUtils).serialize(#this)"
+		output-channel="simpleFileOutboundChannelAdapterInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:transformer>
+
+	<int:channel id="simpleFileOutboundChannelAdapterInputDirectChannel" />
+
+	<int-file:outbound-channel-adapter id="simpleFileOutboundChannelAdapter" channel="simpleFileOutboundChannelAdapterInputDirectChannel"
+		directory-expression="'newTemp' + T(java.io.File).separator + headers.relative" auto-create-directory="true"
+		filename-generator-expression="headers.relative + '_' + new java.text.SimpleDateFormat('yyyyMMddHHmmssSSS').format(new java.util.Date()) + '.txt'" auto-startup="false" />
+
+	<int-file:inbound-channel-adapter id="simpleFileInboundChannelAdapter" directory="newTemp" filter="compositeFilter" scanner="customDirectoryScanner"
+		auto-create-directory="true" auto-startup="false">
+		<int-file:locker ref="nioFileLocker" />
+	</int-file:inbound-channel-adapter>
+
+	<bean id="nioFileLocker" class="org.springframework.integration.file.locking.NioFileLocker" />
+
+	<bean id="compositeFilter" class="org.springframework.integration.file.filters.CompositeFileListFilter">
+		<constructor-arg>
+			<list>
+				<bean class="org.springframework.integration.file.filters.AcceptOnceFileListFilter" />
+				<bean class="org.springframework.integration.file.filters.RegexPatternFileListFilter">
+					<constructor-arg value="^Dante.*\.txt$" />
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<bean id="customDirectoryScanner" class="org.springframework.integration.file.RecursiveLeafOnlyDirectoryScanner" />
+
+	<int:channel id="simpleFileInboundChannelAdapter">
+		<int:interceptors>
+			<int:ref bean="myHandlingMessageFileChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-file:outbound-gateway id="simpleFileOutboundGateway" reply-channel="simpleFileOutboundGatewayReplyChannel" request-channel="simpleFileInboundChannelAdapter"
+		directory-expression="'anotherNewTemp'" auto-startup="false" />
+
+	<int-file:file-to-bytes-transformer id="simpleFileOutboundGatewayFileToBytesTransformer" input-channel="simpleFileOutboundGatewayReplyChannel"
+		output-channel="simpleFileToBytesTransformerOutputQueueChannel" />
+
+	<int:channel id="simpleFileToBytesTransformerOutputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:payload-deserializing-transformer id="simplePayloadDeserializingTransformer" input-channel="simpleFileToBytesTransformerOutputQueueChannel"
+		output-channel="simplePayloadDeserializingTransformerOutputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:payload-deserializing-transformer>
+
+	<int:channel id="simplePayloadDeserializingTransformerOutputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="simplePayloadDeserializingTransformerOutboundChannelAdapter" channel="simplePayloadDeserializingTransformerOutputQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+</beans>

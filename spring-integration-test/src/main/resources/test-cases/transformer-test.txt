@@ -1,0 +1,13 @@
+Transformers:
+1. to Test a simple transformer with a ref implementation with annotations (@Transformer, @Header, @Headers)
+2. to Test a simple transformer with an expression
+3. to Test a simple Transformer with a ref implementation returning a new message in its totality, without the headers of the original message included. (you must do a new GenericMessage to return in the implementation)
+
+Commons Transformers:
+1. to test an object-to-string-transformer with an outbound channel adapter in the file namespace
+2. to test a payload-serializing-transformer and a payload-deserializing-transformer with and without the serializer and
+	deserializer attributes
+3. to test and object-to-map transformer and a map-to-object transformer and to print the map generated
+
+Header Filter:
+1. to test a header filter

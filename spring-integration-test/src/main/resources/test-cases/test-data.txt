@@ -1,0 +1,15 @@
+wrong = 7 (1 repeated 3 with times and 1 ok.
+	   1 repeated wrong and 1 ok. 
+	   1 with 3 wrong and 1 ok
+	   1 with 3 wrong and 1 ok
+	   1 with 3 wrong and 1 ok)
+ok= 5
+
+
+
+409c06e5-d8e0-47ce-b17c-8488cbf4154a  OK
+169dad45-46e8-44ba-9144-c022109f6809 3 BAD 1 OK
+002607f8-646a-429c-8ff1-02a51f46347b 2 BAD
+3b3c7fd8-026e-42fa-b15d-ab6e1898b2e3 1 BAD
+5b598d66-70e9-40c7-aa05-f8bcbe1d96ca 3 BAD 1 OK 
+

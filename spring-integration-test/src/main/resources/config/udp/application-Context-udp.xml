@@ -1,0 +1,128 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd">
+
+	<!-- In this case I am testing a simple udp-outbound-channel-adapter and udp-inbound-channel-adapter. Regarding udp-outbound-channel-adapter I am sending the packets to this host without 
+		multicast, but using check-length and regarding udp-inbound-channel-adapter I am receiving udp packets from this host without multicast and using check-length (When this udp-inbound-channel-adapter 
+		receives the packet it receives it as byte array despite being sent as string to udp-outbound-channel-adapter). When you sent the Message to udp-outbound-channel-adapter only the string 
+		payload was sent and the header 'anotherPaymentType' of the Message is lost when the udp-inbound-channel-adapter receives the udp packets. Regarding threads theare are two paths: ================== 
+		1.) inbound-channel-adapter -> simpleUdpOutboundChannelAdapterChannel -> udp-outbound-channel-adapter -> host ======================================================================================= 
+		2.) int-ip:udp-inbound-channel-adapter -> simpleUdpReceiverOutChannel -> simpleUdpReceiverOutboundChannelAdapter -->
+<!-- 
+	<int:inbound-channel-adapter id="simpleUdpOutboundChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload('Dantito Ricalde Rivera').setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload('Danielito Ricalde Rivera').setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="simpleUdpOutboundChannelAdapterChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleUdpOutboundChannelAdapterChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-ip:udp-outbound-channel-adapter id="simpleUdpOutboundChannelAdapter" host="localhost" port="11111" multicast="false" check-length="true"
+		channel="simpleUdpOutboundChannelAdapterChannel"></int-ip:udp-outbound-channel-adapter>
+
+	<int-ip:udp-inbound-channel-adapter id="simpleUdpReceiver" channel="simpleUdpReceiverOutChannel" port="11111" receive-buffer-size="500"
+		multicast="false" check-length="true" />
+
+	<int:channel id="simpleUdpReceiverOutChannel" />
+
+	<int:outbound-channel-adapter id="simpleUdpReceiverOutboundChannelAdapter" channel="simpleUdpReceiverOutChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />  -->
+
+	<!-- In this case I have tested a udp-outbound-channel-adapter that sends packets to a external host, I have used a host of Egnyte: ftp-dricalde.egnyte.com and the packets are sent 
+		correctly to the host. I was trying to receives the packets from the same host using and udp-inbound-channel-adapter but I couldn't connect to the host, all along I was getting: java.net.BindException: 
+		Cannot assign requested address: Cannot bind. I tried with (localAddress:173.245.120.49, port: 11111) and (localAddress:173.245.120.49, port: 21) and (multicast-address=173.245.120.49, 
+		port: 11111) and all the cases it didn't work. -->
+	<int:inbound-channel-adapter id="hostExternalSimpleUdpOutboundChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload('Dantito Ricalde Rivera').setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload('Danielito Ricalde Rivera').setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="hostExternalSimpleUdpOutboundChannelAdapterChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="hostExternalSimpleUdpOutboundChannelAdapterChannel">
+		<!-- <int:interceptors> -->
+		<!-- <ref bean="myChannelInterceptor" /> -->
+		<!-- </int:interceptors> -->
+	</int:channel>
+
+	<int-ip:udp-outbound-channel-adapter id="hostExternalSimpleUdpOutboundChannelAdapter" host="173.245.120.49" port="11111" multicast="false"
+		check-length="true" channel="hostExternalSimpleUdpOutboundChannelAdapterChannel" />
+
+	<!-- In this case I am testing an int-ip:udp-outbound-channel-adapter with acknowledgements, the receiver must send an acknowlegment to the sender within a specified 
+		time and so that this happens the recipient of the packet can interpret the header added to the packet containing acknowledgement data (host and port). The 
+		int-ip:udp-outbound-channel-adapter receives the ack listining to on the port 12312.
+		Regarding threats I have noticed 3 main threads: 
+		1. int:inbound-channel-adapter -> ackUdpOutboundChannelAdapterChannel -> int-ip:udp-outbound-channel-adapter -> host
+		2. int-ip:udp-inbound-channel-adapter (sending ACK) -> ackUdpInboundChannelAdapterChannel -> ackUdpOutboundChannelAdapterChannelOutboundChannelAdapter
+		3. ACKHandler (int-ip:udp-outbound-channel-adapter (UnicastSendingMessageHandler)) (receiving ACK)
+		
+		An important aspect to take into account is that only the payload of the message is transfered as datagram packets to the destination. When the 
+		int-ip:udp-inbound-channel-adapter receives the packets (receives the message) uses the id of the message received as an ackId and that value is used as a header 
+		(and you can see it in the traces when that received message is processed by the remaining endpoints) and as the id to send the acknowledgement to the sender, 
+		and that means that the int-ip:udp-outbound-channel-adapter endpoint had to send the message id in the packets so that the acknowledgement process works very well. 
+		You can notice that the ids that are logged are different and you can think that the process is different and it's not working ok, but don't worry the process is ok,
+		the id of the messages are always being changed while the messages go throught the endpoints, you must take into account the last message ids near to send and receive 
+		the packets(message).
+	-->
+	<int:inbound-channel-adapter id="ackUdpOutboundChannelAdapterChannelInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload('Dantito Ricalde Rivera').setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload('Danielito Ricalde Rivera').setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="ackUdpOutboundChannelAdapterChannel" auto-startup="true">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="ackUdpOutboundChannelAdapterChannel">
+<!-- 	    <int:interceptors> -->
+<!-- 	        <ref bean="myChannelInterceptor" /> -->
+<!-- 	    </int:interceptors> -->
+	</int:channel>
+
+	<int-ip:udp-outbound-channel-adapter id="ackUdpOutboundChannelAdapter" host="localhost" port="11111" multicast="false" check-length="true"
+		channel="ackUdpOutboundChannelAdapterChannel" ack-host="localhost" ack-port="12312" ack-timeout="5000" acknowledge="true" />
+
+	<int-ip:udp-inbound-channel-adapter id="ackUdpInboundChannelAdapter" channel="ackUdpInboundChannelAdapterChannel" multicast="false" port="11111"
+		check-length="true" receive-buffer-size="500" />
+
+	<int:channel id="ackUdpInboundChannelAdapterChannel">
+<!-- 	    <int:interceptors> -->
+<!-- 	        <ref bean="myChannelInterceptor" /> -->
+<!-- 	    </int:interceptors> -->
+	</int:channel>
+	
+	<int:outbound-channel-adapter id="ackUdpOutboundChannelAdapterChannelOutboundChannelAdapter" channel="ackUdpInboundChannelAdapterChannel"
+	    ref="channelAdapterReceiver" method="receiveMessage" auto-startup="true" />
+
+</beans>

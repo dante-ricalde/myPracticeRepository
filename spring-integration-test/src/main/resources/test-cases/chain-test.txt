@@ -1,0 +1,11 @@
+Chain
+
+	- test the first example but without the property throw-exception-on-rejection of
+	  the filter to test if the messages are not processed by the rest of the chandler of 
+	  chain.
+	- test the same example but with another filter (namely with two filter) with a different
+	  acceptance criteria to test the property throw-exception-on-rejection and to test
+	  if the message is then processed by the second filter.
+	- test a chain with nested-chain's.
+	- test a chain with the nested version of a <gateway> element.	
+	

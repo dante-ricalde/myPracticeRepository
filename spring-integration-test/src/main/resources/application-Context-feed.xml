@@ -1,0 +1,51 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd">
+
+	<!-- In this case I am testing a feed-inbound-channel-adapter to retrieve news feeds from the BBC's url specified as url. Each 10 seconds this adapter is releasing 2 feeds (as the 
+		default behaviour is: When an Inbound Feed adapter is started, it does the first poll and receives a com.sun.syndication.feed.synd.SyndEntryFeed instance. That is an object that contains 
+		multiple SyndEntry objects. Each entry is stored in the local entry queue and is released based on the value in the max-messages-per-poll attribute such that each Message will contain 
+		a single entry. If during retrieval of the entries from the entry queue the queue had become empty, the adapter will attempt to update the Feed thereby populating the queue with more 
+		entries (SyndEntry instances) if available. Otherwise the next attempt to poll for a feed will be determined by the trigger of the poller (e.g., every 10 seconds in the above configuration)). 
+		I have configured a metada-store so that the adapter can store various types of generic-metadata, in this case is storing the published date of the last feed entry that has been processed 
+		to help components such as this Feed adapter to deal with duplicates (Every time a new Message is generated and sent, Spring Integration will store the value of the latest published 
+		date in an instance of the org.springframework.integration.store.MetadataStore strategy). The file name generated by this PropertiesPersistingMetadataStore is named by default "metadata-store.properties" -->
+
+	<int-feed:inbound-channel-adapter id="feedAdapter" channel="feedChannel" url="http://feeds.bbci.co.uk/news/rss.xml" metadata-store="metadataStore"
+		auto-startup="true">
+		<int:poller fixed-rate="10000" max-messages-per-poll="2" />
+	</int-feed:inbound-channel-adapter>
+
+	<int:channel id="feedChannel" />
+
+	<int:outbound-channel-adapter id="feedAdapterOutboundChannelAdapter" channel="feedChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="true" />
+
+	<bean id="metadataStore" class="org.springframework.integration.store.PropertiesPersistingMetadataStore">
+		<property name="baseDirectory" value="src/main/resources/META-INF/spring/" />
+	</bean>
+
+</beans>

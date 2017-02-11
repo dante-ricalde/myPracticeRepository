@@ -1,0 +1,370 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a simple transformer, the transformer only changes the payment type by the header value called 'anotherPaymentType' returning a new message. If the 
+		type of a inbound message is CASH, the transformer in this case returns a new message with the payment type changed by 'CREDIT', if the message is 'CREDIT' is changed by 'PERSONAL CHECK'. -->
+	<int:inbound-channel-adapter id="toTestASimpleTransfomerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="toTestAsimpleTransformerInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestAsimpleTransformerInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:transformer id="toTestASimpleTransfomer" input-channel="toTestAsimpleTransformerInputDirectChannel" output-channel="toTestAsimpleTransformerOutputChannel"
+		ref="simpleTransformer" auto-startup="false" />
+
+	<int:channel id="toTestAsimpleTransformerOutputChannel" />
+
+	<int:outbound-channel-adapter id="toTestAsimpleTransformerOutboundChannelAdapter" channel="toTestAsimpleTransformerOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- This case is the same as the previous one, the difference is that in this case we are using a expression instead of a ref implementation. In this case the transformer returns 
+		a new message with its payment type changed by its header value called 'anotherPaymentType'. The transformer as in the previous case returns a new message with the payment type changed, 
+		but besides with all headers included, too. I know that is a different message because the id of the new message is different from the original message (the message which entered on 
+		the transformer input channel). -->
+	<int:inbound-channel-adapter id="toTestATransformerWithAnExpressionInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="toTestATransformerWithAnExpressionInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestATransformerWithAnExpressionInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:transformer id="toTestATransformerWithAnExpressionTransformer" input-channel="toTestATransformerWithAnExpressionInputDirectChannel" output-channel="oTestATransformerWithAnExpressionOutputChannel"
+		expression="payload.paymentType=headers.anotherPaymentType" auto-startup="false" />
+
+	<int:channel id="oTestATransformerWithAnExpressionOutputChannel" />
+
+	<int:outbound-channel-adapter id="toTestATransformerWithAnExpressionOutboundChannelAdapter" channel="oTestATransformerWithAnExpressionOutputChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- This case is the same as the previous ones. The only difference is that We are using a ref implementation that returns a new message in its totality, namely without the headers 
+		of the original message included (We have done a new Message to return in the ref implementation) -->
+	<int:inbound-channel-adapter id="toTestATransformerThatReturnsANewMessageInItsTotalityInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="toTestATransformerThatReturnsANewMessageInItsTotalityInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestATransformerThatReturnsANewMessageInItsTotalityInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:transformer id="toTestATransformerThatReturnsANewMessageInItsTotalityTransformer" input-channel="toTestATransformerThatReturnsANewMessageInItsTotalityInputDirectChannel"
+		output-channel="toTestATransformerThatReturnsANewMessageInItsTotalityOutputChannel" ref="simpleTransformerThatReturnsANewMessageInItsTotality" auto-startup="false" />
+
+	<int:channel id="toTestATransformerThatReturnsANewMessageInItsTotalityOutputChannel" />
+
+	<int:outbound-channel-adapter id="toTestATransformerThatReturnsANewMessageInItsTotalityOutboundChannelAdapter" channel="toTestATransformerThatReturnsANewMessageInItsTotalityOutputChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an object to string transformer. The object to string transformer invokes the toString() operation on the inbound message payload, then the result 
+		is written to a file. the outbound channel adapter of the file namespace writes each message to 1 file, namely every message in a different file. -->
+	<int:inbound-channel-adapter id="toTestAnObjectToStringTransformerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="toTestAnObjectToStringTransformerInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="toTestAnObjectToStringTransformerInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:object-to-string-transformer id="toTestAnObjectToStringTransformer" input-channel="toTestAnObjectToStringTransformerInputDirectChannel"
+		output-channel="toTestAnObjectToStringTransformerOutputChannel" auto-startup="false" />
+
+	<int:channel id="toTestAnObjectToStringTransformerOutputChannel" />
+
+	<int-file:outbound-channel-adapter id="toTestAnObjectToStringTransformerOutboundChannelAdapter" channel="toTestAnObjectToStringTransformerOutputChannel"
+		directory="tmp" auto-startup="false" />
+
+	<!-- In this case we are testing a simple payload serializing transformer. This transformer simply serializes an object to a byte array using standard java serialization by default. 
+		Each message serialized is written in a file. -->
+	<int:inbound-channel-adapter id="simplePayloadSerializingTransformerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="simplePayloadSerializingTransformerInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simplePayloadSerializingTransformerInputDirectChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:payload-serializing-transformer id="simplePayloadSerializingTransformer" input-channel="simplePayloadSerializingTransformerInputDirectChannel"
+		output-channel="simplePayloadSerializingTransformerOutputChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:payload-serializing-transformer>
+
+	<int:channel id="simplePayloadSerializingTransformerOutputChannel" />
+
+	<int-file:outbound-channel-adapter id="simplePayloadSerializingTransformerOutboundChannelAdapter" channel="simplePayloadSerializingTransformerOutputChannel"
+		directory="tmp" auto-startup="false" />
+
+	<!-- In this case we are testing a payload deserializing transformer. First we are serializing the payload of the messages and writting to the tmp directory, then we are consuming 
+		the files from the directory and send them to a channel, then a transfomer transforms those message whose payload are instances of java.io.File to byte array and send the bytes to a 
+		channel, then with our payload-desrializing-transformer we turn the bytes into an object (in this case the type Payload), then the final messages whose are instances of payload are 
+		consumed by an outbound-channel-adapter. You must take into account that when print the messages in the outbound channel adapter the messages only have the payload from the original 
+		messages (the ones produced the first time by the inbound channel adapter) and the headers are missing and this is so because when we write the bytes to a file with the file-outbound-channel-adapter 
+		we only write the payload because previuosly the messages were turned into bytes by the payload-serializing-transformer and this transformer only converts the payload of the messages, 
+		not the headers. Another aspect to consider is that when the file-inbound-channel-adapter consumes the files from the directory the files are not removed. -->
+	<int:inbound-channel-adapter id="simplePayloadDeserializingTransformerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="simplePayloadDeserializingTransformerInputQueueChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simplePayloadDeserializingTransformerInputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:payload-serializing-transformer id="simplePayloadDeserializingSerializingTransformer" input-channel="simplePayloadDeserializingTransformerInputQueueChannel"
+		output-channel="simplePayloadDeserializingTransformerOutputChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:payload-serializing-transformer>
+
+	<int:channel id="simplePayloadDeserializingTransformerOutputChannel" />
+
+	<int-file:outbound-channel-adapter id="simplePayloadDeserializingTransformerFileOutboundChannelAdapter" channel="simplePayloadDeserializingTransformerOutputChannel"
+		directory="tmp" auto-startup="false" />
+
+	<int-file:inbound-channel-adapter id="simplePayloadDeserializingTransformerFileInboundChannelAdapter" directory="tmp"
+		channel="simplePayloadDeserializingTransformerFileInputChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int-file:inbound-channel-adapter>
+
+	<int:channel id="simplePayloadDeserializingTransformerFileInputChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:transformer id="simplePayloadDeserializingGenericTransformer" input-channel="simplePayloadDeserializingTransformerFileInputChannel" output-channel="simplePayloadDeserializingTransformerBytesOutputChannel"
+		expression="T(org.apache.commons.io.FileUtils).readFileToByteArray(payload)" auto-startup="false" />
+
+	<int:channel id="simplePayloadDeserializingTransformerBytesOutputChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:payload-deserializing-transformer id="simplePayloadDeserializingTransformer" input-channel="simplePayloadDeserializingTransformerBytesOutputChannel"
+		output-channel="simplePayloadDeserializingTransformerFileOutputChannel" auto-startup="false" />
+
+	<int:channel id="simplePayloadDeserializingTransformerFileOutputChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="simplePayloadDeserializingTransformerOutboundChannelAdapter" channel="simplePayloadDeserializingTransformerFileOutputChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- In this case we are testing an Object-to-Map transformer. The object hierarchy is introspected to the most primitive types (String, int, etc). The path to this type is described 
+		via SpEL, which becomes the key in the transformed Map, the primitive type becomes the value. Eg.: [Payload={child.nickNames[1]=chatiboro, child.nickNames[2]=chatiboris, child.name=Dantito, 
+		child.nickNames[0]=chato, name=Dante}][Headers={timestamp=1354164747703, id=5648df74-6938-4d15-8348-2a4817cb5b4e, history=objectToMapTransformerInboundChannelAdapter,objectToMapTransformerInputDirectChannel,objectToMapTransformer,objectToMapTransformerOutputQueueChannel,objectToMapTransformerOutboundChannelAdapter}], 
+		and this map is generated form the following object: new Parent(new Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'). -->
+	<int:inbound-channel-adapter id="objectToMapTransformerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')"
+		channel="objectToMapTransformerInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+
+	<int:object-to-map-transformer id="objectToMapTransformer" input-channel="objectToMapTransformerInputDirectChannel" output-channel="objectToMapTransformerOutputQueueChannel"
+		auto-startup="false" />
+
+	<int:channel id="objectToMapTransformerOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="objectToMapTransformerOutboundChannelAdapter" channel="objectToMapTransformerOutputQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing a map-to-object-transformer, this transformer receives a map where the key is the field name and the value is the field value. In 
+		this case the map is generated by a object-to-map-transformer, then the same map is consumed by the map-to-object transformer. In this case the original type 
+		converted to map by the object-to-map-transformer is Parent and the object to which the map is converted by the map-to-object-transformer is the same one.
+	 -->
+	<!-- 
+ 	org.springframework.expression.spel.SpelEvaluationException: EL1062E:(pos 79): Using an initializer to build a multi-dimensional array is not currently supported
+
+	<int:inbound-channel-adapter id="mapToObjectTransformerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ?  T(org.apache.commons.collections.MapUtils).toMap(new String[][] {{'child.nickNames[1]', 'chatiboro'}, {'child.nickNames[2]', 'chatiboris'}, {'child.name', 'Dantito'}, {'child.nickNames[0]', 'chato'}, {'name', 'Dante'}}) : T(org.apache.commons.collections.MapUtils).toMap(new String[][] {{'child.nickNames[1]', 'chatiboro'}, {'child.nickNames[2]', 'chatiboris'}, {'child.name', 'Dantito'}, {'child.nickNames[0]', 'chato'}, {'name', 'Dante'}})"
+		channel="mapToObjectTransformerInputQueueChannel" auto-startup="true">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+	 -->
+
+	<int:inbound-channel-adapter id="mapToObjectTransformerInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')"
+		channel="mapToObjectTransformerInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+
+	<int:object-to-map-transformer id="mapToObjectTransformerObjectToMapTransformer" input-channel="mapToObjectTransformerInputDirectChannel" output-channel="mapToObjectTransformerOutputQueueChannel"
+		auto-startup="false" />
+
+	<int:channel id="mapToObjectTransformerOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:map-to-object-transformer id="mapToObjectTransformer" input-channel="mapToObjectTransformerOutputQueueChannel" output-channel="mapToObjectTransformerOutputDirectChannel"
+		type="spring.integration.test.var.Parent" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:map-to-object-transformer>
+
+	<int:channel id="mapToObjectTransformerOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="mapToObjectTransformerOutboundChannelAdapter" channel="mapToObjectTransformerOutputDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+		
+	<!-- This case is the same as the previous one, the only difference is that in this case the original type converted to map by the object-to-map-transformer is Parent
+	 and the object to which the map is converted by the map-to-object-transformer is Father and this is got by us because the SpEL-based Map allows you to describe
+	 the object structure without sharing the actual types allowing you to restore/rebuild the object graph into a differently typed Object graph as long as you maintain
+	 the structure. -->
+	<int:inbound-channel-adapter id="mapToObjectTransformerForADifferentTypeInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')"
+		channel="mapToObjectTransformerForADifferentTypeInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+
+	<int:object-to-map-transformer id="mapToObjectTransformerForADifferentTypeObjectToMapTransformer" input-channel="mapToObjectTransformerForADifferentTypeInputDirectChannel" output-channel="mapToObjectTransformerForADifferentTypeOutputQueueChannel"
+		auto-startup="false" />
+
+	<int:channel id="mapToObjectTransformerForADifferentTypeOutputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:map-to-object-transformer id="mapToObjectTransformerForADifferentTypeTransformer" input-channel="mapToObjectTransformerForADifferentTypeOutputQueueChannel" output-channel="mapToObjectTransformerForADifferentTypeOutputDirectChannel"
+		type="spring.integration.test.var.Father" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:map-to-object-transformer>
+
+	<int:channel id="mapToObjectTransformerForADifferentTypeOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="mapToObjectTransformerForADifferentTypeOutboundChannelAdapter" channel="mapToObjectTransformerForADifferentTypeOutputDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+	
+	<!-- In this case we are testing an object-to-json-transformer, the transformer receives an object and converts it to json, then the json
+		(which is a string is received by a outbound channel adapter)-->
+	<int:inbound-channel-adapter id="objectToJsonTransformerInboundChannelAdapter" channel="objectToJsonTransformerInputQueueChannel" 
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="objectToJsonTransformerInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel> 
+	
+	<int:object-to-json-transformer id="objectToJsonTransformer" input-channel="objectToJsonTransformerInputQueueChannel" 
+		output-channel="objectToJsonTransformerOutputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:object-to-json-transformer>
+	
+	<int:channel id="objectToJsonTransformerOutputDirectChannel" />
+	
+	<int:outbound-channel-adapter id="objectToJsonTransformerOutboundChannelAdapter" channel="objectToJsonTransformerOutputDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+		
+	<!--  In this case we are testing a json-to-object-transformer. The original message generated by the inbound channel adapter is of Parent type, then that message
+		is converted into json type, then the json type is transformed to a Father type by the json-to-object-transformer, at end the message is received by a 
+		outbound channel adapter. The json-to-object-transformer uses a custom object mapper using a simple factory method to configure 'ALLOW_COMMENTS' feature
+		when parsing JSON.
+	-->
+	<int:inbound-channel-adapter id="jsonToObjectTransformerInboundChannelAdapter" channel="jsonToObjectTransformerInputQueueChannel" 
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="jsonToObjectTransformerInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel> 
+	
+	<int:object-to-json-transformer id="jsonToObjectTransformerObjectToJsonTransformer" input-channel="jsonToObjectTransformerInputQueueChannel" 
+		output-channel="jsonToObjectTransformerObjectToJsonTransformerOutputChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="1" />
+	</int:object-to-json-transformer>
+	
+	<int:channel id="jsonToObjectTransformerObjectToJsonTransformerOutputChannel" />
+	
+	<int:json-to-object-transformer id="jsonToObjectTransformer" input-channel="jsonToObjectTransformerObjectToJsonTransformerOutputChannel" output-channel="jsonToObjectTransformerOutputDirectChannel" 
+		object-mapper="customObjectMapper" type="spring.integration.test.var.Father" auto-startup="false" />
+		
+	<bean id="customObjectMapper" class="spring.integration.test.mapper.factory.ObjectMapperFactory" factory-method="getMapper" />
+	
+	<int:channel id="jsonToObjectTransformerOutputDirectChannel" />
+	
+	<int:outbound-channel-adapter id="jsonToObjectTransformerOutboundChannelAdapter" channel="jsonToObjectTransformerOutputDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+		
+	<!--  In this case we are testing a simple Header Filter. A Header Filter is an endpoint which allows you to specify certain header names that should be removed 
+		from the output Message. In this case this header filter is removing the header called 'anotherPaymentType' from the original message generated by the inbound 
+		channel adapter. -->
+	<int:inbound-channel-adapter id="headerFilterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CASH')).setHeader('anotherPaymentType', 'DEBIT').setHeader('adittionalPaymentType', 'CHECK').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.PaymentType('CREDIT')).setHeader('anotherPaymentType', 'PERSONAL CHECK').setHeader('adittionalPaymentType', 'CERTIFICATE').build()"
+		channel="headerFilterInputDirectChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="headerFilterInputDirectChannel">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+	
+	<int:header-filter id="headerFilter" input-channel="headerFilterInputDirectChannel" output-channel="headerFilterOutputDirectChannel" 
+		 header-names="anotherPaymentType" auto-startup="false" />
+	
+	<int:channel id="headerFilterOutputDirectChannel" />
+	
+	<int:outbound-channel-adapter id="headerFilterOutboundChannelAdapter" channel="headerFilterOutputDirectChannel" ref="channelAdapterReceiver" 
+		method="receiveMessage" auto-startup="false" />
+
+</beans>

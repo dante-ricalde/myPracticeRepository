@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case We have declared a bridge between the inputSimpleDirectChannel and the outputSimpleDirectChannel. The inbound channel adapter is using the global poller "defaultPoller". 
+		Before the message is sent, the global "spring.integration.test.interceptor.MyGlobalChannelInterceptor" interceptors intercept the message together with the wire-tap interceptor who 
+		uses the logging channel adapter "fullLogger". All this process occurs in the same thread, since the message is created by the expression of the inbound channel adapter when the global 
+		poller with the default task executor has executed it. By default there is a thread executing in any given time, because the pool size of a default task executor is 1, but If the default 
+		task executor is overloaded it may open another threads because its max size is Integer.MAX_VALUE. -->
+	<int:inbound-channel-adapter id="bsimpleInboundChannelAdapter" expression="'this message is going out through wall'" channel="binputSimpleDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="binputSimpleDirectChannel" />
+
+	<int:channel id="boutputSimpleDirectChannel" />
+
+	<int:bridge id="bsimpleBridge" input-channel="binputSimpleDirectChannel" output-channel="boutputSimpleDirectChannel" />
+
+	<int:outbound-channel-adapter id="bsimpleOutboundChannelAdapter" channel="boutputSimpleDirectChannel" ref="channelAdapterReceiver" method="receiveMessage" />
+
+	<!-- In this case we are connecting a PollableChannel to a SuscribableChannel. The b2simpleInboundChannelAdapter inbound channel adapter has a default poller which its default task 
+		executor opens a thread to execute the createMessage method every 2 seconds and to send a message to the binputsimplePollableChannel pollable channel. When the message arrives to the 
+		pollable channel the thread sender will return immediately (even if no receiver is ready to handle the message; if the queue has reached capacity, then the sender will block until room 
+		is available or timeout elapsed if is specified). On the other hand, the bridge binputsimplePollableChannel (which is connecting the PollableChannel to the SuscribableChannel) will 
+		open a thread (its poller's default task executor) every seven seconds to pass the message of the input-channel to the output-channel, and as the output channel is a publish-subscribe-channel 
+		and doesn't have a task executor will publish in the same thread opened previously, namely will execute the receiveMessage method of the two outbound channel adapter to broadcast them 
+		the message (in the same thread opened previously). As you can see the messaging bridge is serving as a throttler and the subscribing endpoints (the two outbound channel adapter) do 
+		not have to worry about the polling configuration because this bridge provides it. -->
+	<int:inbound-channel-adapter id="b2simpleInboundChannelAdapter" ref="channelAdapterSender" method="createMessage" channel="binputsimplePollableChannel"
+		auto-startup="false" />
+
+	<int:channel id="binputsimplePollableChannel">
+		<int:queue capacity="20" />
+	</int:channel>
+
+	<int:publish-subscribe-channel id="boutputSimpleSuscribableChannel" />
+
+	<int:bridge input-channel="binputsimplePollableChannel" output-channel="boutputSimpleSuscribableChannel" auto-startup="false">
+		<int:poller fixed-rate="7000" max-messages-per-poll="10" />
+	</int:bridge>
+
+	<int:outbound-channel-adapter id="b2simpleOutboundChannelAdapter" channel="boutputSimpleSuscribableChannel" ref="channelAdapterReceiver" method="receiveMessage" />
+
+	<int:outbound-channel-adapter id="b3simpleOutboundChannelAdapter" channel="boutputSimpleSuscribableChannel" ref="channelAdapterReceiver" method="receiveMessage" />
+
+	<!-- In this case We are connecting a direct channel (inputStreamChannel) with a stdout channel adapter (really with the direct channel created by default for the stdout channel adapter, 
+		who has the same name) through the "echo" bridge. The stdin-channel-adapter is reading from the System.in, in this case is reading from a input stream through the "byteStreamReadingMessageSource" 
+		message source, the stdin channel adapter sends the message to the "inputStreamChannel" direct channel, then the bridge sends it to the stdout direct channel created by default for 
+		the stdout channel adapter (this direct channel created has the same name that the stdout channel adapter, too), then the stdout channel adapter receives the messages and it writes 
+		it to the console (The stdout adapter writes to the system’s STDOUT output stream (typically, this describes the stream that controls what shows up on the system’s command line). All 
+		this process occurs in the same thread (all the communication occurs in a single thread), namely the default task executor of stdin channel adapter' poller opens a tread, in the thread, 
+		it reads from the input stream, it sends it to "inputStreamChannel" directChannel, then the bridge sends it to the stdout direct channel and the stdout channel adapter handles the message 
+		to writes it to the console, when this handler method (the handler of the stdout channel adapter) finishes executing, the send() method of the "inputStreamChannel" direct channel continues 
+		its executing, as you can see all this process occurs in the thread opened by the default task executor of stdin channel adapter' poller. -->
+
+	<bean id="inputStream" class="java.io.ByteArrayInputStream">
+		<constructor-arg value="Hola Esto es una prueba de enviar un texto a través de un input stream" />
+	</bean>
+
+	<bean id="byteStreamReadingMessageSource" class="org.springframework.integration.stream.ByteStreamReadingMessageSource" p:bytesPerMessage="10">
+		<constructor-arg ref="inputStream" />
+	</bean>
+
+	<int:channel id="inputStreamChannel" />
+
+	<int-stream:stdin-channel-adapter id="stdin" auto-startup="false" charset="UTF-8" channel="inputStreamChannel">
+		<int:poller fixed-rate="1000" />
+	</int-stream:stdin-channel-adapter>
+
+	<int-stream:stdout-channel-adapter id="stdout" auto-startup="false" append-newline="true" charset="UTF-8" />
+
+	<int:bridge id="echo" input-channel="inputStreamChannel" output-channel="stdout" />
+
+	<!-- In this case we are connecting 2 direct channels between a bridge. The only difference in the bridge configuration is that we are not specifying a output-channel, in those cases 
+		the bridge will use the reply channel provided by the inbound message. The remaining configuration doesn't have any special aspect. The inbound channel adapter is using a global poller 
+		"defaultPoller". For all the process there is always a single thread, the thread opened by the default poller's task executor. The task executor open a thread which generates the message 
+		in the oubound channel adapter, then it send it to the input direct channel, then the bridge send it to the output channel so that the output channel adapter consumes it with the method 
+		receiveMessage. All you can see, all this process happens in a single thread. -->
+	<int:inbound-channel-adapter id="simpleInboundChannelAdapterToTestABridgeWithoutAOutputChannel" expression="'this message is going out through wall'"
+		channel="simpleInputDirectChannelToTestABridgeWithoutAOutputChannel" auto-startup="false" />
+
+	<int:channel id="simpleInputDirectChannelToTestABridgeWithoutAOutputChannel">
+		<int:interceptors>
+			<int:ref bean="myGlobalChannelInterceptorToTestABridgeWithoutAOutputChannel" />
+		</int:interceptors>
+	</int:channel>
+
+	<bean id="myGlobalChannelInterceptorToTestABridgeWithoutAOutputChannel" class="spring.integration.test.interceptor.MyGlobalChannelInterceptor" p:replyChannel-ref="simpleOutputDirectChannelToTestABridgeWithoutAOutputChannel"
+		p:number="1" />
+
+	<int:channel id="simpleOutputDirectChannelToTestABridgeWithoutAOutputChannel" />
+
+	<int:outbound-channel-adapter id="simpleOutboundChannelAdapterToTestABridgeWithoutAOutputChannel" channel="simpleOutputDirectChannelToTestABridgeWithoutAOutputChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+	</int:outbound-channel-adapter>
+
+	<int:bridge id="bridgeWithoutOutputChannel" input-channel="simpleInputDirectChannelToTestABridgeWithoutAOutputChannel" output-channel="" auto-startup="false" />
+
+</beans>

@@ -1,0 +1,88 @@
+@CHARSET "UTF-8"
+; .chat-window
+{ .text-align:
+center; .}  .
+chat-window .cha
+t-text-messages
+{ .width: 97%;.
+ padding: 5px;.
+ height: 56%; 
+.font-size: 0.8e
+m; .background-
+color: #D9D3D0;.
+ text-align: le
+ft; .overflow:
+scroll; }  .c
+hat-window input
+{ .width: 99%;
+ .margin: 20px;
+ .margin-left:
+0px; .display:
+block; }  .ch
+at-window button
+{  .}  .mes
+sage { .display
+: table; .width
+: 100%; }  .c
+hat-message { .
+padding: 4px !im
+portant; .margi
+n: 4px !importan
+t;  color: bla
+ck; .border-rad
+ius: 7.5px; .di
+splay: block; .
+max-width: 90%;.
+.}  .chat-rece
+ived-message { 
+ margin-left: -
+1px !important;.
+ background-col
+or: white;  fl
+oat: left; .} 
+ .chat-sent-mes
+sage {  margin
+-right: -1px !im
+portant; .backg
+round-color: #D5
+F2D0;  float:
+right; .}  .c
+hat-message-time
+{ .color: gray
+; .font-size: 0
+.7em; .margin-l
+eft: 3px; .marg
+in-right: 3px; 
+}  .message >
+.tail-container
+{ .width: 12px;
+  height: 19
+px;  content
+: '';  backg
+round-position:
+50% 50%;  di
+splay: block; }
+  .received-me
+ssage > .tail-co
+ntainer { .back
+ground-image: ur
+l(' /public/tai
+l-container-high
+light-white.png'
+);   floa
+t: left;   
+}   .sent-mess
+age > .tail-cont
+ainer { .backgr
+ound-image: url(
+" /public/tail-
+container-highli
+ght.png");  
+float: right
+; }  .chat-me
+ssage-tick.defau
+lt { .color: gr
+ay; }  .chat-
+message-tick.rea
+d { .color: .#0
+; }

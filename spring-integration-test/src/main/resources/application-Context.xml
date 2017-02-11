@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<import resource="classpath:applicationContext-commons.xml" />
+	<import resource="classpath:application-Context-channels.xml" />
+	<import resource="classpath:application-Context-adapters.xml" />
+	<import resource="classpath:application-Context-bridges.xml" />
+	<import resource="classpath:application-Context-routers.xml" />
+	<!-- <import resource="classpath:application-Context-filters.xml" /> -->
+	<!-- <import resource="classpath:application-Context-splitters.xml" /> -->
+	<!-- <import resource="classpath:application-Context-aggregator.xml" /> -->
+	<!-- <import resource="classpath:application-Context-resequencer.xml" /> -->
+	<!-- <import resource="classpath:application-Context-chain.xml" /> -->
+	<!-- <import resource="classpath:application-Context-transformer.xml" /> -->
+	<!-- <import resource="classpath:application-Context-header-enricher.xml" /> -->
+	<!-- <import resource="classpath:application-Context-payload-enricher.xml" /> -->
+	<!-- <import resource="classpath:application-Context-claim-check.xml" /> -->
+	<!-- <import resource="classpath:application-Context-gateway.xml" /> -->
+	<!-- <import resource="classpath:application-Context-delayer.xml" /> -->
+	<!-- <import resource="classpath:application-Context-scripting.xml" /> -->
+	<!-- <import resource="classpath:application-Context-http-inbound-gateway.xml" /> -->
+	<!-- <import resource="classpath:application-Context-http-outbound-gateway.xml" /> -->
+	<!-- <import resource="classpath:application-Context-behavior-to-endpoints.xml" /> -->
+	<!-- <import resource="classpath:application-Context-file.xml" /> -->
+	<!-- <import resource="classpath:application-Context-ftp.xml" /> -->
+	<!-- <import resource="classpath:application-Context-amqp.xml" /> -->
+	<!-- <import resource="classpath:application-Context-amqp-gateway.xml" /> -->
+	<!-- <import resource="classpath:application-Context-event.xml" /> -->
+	<!-- <import resource="classpath:application-Context-feed.xml" /> -->
+	<!-- <import resource="classpath:config/gemfire/application-Context-gemfire.xml" /> -->
+	<!-- <import resource="classpath:config/gemfire/application-Context-gemfire-client.xml" /> -->
+	<!-- <import resource="classpath:config/gemfire/application-Context-gemfire-client-message-store.xml" /> -->
+	<!-- <import resource="classpath:config/udp/application-Context-udp.xml" />  -->
+	<!-- 	<import resource="classpath:config/tcp/application-Context-tcp.xml" /> -->
+	<!-- 	<import resource="classpath:config/tcp/application-Context-tcp-gateway.xml" /> -->
+	<!-- 	<import resource="classpath:config/tcp/application-Context-tcp-gateway-ssl-tls-support.xml" /> -->
+	<!-- 	<import resource="classpath:config/jdbc/application-Context-jdbc-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jdbc/application-Context-jdbc-outbound-gateway.xml" /> -->
+	<!-- 	<import resource="classpath:config/jdbc/application-Context-jdbc-message-store.xml" /> -->
+	<!-- 	<import resource="classpath:config/jdbc/application-Context-jdbc-stored-procedure-inbound-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jdbc/application-Context-jdbc-stored-procedure-outbound-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jdbc/application-Context-jdbc-stored-procedure-outbound-gateway.xml" /> -->
+	<!-- 	<import resource="classpath:config/jpa/application-Context-jpa-java-configuration.xml" /> -->
+	<!-- 	<import resource="classpath:config/jpa/application-Context-jpa-inbound-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jpa/application-Context-jpa-outbound-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jpa/application-Context-jpa-outbound-gateway.xml" /> -->
+	<!-- 	<import resource="classpath:config/jms/application-Context-jms-inbound-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jms/application-Context-jms-outbound-channel-adapter.xml" /> -->
+	<!-- 	<import resource="classpath:config/jms/application-Context-jms-inbound-gateway.xml" /> -->
+<!-- 		<import resource="classpath:config/jms/application-Context-jms-outbound-gateway.xml" /> -->
+<!-- 		<import resource="classpath:config/jms/application-Context-jms-backed-message-channel.xml" /> -->
+<!-- 	<import resource="classpath:config/mail/application-Context-mail-outbound-channel-adapter.xml" /> -->
+<!-- 	<import resource="classpath:config/mail/application-Context-mail-inbound-channel-adapter.xml" /> -->
+<!-- 	<import resource="classpath:config/mqtt/application-Context-mqtt-channel-adapter.xml" /> -->
+
+	<context:component-scan base-package="spring.integration.test" />
+
+	<int:annotation-config />
+
+	<!-- **************************************** CONTROL BUS ******************************************** -->
+	<int:channel id="operationChannel" />
+
+	<int:control-bus input-channel="operationChannel" />
+
+	<!-- ********************************* EXPORT TO JMX ************************************************** -->
+<!-- 	<context:mbean-server /> -->
+<!-- 	<int-jmx:mbean-export id="integrationMBeanExporter" default-domain="spring.integration.application.sample" /> -->
+<!-- 	<context:mbean-export default-domain="spring.integration.application.sample" /> -->
+
+	<int:message-history />
+
+	<context:property-placeholder location="classpath:/META-INF/spring/amqpMarketData.properties" />
+
+</beans>

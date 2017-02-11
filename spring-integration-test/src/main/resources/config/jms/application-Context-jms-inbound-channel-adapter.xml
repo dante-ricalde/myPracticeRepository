@@ -1,0 +1,577 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:int-jpa="http://www.springframework.org/schema/integration/jpa" xmlns:int-jms="http://www.springframework.org/schema/integration/jms" xmlns:jms="http://www.springframework.org/schema/jms"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.0.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration/jpa http://www.springframework.org/schema/integration/jpa/spring-integration-jpa-3.0.xsd">
+
+	<!-- In this case I am testing a jms-inbound-channel-adapter. You can notice from the configuration that this jms-inbound-channel-adapter is a Polling Consumer and that means that 
+		invokes receive() when triggered (this should only be used in situations where polling is done relatively infrequently and timeliness is not important. For all other situations (a vast 
+		majority of JMS-based use-cases), the message-driven-channel-adapter is a better option). To test this jms-inbound-channel-adapter I have needed a jms-outbound-channel-adapter to send 
+		messages to the queue named 'mmm' so that later those messages can be consumed by the jms-inbound-channel-adapter. In the jms-inbound-channel-adapter I have set the property 'jms-template' 
+		to an instance of JmsTemplate (jmsTemplate), if I don't specify this property a DynamicJmsTemplate is used by default for this adapter and I noticed that when this adapter uses that 
+		template the messages aren't always consumed. In my jmsTemplate I have specified the property 'receiveTimeout' to -1 (JmsTemplate.RECEIVE_TIMEOUT_NO_WAIT) so that the receive operation 
+		doesn't block. An important aspect that I have noticed is that when you see a message in the activemq broker browser you see the following message in the Message Details: : Failed to 
+		build body from content. Serializable class not available to broker. Reason: java.lang.ClassNotFoundException: spring.integration.test.var.Item and for me that message is correct because 
+		in the jms-outbound-channel-adapter the property 'extract-payload' is set to true (which is the default) and when this property is set to true a message converter is used and a ObjectMessage 
+		with a serialized instance (spring.integration.test.var.Item) is created and that ObjectMessage is sent to the queue, and for that reason you see that message because the activemq core 
+		browser doesn't have that class. But when the adapter int-jms:inbound-channel-adapter receives the message (the received JMS Message will be passed through the SimpleMessageConverter 
+		because extract-payload is set to 'true' by default) the JMS ObjectMessage retrieved will produced a Serializable instance by the SimpleMessageConverter which in this case is spring.integration.test.var.Item 
+		and inside tha application that class exists and for that reason you can see the message in the <int:outbound-channel-adapter. Regarding threads We have for the jms-oubound-channel-adapter: 
+		int:inbound-channel-adapter  simpleJmsOutboundChannelAdapterChannel  int-jms:outbound-channel-adapter  activemq bróker and for the jms-inbound-channel-adapter: int-jms:inbound-channel-adapter 
+		 simpleJmsInboundChannelAdapterChannel  int:outbound-channel-adapter Both jms channel adapters are polling consumers and when no task-executor is provided for an endpoint’s poller 
+		the invocation of the handler methods will happen whitin the main executor pool, i.e they will be invoked by one of the main scheduller’s threads. Theory says: (By default Spring Integration 
+		relies on an instance of ThreadPoolTaskScheduler as described in the Task Execution and Scheduling section of the Spring Framework reference manual. That default TaskScheduler will 
+		startup automatically with a pool of 10 threads. If you provide your own TaskScheduler instance instead, you can set the 'autoStartup' property to false, and/or you can provide your 
+		own pool size value). For this reason you always see 10 threads when you debug the threads, and inside each thread there is a Thread.run invoked with the path of calls of the enpoint 
+		what is processing in that moment (but this when no task-executor is provided). -->
+
+	<int:inbound-channel-adapter id="simpleJmsOutboundChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 
+ 		'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('anotherPaymentType', 'DEBIT').build():
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera',
+		'Danielito Ricalde Rivera', 2)).setHeader('anotherPaymentType', 'CREDIT').build()"
+		channel="simpleJmsOutboundChannelAdapterChannel" auto-startup="false">
+		<int:poller fixed-rate="3000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleJmsOutboundChannelAdapterChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-jms:outbound-channel-adapter id="simpleJmsOutboundChannelAdapter" destination-name="mmm" channel="simpleJmsOutboundChannelAdapterChannel"
+		auto-startup="false" />
+
+	<int-jms:inbound-channel-adapter id="simpleJmsInboundChannelAdapter" destination="queue" channel="simpleJmsInboundChannelAdapterChannel"
+		jms-template="jmsTemplate" auto-startup="false">
+		<int:poller fixed-rate="6000" />
+	</int-jms:inbound-channel-adapter>
+
+	<int:channel id="simpleJmsInboundChannelAdapterChannel" />
+
+	<int:outbound-channel-adapter id="simpleJmsInboundChannelAdapterOutboundChannelAdapter" ref="channelAdapterReceiver" method="receiveMessage"
+		channel="simpleJmsInboundChannelAdapterChannel" auto-startup="false" />
+
+	<!-- In this case I am testing  a Message Driven Channel Adapter where an instance of DefaultMessageListenerContainer is created and configured based on the several 
+	properties set in the adapter that pertain to the MessageListener container. In this case I have specified the property ‘acknowledge’ to ‘transacted’ in this adapter 
+	to make the entire flow to be transactional (I could make the poller transactional with a JmsTransactionManager in case of using a Jms Inbound Channel Adapter), that 
+	transacted property is used to create the DefaultMessageListenerContainer. 
+		In this adapter the ‘extra-payload’ property has the same effect as described above, and once again its default value is ‘true’. The poller sub element is not 
+	applicable for a message-driven Channel  Adapter, as it will be actively invoked. For most usage scenarios , the message-driven approach is better since the 
+	Messages will be passed along to the MessageChannel as soon as they are received  from the underlying JMS consumer.
+		This <message-driven-channel-adapter> also accepts the ‘error-channel’ attribute. As this is a ‘channel-adapter’ and not a gateway we are in a one-way flow and 
+	therefore, the flow downstream from the ‘error-channel’ should also be one-way, for example it could simply send to a logging handler, or it could be connected 
+	to a different JMS <outbound-channel-adapter> element, in this case it sends to a Service Activator that logs the message.
+		Regarding the ‘error-channel’, theory says: If a (synchronous) downstream exception is thrown and an error-channel is specified, the MessagingException 
+ 	will be sent to this channel. Otherwise, any such exception will be propagated to the listener container and any 
+ 	JMS transaction will be rolled back. Any synchronous downstream exceptions in the error flow will also cause any 
+ 	JMS transaction to be rolled back and if not downstream exceptions happens that will cause any JMS transaction to be commited.
+	Regarding threads we have:
+	
+		<int:inbound-channel-adapter   simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel  <int-jms:outbound-channel-adapter
+
+	A committed thread:
+	
+		<int-jms:message-driven-channel-adapter  simpleJmsMessageDrivenChannelAdapterChannel  <int:service-activator  System.out
+		
+	Another committed thread:
+	
+	<int-jms:message-driven-channel-adapter  simpleJmsMessageDrivenChannelAdapterChannel  <int:service-activator simpleJmsMessageDrivenChannelAdapterErrorChannel 
+	error: <int:service-activator  System.out
+	
+	Rollbacked thread:
+
+	<int-jms:message-driven-channel-adapter  simpleJmsMessageDrivenChannelAdapterChannel  <int:service-activator  simpleJmsMessageDrivenChannelAdapterErrorChannel  
+	error: <int:service-activator  NumberFormatException: For input string: "Dantito"
+	
+	I have also noticed that the transaction is managed by the ActiveMQSession and org.apache.activemq.TransactionContext, because in this case We are not using a JmsTransacionManager.
+	
+	The logs are:
+	
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, id=a27b2589-1501-4817-8a9b-0c65ea0d7dff, timestamp=1402208576393}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel', message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=ac243f2d-9300-6f27-3819-f07a42802f39, timestamp=1402208576394}]
+		 DEBUG [org.springframework.integration.jms.JmsSendingMessageHandler]  - org.springframework.integration.jms.JmsSendingMessageHandler#1 received message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=ac243f2d-9300-6f27-3819-f07a42802f39, timestamp=1402208576394}]
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - Sending: WireFormatInfo { version=10, properties={MaxFrameSize=9223372036854775807, CacheSize=1024, CacheEnabled=true, Host=localhost, SizePrefixDisabled=false, MaxInactivityDurationInitalDelay=10000, TcpNoDelayEnabled=true, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.InactivityMonitor]  - Using min of local: WireFormatInfo { version=10, properties={MaxFrameSize=9223372036854775807, CacheSize=1024, CacheEnabled=true, Host=localhost, SizePrefixDisabled=false, MaxInactivityDurationInitalDelay=10000, TcpNoDelayEnabled=true, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]} and remote: WireFormatInfo { version=10, properties={CacheSize=1024, MaxFrameSize=104857600, CacheEnabled=true, SizePrefixDisabled=false, TcpNoDelayEnabled=true, MaxInactivityDurationInitalDelay=10000, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - Received WireFormat: WireFormatInfo { version=10, properties={CacheSize=1024, MaxFrameSize=104857600, CacheEnabled=true, SizePrefixDisabled=false, TcpNoDelayEnabled=true, MaxInactivityDurationInitalDelay=10000, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - tcp://localhost/127.0.0.1:61616@59528 before negotiation: OpenWireFormat{version=10, cacheEnabled=false, stackTraceEnabled=false, tightEncodingEnabled=false, sizePrefixDisabled=false, maxFrameSize=9223372036854775807}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - tcp://localhost/127.0.0.1:61616@59528 after negotiation: OpenWireFormat{version=10, cacheEnabled=true, stackTraceEnabled=true, tightEncodingEnabled=true, sizePrefixDisabled=false, maxFrameSize=104857600}
+		 DEBUG [org.springframework.integration.jms.DynamicJmsTemplate]  - Executing callback on JMS Session: ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:23:1,started=false}
+		 DEBUG [org.springframework.integration.jms.DynamicJmsTemplate]  - Sending created message: ActiveMQObjectMessage {commandId = 0, responseRequired = false, messageId = null, originalDestination = null, originalTransactionId = null, producerId = null, destination = null, transactionId = null, expiration = 0, timestamp = 0, arrival = 0, brokerInTime = 0, brokerOutTime = 0, correlationId = null, replyTo = null, persistent = false, type = null, priority = 0, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@18980fb7, marshalledProperties = null, dataStructure = null, redeliveryCounter = 0, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208576394}, readOnlyProperties = false, readOnlyBody = false, droppable = false, jmsXGroupFirstForConsumer = false}
+		 DEBUG [org.apache.activemq.TransactionContext]  - Begin:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:33
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Received message of type [class org.apache.activemq.command.ActiveMQObjectMessage] from consumer [ActiveMQMessageConsumer { value=ID:DanteRicalde-PC-59440-1402208471498-1:2:1:1, started=true }] of session [ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:2:1,started=true}]
+		 DEBUG [org.springframework.integration.jms.ChannelPublishingJmsMessageListener]  - converted JMS Message [ActiveMQObjectMessage {commandId = 5, responseRequired = true, messageId = ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, originalDestination = null, originalTransactionId = null, producerId = ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1, destination = queue://mmm, transactionId = null, expiration = 0, timestamp = 1402208576411, arrival = 0, brokerInTime = 1402208576411, brokerOutTime = 1402208576412, correlationId = null, replyTo = null, persistent = true, type = null, priority = 4, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@272fc3fe, marshalledProperties = org.apache.activemq.util.ByteSequence@30ec6ccb, dataStructure = null, redeliveryCounter = 0, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208576394}, readOnlyProperties = true, readOnlyBody = true, droppable = false, jmsXGroupFirstForConsumer = false}] to integration Message payload [Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, jms_timestamp=1402208576411, jms_redelivered=false, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=16f9eac7-1b8a-6a9c-de90-6d26fbc90c85, timestamp=1402208576414}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09] received message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, jms_timestamp=1402208576411, jms_redelivered=false, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=16f9eac7-1b8a-6a9c-de90-6d26fbc90c85, timestamp=1402208576414}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterErrorChannel', message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=ab11a14c-5700-d3c9-0f85-c74844d23487, timestamp=1402208576415}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@74f7b038] received message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=ab11a14c-5700-d3c9-0f85-c74844d23487, timestamp=1402208576415}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Initiating transaction rollback on application exception
+		 org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:133)
+			at org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor.processMessage(ExpressionEvaluatingMessageProcessor.java:76)
+			at org.springframework.integration.handler.ServiceActivatingHandler.handleRequestMessage(ServiceActivatingHandler.java:71)
+			at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:170)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:78)
+			at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:101)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:97)
+			at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+			at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:255)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:109)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:44)
+			at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:94)
+			at org.springframework.integration.gateway.MessagingGatewaySupport.send(MessagingGatewaySupport.java:204)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener$GatewayDelegate.send(ChannelPublishingJmsMessageListener.java:480)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener.onMessage(ChannelPublishingJmsMessageListener.java:327)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:537)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:497)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:468)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.doReceiveAndExecute(AbstractPollingMessageListenerContainer.java:325)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.receiveAndExecute(AbstractPollingMessageListenerContainer.java:263)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.invokeListener(DefaultMessageListenerContainer.java:1102)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.executeOngoingLoop(DefaultMessageListenerContainer.java:1094)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.run(DefaultMessageListenerContainer.java:991)
+			at java.lang.Thread.run(Thread.java:722)
+		Caused by: java.lang.NumberFormatException: For input string: "Dantito"
+			at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+			at java.lang.Integer.parseInt(Integer.java:492)
+			at java.lang.Integer.valueOf(Integer.java:582)
+			at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+			at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+			at java.lang.reflect.Method.invoke(Method.java:601)
+			at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+			at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+			at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+			at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+			at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+			at org.springframework.expression.spel.ast.Ternary.getValueInternal(Ternary.java:57)
+			at org.springframework.expression.spel.ast.SpelNodeImpl.getTypedValue(SpelNodeImpl.java:114)
+			at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:111)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:159)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:119)
+			... 24 more
+		DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Rollback, txid:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:33
+		 DEBUG [org.apache.activemq.TransactionContext]  - Rollback: TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:33 syncCount: 1
+		 WARN  [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Execution of JMS message listener failed, and no ErrorHandler has been set.
+		 org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:133)
+			at org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor.processMessage(ExpressionEvaluatingMessageProcessor.java:76)
+			at org.springframework.integration.handler.ServiceActivatingHandler.handleRequestMessage(ServiceActivatingHandler.java:71)
+			at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:170)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:78)
+			at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:101)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:97)
+			at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+			at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:255)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:109)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:44)
+			at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:94)
+			at org.springframework.integration.gateway.MessagingGatewaySupport.send(MessagingGatewaySupport.java:204)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener$GatewayDelegate.send(ChannelPublishingJmsMessageListener.java:480)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener.onMessage(ChannelPublishingJmsMessageListener.java:327)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:537)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:497)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:468)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.doReceiveAndExecute(AbstractPollingMessageListenerContainer.java:325)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.receiveAndExecute(AbstractPollingMessageListenerContainer.java:263)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.invokeListener(DefaultMessageListenerContainer.java:1102)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.executeOngoingLoop(DefaultMessageListenerContainer.java:1094)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.run(DefaultMessageListenerContainer.java:991)
+			at java.lang.Thread.run(Thread.java:722)
+		Caused by: java.lang.NumberFormatException: For input string: "Dantito"
+			at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+			at java.lang.Integer.parseInt(Integer.java:492)
+			at java.lang.Integer.valueOf(Integer.java:582)
+			at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+			at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+			at java.lang.reflect.Method.invoke(Method.java:601)
+			at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+			at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+			at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+			at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+			at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+			at org.springframework.expression.spel.ast.Ternary.getValueInternal(Ternary.java:57)
+			at org.springframework.expression.spel.ast.SpelNodeImpl.getTypedValue(SpelNodeImpl.java:114)
+			at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:111)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:159)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:119)
+			... 24 more
+		DEBUG [org.apache.activemq.util.ThreadPoolUtils]  - Shutdown of ExecutorService: java.util.concurrent.ThreadPoolExecutor@1bdab192[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0] is shutdown: true and terminated: true took: 0.000 seconds.
+		 DEBUG [org.apache.activemq.transport.tcp.TcpTransport]  - Stopping transport tcp://localhost/127.0.0.1:61616@59528
+		 DEBUG [org.apache.activemq.thread.TaskRunnerFactory]  - Initialized TaskRunnerFactory[ActiveMQ Task] using ExecutorService: java.util.concurrent.ThreadPoolExecutor@32bff687[Running, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0]
+		 DEBUG [org.apache.activemq.transport.tcp.TcpTransport]  - Closed socket Socket[addr=localhost/127.0.0.1,port=61616,localport=59528]
+		 DEBUG [org.apache.activemq.util.ThreadPoolUtils]  - Forcing shutdown of ExecutorService: java.util.concurrent.ThreadPoolExecutor@32bff687[Running, pool size = 1, active threads = 0, queued tasks = 0, completed tasks = 1]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel', message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=ac243f2d-9300-6f27-3819-f07a42802f39, timestamp=1402208576394}]
+		 DEBUG [org.apache.activemq.TransactionContext]  - Begin:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:34
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Received message of type [class org.apache.activemq.command.ActiveMQObjectMessage] from consumer [ActiveMQMessageConsumer { value=ID:DanteRicalde-PC-59440-1402208471498-1:2:1:1, started=true }] of session [ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:2:1,started=true}]
+		 DEBUG [org.springframework.integration.jms.ChannelPublishingJmsMessageListener]  - converted JMS Message [ActiveMQObjectMessage {commandId = 5, responseRequired = true, messageId = ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, originalDestination = null, originalTransactionId = null, producerId = ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1, destination = queue://mmm, transactionId = null, expiration = 0, timestamp = 1402208576411, arrival = 0, brokerInTime = 1402208576411, brokerOutTime = 1402208576412, correlationId = null, replyTo = null, persistent = true, type = null, priority = 4, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@272fc3fe, marshalledProperties = org.apache.activemq.util.ByteSequence@30ec6ccb, dataStructure = null, redeliveryCounter = 1, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208576394}, readOnlyProperties = true, readOnlyBody = true, droppable = false, jmsXGroupFirstForConsumer = false}] to integration Message payload [Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=2, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=4d91c711-95ce-69dc-1d7a-8d46260be672, timestamp=1402208577442}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09] received message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=2, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=4d91c711-95ce-69dc-1d7a-8d46260be672, timestamp=1402208577442}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterErrorChannel', message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=83dca8a1-6aa0-1313-bfdb-62e6ce0d3b01, timestamp=1402208577445}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@74f7b038] received message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=83dca8a1-6aa0-1313-bfdb-62e6ce0d3b01, timestamp=1402208577445}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Initiating transaction rollback on application exception
+		 org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:133)
+			at org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor.processMessage(ExpressionEvaluatingMessageProcessor.java:76)
+			at org.springframework.integration.handler.ServiceActivatingHandler.handleRequestMessage(ServiceActivatingHandler.java:71)
+			at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:170)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:78)
+			at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:101)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:97)
+			at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+			at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:255)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:109)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:44)
+			at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:94)
+			at org.springframework.integration.gateway.MessagingGatewaySupport.send(MessagingGatewaySupport.java:204)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener$GatewayDelegate.send(ChannelPublishingJmsMessageListener.java:480)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener.onMessage(ChannelPublishingJmsMessageListener.java:327)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:537)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:497)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:468)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.doReceiveAndExecute(AbstractPollingMessageListenerContainer.java:325)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.receiveAndExecute(AbstractPollingMessageListenerContainer.java:263)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.invokeListener(DefaultMessageListenerContainer.java:1102)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.executeOngoingLoop(DefaultMessageListenerContainer.java:1094)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.run(DefaultMessageListenerContainer.java:991)
+			at java.lang.Thread.run(Thread.java:722)
+		Caused by: java.lang.NumberFormatException: For input string: "Dantito"
+			at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+			at java.lang.Integer.parseInt(Integer.java:492)
+			at java.lang.Integer.valueOf(Integer.java:582)
+			at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+			at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+			at java.lang.reflect.Method.invoke(Method.java:601)
+			at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+			at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+			at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+			at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+			at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+			at org.springframework.expression.spel.ast.Ternary.getValueInternal(Ternary.java:57)
+			at org.springframework.expression.spel.ast.SpelNodeImpl.getTypedValue(SpelNodeImpl.java:114)
+			at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:111)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:159)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:119)
+			... 24 more
+		DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Rollback, txid:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:34
+		 DEBUG [org.apache.activemq.TransactionContext]  - Rollback: TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:34 syncCount: 1
+		 WARN  [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Execution of JMS message listener failed, and no ErrorHandler has been set.
+		 org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:133)
+			at org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor.processMessage(ExpressionEvaluatingMessageProcessor.java:76)
+			at org.springframework.integration.handler.ServiceActivatingHandler.handleRequestMessage(ServiceActivatingHandler.java:71)
+			at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:170)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:78)
+			at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:101)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:97)
+			at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+			at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:255)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:109)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:44)
+			at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:94)
+			at org.springframework.integration.gateway.MessagingGatewaySupport.send(MessagingGatewaySupport.java:204)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener$GatewayDelegate.send(ChannelPublishingJmsMessageListener.java:480)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener.onMessage(ChannelPublishingJmsMessageListener.java:327)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:537)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:497)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:468)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.doReceiveAndExecute(AbstractPollingMessageListenerContainer.java:325)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.receiveAndExecute(AbstractPollingMessageListenerContainer.java:263)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.invokeListener(DefaultMessageListenerContainer.java:1102)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.executeOngoingLoop(DefaultMessageListenerContainer.java:1094)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.run(DefaultMessageListenerContainer.java:991)
+			at java.lang.Thread.run(Thread.java:722)
+		Caused by: java.lang.NumberFormatException: For input string: "Dantito"
+			at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+			at java.lang.Integer.parseInt(Integer.java:492)
+			at java.lang.Integer.valueOf(Integer.java:582)
+			at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+			at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+			at java.lang.reflect.Method.invoke(Method.java:601)
+			at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+			at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+			at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+			at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+			at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+			at org.springframework.expression.spel.ast.Ternary.getValueInternal(Ternary.java:57)
+			at org.springframework.expression.spel.ast.SpelNodeImpl.getTypedValue(SpelNodeImpl.java:114)
+			at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:111)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:159)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:119)
+			... 24 more
+		DEBUG [org.apache.activemq.TransactionContext]  - Begin:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:35
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Received message of type [class org.apache.activemq.command.ActiveMQObjectMessage] from consumer [ActiveMQMessageConsumer { value=ID:DanteRicalde-PC-59440-1402208471498-1:2:1:1, started=true }] of session [ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:2:1,started=true}]
+		 DEBUG [org.springframework.integration.jms.ChannelPublishingJmsMessageListener]  - converted JMS Message [ActiveMQObjectMessage {commandId = 5, responseRequired = true, messageId = ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, originalDestination = null, originalTransactionId = null, producerId = ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1, destination = queue://mmm, transactionId = null, expiration = 0, timestamp = 1402208576411, arrival = 0, brokerInTime = 1402208576411, brokerOutTime = 1402208576412, correlationId = null, replyTo = null, persistent = true, type = null, priority = 4, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@272fc3fe, marshalledProperties = org.apache.activemq.util.ByteSequence@30ec6ccb, dataStructure = null, redeliveryCounter = 2, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208576394}, readOnlyProperties = true, readOnlyBody = true, droppable = false, jmsXGroupFirstForConsumer = false}] to integration Message payload [Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=3, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=7ebf8f2f-1121-dcca-9c30-8961b72df239, timestamp=1402208578459}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09] received message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=3, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=7ebf8f2f-1121-dcca-9c30-8961b72df239, timestamp=1402208578459}]
+		 Received message for Service Activator. Message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel,simpleJmsMessageDrivenChannelAdapterChannelServiceAdapter, JMSXDeliveryCount=3, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=e788fba0-ef84-b2c4-2630-b7c80f4835e0, timestamp=1402208578461}]
+		DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - handler 'ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09]' produced no reply for request Message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel,simpleJmsMessageDrivenChannelAdapterChannelServiceAdapter, JMSXDeliveryCount=3, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=e788fba0-ef84-b2c4-2630-b7c80f4835e0, timestamp=1402208578461}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=04ee2dd0-6177-4a79-ac40-8e28f0ce5f8d, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=3, jms_timestamp=1402208576411, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:23:1:1:1, id=7ebf8f2f-1121-dcca-9c30-8961b72df239, timestamp=1402208578459}]
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:35
+		 DEBUG [org.apache.activemq.TransactionContext]  - Commit: TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:35 syncCount: 1
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, id=5a17672c-6357-92ad-5b5c-ac23b7269e65, timestamp=1402208581394}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel', message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=74597ee5-978e-214b-3be1-363d74b0c80b, timestamp=1402208581394}]
+		 DEBUG [org.springframework.integration.jms.JmsSendingMessageHandler]  - org.springframework.integration.jms.JmsSendingMessageHandler#1 received message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=74597ee5-978e-214b-3be1-363d74b0c80b, timestamp=1402208581394}]
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - Sending: WireFormatInfo { version=10, properties={MaxFrameSize=9223372036854775807, CacheSize=1024, CacheEnabled=true, Host=localhost, SizePrefixDisabled=false, MaxInactivityDurationInitalDelay=10000, TcpNoDelayEnabled=true, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.InactivityMonitor]  - Using min of local: WireFormatInfo { version=10, properties={MaxFrameSize=9223372036854775807, CacheSize=1024, CacheEnabled=true, Host=localhost, SizePrefixDisabled=false, MaxInactivityDurationInitalDelay=10000, TcpNoDelayEnabled=true, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]} and remote: WireFormatInfo { version=10, properties={CacheSize=1024, MaxFrameSize=104857600, CacheEnabled=true, SizePrefixDisabled=false, TcpNoDelayEnabled=true, MaxInactivityDurationInitalDelay=10000, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - Received WireFormat: WireFormatInfo { version=10, properties={CacheSize=1024, MaxFrameSize=104857600, CacheEnabled=true, SizePrefixDisabled=false, TcpNoDelayEnabled=true, MaxInactivityDurationInitalDelay=10000, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - tcp://localhost/127.0.0.1:61616@59530 before negotiation: OpenWireFormat{version=10, cacheEnabled=false, stackTraceEnabled=false, tightEncodingEnabled=false, sizePrefixDisabled=false, maxFrameSize=9223372036854775807}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - tcp://localhost/127.0.0.1:61616@59530 after negotiation: OpenWireFormat{version=10, cacheEnabled=true, stackTraceEnabled=true, tightEncodingEnabled=true, sizePrefixDisabled=false, maxFrameSize=104857600}
+		 DEBUG [org.springframework.integration.jms.DynamicJmsTemplate]  - Executing callback on JMS Session: ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:24:1,started=false}
+		 DEBUG [org.springframework.integration.jms.DynamicJmsTemplate]  - Sending created message: ActiveMQObjectMessage {commandId = 0, responseRequired = false, messageId = null, originalDestination = null, originalTransactionId = null, producerId = null, destination = null, transactionId = null, expiration = 0, timestamp = 0, arrival = 0, brokerInTime = 0, brokerOutTime = 0, correlationId = null, replyTo = null, persistent = false, type = null, priority = 0, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@2c78beb8, marshalledProperties = null, dataStructure = null, redeliveryCounter = 0, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208581397}, readOnlyProperties = false, readOnlyBody = false, droppable = false, jmsXGroupFirstForConsumer = false}
+		 DEBUG [org.apache.activemq.TransactionContext]  - Begin:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:36
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Received message of type [class org.apache.activemq.command.ActiveMQObjectMessage] from consumer [ActiveMQMessageConsumer { value=ID:DanteRicalde-PC-59440-1402208471498-1:2:1:1, started=true }] of session [ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:2:1,started=true}]
+		 DEBUG [org.springframework.integration.jms.ChannelPublishingJmsMessageListener]  - converted JMS Message [ActiveMQObjectMessage {commandId = 5, responseRequired = true, messageId = ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, originalDestination = null, originalTransactionId = null, producerId = ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1, destination = queue://mmm, transactionId = null, expiration = 0, timestamp = 1402208581417, arrival = 0, brokerInTime = 1402208581417, brokerOutTime = 1402208581418, correlationId = null, replyTo = null, persistent = true, type = null, priority = 4, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@2b3138d7, marshalledProperties = org.apache.activemq.util.ByteSequence@2c8ac168, dataStructure = null, redeliveryCounter = 0, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208581397}, readOnlyProperties = true, readOnlyBody = true, droppable = false, jmsXGroupFirstForConsumer = false}] to integration Message payload [Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, jms_timestamp=1402208581417, jms_redelivered=false, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=526f150e-e6af-c0db-d3f4-edd9984571fb, timestamp=1402208581420}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09] received message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, jms_timestamp=1402208581417, jms_redelivered=false, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=526f150e-e6af-c0db-d3f4-edd9984571fb, timestamp=1402208581420}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterErrorChannel', message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=4a94ee1a-8a30-9246-884c-1ed22b4e5813, timestamp=1402208581421}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@74f7b038] received message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=4a94ee1a-8a30-9246-884c-1ed22b4e5813, timestamp=1402208581421}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Initiating transaction rollback on application exception
+		 org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:133)
+			at org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor.processMessage(ExpressionEvaluatingMessageProcessor.java:76)
+			at org.springframework.integration.handler.ServiceActivatingHandler.handleRequestMessage(ServiceActivatingHandler.java:71)
+			at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:170)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:78)
+			at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:101)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:97)
+			at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+			at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:255)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:109)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:44)
+			at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:94)
+			at org.springframework.integration.gateway.MessagingGatewaySupport.send(MessagingGatewaySupport.java:204)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener$GatewayDelegate.send(ChannelPublishingJmsMessageListener.java:480)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener.onMessage(ChannelPublishingJmsMessageListener.java:327)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:537)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:497)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:468)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.doReceiveAndExecute(AbstractPollingMessageListenerContainer.java:325)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.receiveAndExecute(AbstractPollingMessageListenerContainer.java:263)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.invokeListener(DefaultMessageListenerContainer.java:1102)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.executeOngoingLoop(DefaultMessageListenerContainer.java:1094)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.run(DefaultMessageListenerContainer.java:991)
+			at java.lang.Thread.run(Thread.java:722)
+		Caused by: java.lang.NumberFormatException: For input string: "Dantito"
+			at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+			at java.lang.Integer.parseInt(Integer.java:492)
+			at java.lang.Integer.valueOf(Integer.java:582)
+			at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+			at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+			at java.lang.reflect.Method.invoke(Method.java:601)
+			at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+			at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+			at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+			at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+			at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+			at org.springframework.expression.spel.ast.Ternary.getValueInternal(Ternary.java:57)
+			at org.springframework.expression.spel.ast.SpelNodeImpl.getTypedValue(SpelNodeImpl.java:114)
+			at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:111)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:159)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:119)
+			... 24 more
+		DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Rollback, txid:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:36
+		 DEBUG [org.apache.activemq.TransactionContext]  - Rollback: TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:36 syncCount: 1
+		 DEBUG [org.apache.activemq.util.ThreadPoolUtils]  - Shutdown of ExecutorService: java.util.concurrent.ThreadPoolExecutor@32ca7b24[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0] is shutdown: true and terminated: true took: 0.000 seconds.
+		 WARN  [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Execution of JMS message listener failed, and no ErrorHandler has been set.
+		 org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:133)
+			at org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor.processMessage(ExpressionEvaluatingMessageProcessor.java:76)
+			at org.springframework.integration.handler.ServiceActivatingHandler.handleRequestMessage(ServiceActivatingHandler.java:71)
+			at org.springframework.integration.handler.AbstractReplyProducingMessageHandler.handleMessageInternal(AbstractReplyProducingMessageHandler.java:170)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:78)
+			at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:116)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:101)
+			at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:97)
+			at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:77)
+			at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:255)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:109)
+			at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:44)
+			at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:94)
+			at org.springframework.integration.gateway.MessagingGatewaySupport.send(MessagingGatewaySupport.java:204)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener$GatewayDelegate.send(ChannelPublishingJmsMessageListener.java:480)
+			at org.springframework.integration.jms.ChannelPublishingJmsMessageListener.onMessage(ChannelPublishingJmsMessageListener.java:327)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:537)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:497)
+			at org.springframework.jms.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:468)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.doReceiveAndExecute(AbstractPollingMessageListenerContainer.java:325)
+			at org.springframework.jms.listener.AbstractPollingMessageListenerContainer.receiveAndExecute(AbstractPollingMessageListenerContainer.java:263)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.invokeListener(DefaultMessageListenerContainer.java:1102)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.executeOngoingLoop(DefaultMessageListenerContainer.java:1094)
+			at org.springframework.jms.listener.DefaultMessageListenerContainer$AsyncMessageListenerInvoker.run(DefaultMessageListenerContainer.java:991)
+			at java.lang.Thread.run(Thread.java:722)
+		Caused by: java.lang.NumberFormatException: For input string: "Dantito"
+			at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+			at java.lang.Integer.parseInt(Integer.java:492)
+			at java.lang.Integer.valueOf(Integer.java:582)
+			at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+			at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+			at java.lang.reflect.Method.invoke(Method.java:601)
+			at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+			at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+			at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+			at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+			at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+			at org.springframework.expression.spel.ast.Ternary.getValueInternal(Ternary.java:57)
+			at org.springframework.expression.spel.ast.SpelNodeImpl.getTypedValue(SpelNodeImpl.java:114)
+			at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:111)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:159)
+			at org.springframework.integration.util.AbstractExpressionEvaluator.evaluateExpression(AbstractExpressionEvaluator.java:119)
+			... 24 more
+		DEBUG [org.apache.activemq.transport.tcp.TcpTransport]  - Stopping transport tcp://localhost/127.0.0.1:61616@59530
+		 DEBUG [org.apache.activemq.thread.TaskRunnerFactory]  - Initialized TaskRunnerFactory[ActiveMQ Task] using ExecutorService: java.util.concurrent.ThreadPoolExecutor@b5a9289[Running, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0]
+		 DEBUG [org.apache.activemq.transport.tcp.TcpTransport]  - Closed socket Socket[addr=localhost/127.0.0.1,port=61616,localport=59530]
+		 DEBUG [org.apache.activemq.util.ThreadPoolUtils]  - Forcing shutdown of ExecutorService: java.util.concurrent.ThreadPoolExecutor@b5a9289[Running, pool size = 1, active threads = 0, queued tasks = 0, completed tasks = 1]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel', message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=74597ee5-978e-214b-3be1-363d74b0c80b, timestamp=1402208581394}]
+		 DEBUG [org.apache.activemq.transport.AbstractInactivityMonitor]  - WriteChecker: 10000ms elapsed since last write check.
+		 DEBUG [org.apache.activemq.TransactionContext]  - Begin:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:37
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Received message of type [class org.apache.activemq.command.ActiveMQObjectMessage] from consumer [ActiveMQMessageConsumer { value=ID:DanteRicalde-PC-59440-1402208471498-1:2:1:1, started=true }] of session [ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:2:1,started=true}]
+		 DEBUG [org.springframework.integration.jms.ChannelPublishingJmsMessageListener]  - converted JMS Message [ActiveMQObjectMessage {commandId = 5, responseRequired = true, messageId = ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, originalDestination = null, originalTransactionId = null, producerId = ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1, destination = queue://mmm, transactionId = null, expiration = 0, timestamp = 1402208581417, arrival = 0, brokerInTime = 1402208581417, brokerOutTime = 1402208581418, correlationId = null, replyTo = null, persistent = true, type = null, priority = 4, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@2b3138d7, marshalledProperties = org.apache.activemq.util.ByteSequence@2c8ac168, dataStructure = null, redeliveryCounter = 1, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208581397}, readOnlyProperties = true, readOnlyBody = true, droppable = false, jmsXGroupFirstForConsumer = false}] to integration Message payload [Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=2, jms_timestamp=1402208581417, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=510222fa-6742-7a67-1642-fba429ba2202, timestamp=1402208582446}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09] received message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=2, jms_timestamp=1402208581417, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=510222fa-6742-7a67-1642-fba429ba2202, timestamp=1402208582446}]
+		 Received message for Service Activator. Message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel,simpleJmsMessageDrivenChannelAdapterChannelServiceAdapter, JMSXDeliveryCount=2, jms_timestamp=1402208581417, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=bb5c4b22-c276-1c12-ffc5-e19997948c08, timestamp=1402208582447}]
+		DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - handler 'ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09]' produced no reply for request Message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel,simpleJmsMessageDrivenChannelAdapterChannelServiceAdapter, JMSXDeliveryCount=2, jms_timestamp=1402208581417, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=bb5c4b22-c276-1c12-ffc5-e19997948c08, timestamp=1402208582447}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=03d7d9c4-c054-466e-b14c-813aeda3f9fd, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, JMSXDeliveryCount=2, jms_timestamp=1402208581417, jms_redelivered=true, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:24:1:1:1, id=510222fa-6742-7a67-1642-fba429ba2202, timestamp=1402208582446}]
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:37
+		 DEBUG [org.apache.activemq.TransactionContext]  - Commit: TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:37 syncCount: 1
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 
+		 
+		 
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload Item content=Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, id=e923e2b1-1991-ad8d-3f0a-ef06d3bc12f0, timestamp=1402208586394}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel', message: [Payload Item content=Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=7e9e2edc-d866-085b-701f-f9853605ced6, timestamp=1402208586395}]
+		 DEBUG [org.springframework.integration.jms.JmsSendingMessageHandler]  - org.springframework.integration.jms.JmsSendingMessageHandler#1 received message: [Payload Item content=Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=7e9e2edc-d866-085b-701f-f9853605ced6, timestamp=1402208586395}]
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - Sending: WireFormatInfo { version=10, properties={MaxFrameSize=9223372036854775807, CacheSize=1024, CacheEnabled=true, Host=localhost, SizePrefixDisabled=false, MaxInactivityDurationInitalDelay=10000, TcpNoDelayEnabled=true, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.InactivityMonitor]  - Using min of local: WireFormatInfo { version=10, properties={MaxFrameSize=9223372036854775807, CacheSize=1024, CacheEnabled=true, Host=localhost, SizePrefixDisabled=false, MaxInactivityDurationInitalDelay=10000, TcpNoDelayEnabled=true, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]} and remote: WireFormatInfo { version=10, properties={CacheSize=1024, MaxFrameSize=104857600, CacheEnabled=true, SizePrefixDisabled=false, TcpNoDelayEnabled=true, MaxInactivityDurationInitalDelay=10000, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - Received WireFormat: WireFormatInfo { version=10, properties={CacheSize=1024, MaxFrameSize=104857600, CacheEnabled=true, SizePrefixDisabled=false, TcpNoDelayEnabled=true, MaxInactivityDurationInitalDelay=10000, MaxInactivityDuration=30000, TightEncodingEnabled=true, StackTraceEnabled=true}, magic=[A,c,t,i,v,e,M,Q]}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - tcp://localhost/127.0.0.1:61616@59533 before negotiation: OpenWireFormat{version=10, cacheEnabled=false, stackTraceEnabled=false, tightEncodingEnabled=false, sizePrefixDisabled=false, maxFrameSize=9223372036854775807}
+		 DEBUG [org.apache.activemq.transport.WireFormatNegotiator]  - tcp://localhost/127.0.0.1:61616@59533 after negotiation: OpenWireFormat{version=10, cacheEnabled=true, stackTraceEnabled=true, tightEncodingEnabled=true, sizePrefixDisabled=false, maxFrameSize=104857600}
+		 DEBUG [org.springframework.integration.jms.DynamicJmsTemplate]  - Executing callback on JMS Session: ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:25:1,started=false}
+		 DEBUG [org.springframework.integration.jms.DynamicJmsTemplate]  - Sending created message: ActiveMQObjectMessage {commandId = 0, responseRequired = false, messageId = null, originalDestination = null, originalTransactionId = null, producerId = null, destination = null, transactionId = null, expiration = 0, timestamp = 0, arrival = 0, brokerInTime = 0, brokerOutTime = 0, correlationId = null, replyTo = null, persistent = false, type = null, priority = 0, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@130a07b9, marshalledProperties = null, dataStructure = null, redeliveryCounter = 0, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208586396}, readOnlyProperties = false, readOnlyBody = false, droppable = false, jmsXGroupFirstForConsumer = false}
+		 DEBUG [org.apache.activemq.TransactionContext]  - Begin:TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:38
+		 DEBUG [org.springframework.jms.listener.DefaultMessageListenerContainer]  - Received message of type [class org.apache.activemq.command.ActiveMQObjectMessage] from consumer [ActiveMQMessageConsumer { value=ID:DanteRicalde-PC-59440-1402208471498-1:2:1:1, started=true }] of session [ActiveMQSession {id=ID:DanteRicalde-PC-59440-1402208471498-1:2:1,started=true}]
+		 DEBUG [org.springframework.integration.jms.ChannelPublishingJmsMessageListener]  - converted JMS Message [ActiveMQObjectMessage {commandId = 5, responseRequired = true, messageId = ID:DanteRicalde-PC-59440-1402208471498-1:25:1:1:1, originalDestination = null, originalTransactionId = null, producerId = ID:DanteRicalde-PC-59440-1402208471498-1:25:1:1, destination = queue://mmm, transactionId = null, expiration = 0, timestamp = 1402208586417, arrival = 0, brokerInTime = 1402208586417, brokerOutTime = 1402208586419, correlationId = null, replyTo = null, persistent = true, type = null, priority = 4, groupID = null, groupSequence = 0, targetConsumerId = null, compressed = false, userID = null, content = org.apache.activemq.util.ByteSequence@77810c72, marshalledProperties = org.apache.activemq.util.ByteSequence@39584da9, dataStructure = null, redeliveryCounter = 0, size = 0, properties = {anotherPaymentType=CREDIT, timestamp=1402208586396}, readOnlyProperties = true, readOnlyBody = true, droppable = false, jmsXGroupFirstForConsumer = false}] to integration Message payload [Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterChannel', message: [Payload Item content=Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, jms_timestamp=1402208586417, jms_redelivered=false, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:25:1:1:1, id=ee4d60ea-3439-2143-7bff-0babd3608f3b, timestamp=1402208586421}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@22f41c09] received message: [Payload Item content=Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapter,simpleJmsMessageDrivenChannelAdapterChannel, jms_timestamp=1402208586417, jms_redelivered=false, priority=4, jms_messageId=ID:DanteRicalde-PC-59440-1402208471498-1:25:1:1:1, id=ee4d60ea-3439-2143-7bff-0babd3608f3b, timestamp=1402208586421}]
+		 DEBUG [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor]  - SpEL Expression evaluation failed with Exception.java.lang.NumberFormatException: For input string: "Dantito"
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleJmsMessageDrivenChannelAdapterErrorChannel', message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=44af688f-4c86-cdba-e55e-1ffe10809cb3, timestamp=1402208586422}]
+		 DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@74f7b038] received message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=44af688f-4c86-cdba-e55e-1ffe10809cb3, timestamp=1402208586422}]
+		 Received message for Error Service Activator. Message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel,simpleJmsMessageDrivenChannelAdapterErrorChannelServiceAdapter, id=fe76eae9-16dd-5a48-5c80-28bfc060bfa0, timestamp=1402208586426}]
+		DEBUG [org.springframework.integration.handler.ServiceActivatingHandler]  - handler 'ServiceActivator for [org.springframework.integration.handler.ExpressionEvaluatingMessageProcessor@74f7b038]' produced no reply for request Message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel,simpleJmsMessageDrivenChannelAdapterErrorChannelServiceAdapter, id=fe76eae9-16dd-5a48-5c80-28bfc060bfa0, timestamp=1402208586426}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleJmsMessageDrivenChannelAdapterErrorChannel', message: [Payload MessageHandlingException content=org.springframework.messaging.MessageHandlingException: Expression evaluation failed: T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')][Headers={history=simpleJmsMessageDrivenChannelAdapterErrorChannel, id=44af688f-4c86-cdba-e55e-1ffe10809cb3, timestamp=1402208586422}]
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:38
+		 DEBUG [org.apache.activemq.TransactionContext]  - Commit: TX:ID:DanteRicalde-PC-59440-1402208471498-1:2:38 syncCount: 1
+		 DEBUG [org.apache.activemq.util.ThreadPoolUtils]  - Shutdown of ExecutorService: java.util.concurrent.ThreadPoolExecutor@8a69d8[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0] is shutdown: true and terminated: true took: 0.001 seconds.
+		 DEBUG [org.apache.activemq.transport.tcp.TcpTransport]  - Stopping transport tcp://localhost/127.0.0.1:61616@59533
+		 DEBUG [org.apache.activemq.thread.TaskRunnerFactory]  - Initialized TaskRunnerFactory[ActiveMQ Task] using ExecutorService: java.util.concurrent.ThreadPoolExecutor@7f2ae42e[Running, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0]
+		 DEBUG [org.apache.activemq.transport.tcp.TcpTransport]  - Closed socket Socket[addr=localhost/127.0.0.1,port=61616,localport=59533]
+		 DEBUG [org.apache.activemq.util.ThreadPoolUtils]  - Forcing shutdown of ExecutorService: java.util.concurrent.ThreadPoolExecutor@7f2ae42e[Running, pool size = 1, active threads = 0, queued tasks = 0, completed tasks = 1]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel', message: [Payload Item content=Item [id=906ed137-6d36-4a03-bd56-228afc455b4a, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={anotherPaymentType=CREDIT, history=simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter,simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel, id=7e9e2edc-d866-085b-701f-f9853605ced6, timestamp=1402208586395}]
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+		 DEBUG [org.apache.activemq.ActiveMQSession]  - ID:DanteRicalde-PC-59440-1402208471498-1:2:1 Transaction Commit :null
+ -->
+
+	<int:inbound-channel-adapter id="simpleJmsMessageDrivenChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 
+ 		'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('anotherPaymentType', 'DEBIT').build():
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera',
+		'Danielito Ricalde Rivera', 2)).setHeader('anotherPaymentType', 'CREDIT').build()"
+		channel="simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel" auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-jms:outbound-channel-adapter id="simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapter" destination-name="mmm"
+		channel="simpleJmsMessageDrivenChannelAdapterJmsOutboundChannelAdapterChannel" auto-startup="false" />
+
+	<int-jms:message-driven-channel-adapter id="simpleJmsMessageDrivenChannelAdapter" destination="queue" channel="simpleJmsMessageDrivenChannelAdapterChannel"
+		error-channel="simpleJmsMessageDrivenChannelAdapterErrorChannel" acknowledge="transacted" auto-startup="false" />
+
+	<int:channel id="simpleJmsMessageDrivenChannelAdapterChannel" />
+
+	<int:service-activator id="simpleJmsMessageDrivenChannelAdapterChannelServiceAdapter" input-channel="simpleJmsMessageDrivenChannelAdapterChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')"
+		auto-startup="false" />
+
+	<int:channel id="simpleJmsMessageDrivenChannelAdapterErrorChannel" />
+
+	<int:service-activator id="simpleJmsMessageDrivenChannelAdapterErrorChannelServiceAdapter" input-channel="simpleJmsMessageDrivenChannelAdapterErrorChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? T(java.lang.System).out.println('Received message for Error Service Activator. Message: ' + #this) : T(java.lang.Integer).valueOf('Dantito')"
+		auto-startup="false" />
+
+	<!-- ****************************************** JMS Configuration ************************************** -->
+
+	<bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+		<property name="brokerURL" value="tcp://localhost:61616" />
+	</bean>
+
+	<bean id="queue" class="org.apache.activemq.command.ActiveMQQueue">
+		<constructor-arg value="mmm" />
+	</bean>
+
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="defaultDestination" ref="queue" />
+		<property name="receiveTimeout" value="#{T(org.springframework.jms.core.JmsTemplate).RECEIVE_TIMEOUT_NO_WAIT}" />
+	</bean>
+
+</beans>

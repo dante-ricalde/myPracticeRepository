@@ -1,0 +1,2 @@
+1. To test a payload enricher with static values (you don't have to provide the request-channel attribute)
+2. To test a payload enricher with the property should-clone-payload set to true.

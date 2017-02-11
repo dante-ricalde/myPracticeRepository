@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+
+	<!-- ****************** PAYLOAD TYPE ROUTER ************************ -->
+	<!-- In this test We are using a payload-type-router, this router consumes the messages from the routingChannel queue channel, hence this router is a Polling Consumer which has a poller 
+		which is polling for messages every second (there are two inbound channel adapters which send messages to the "routingChannel" queue channel every second). When this router gets the 
+		message, it send it depending on its type, if the message's type is string, it send it to a "stringchannel" queue channel, otherwise, it send it to a "integerchannel" direct channel. 
+		If the message is sent to the stringChannel the message is stored there, on the other hand, if the message is sent to the integerChannel direct channel is consumed by the method "receivedMessage" 
+		specified in the oubound channel adapter. Regarding the threads, there are two task schedulers sending messages every second to the "routingChannel" queue channel, this is a first flow, 
+		because the messages stay in this queue waiting to be consumed. The next flow starts when the payload-type-router (Polling Consumer) consumes the message and its task executor opens 
+		threads to send it to its respective channel. The thread that sends to the string channel finishes when it leaves it in the queue channel, on the other hand, the thread that sends to 
+		the "integerChannel" direct channel blocks until the "receiveMessage" consumes the message so that the sender thread can continue and finish. -->
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterThatSendsStrings" channel="routingChannel" ref="channelAdapterSender" method="createMessage"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterThatSendsInteger" expression="5" channel="routingChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="routingChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:payload-type-router input-channel="routingChannel" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+		<int:mapping type="java.lang.String" channel="stringChannel" />
+		<int:mapping type="java.lang.Integer" channel="integerChannel" />
+	</int:payload-type-router>
+
+	<int:channel id="stringChannel">
+		<int:queue capacity="20" />
+	</int:channel>
+
+	<int:channel id="integerChannel" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterWhatReceivesIntegers" channel="integerChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<!-- ***************** HEADER VALUE ROUTER *********************** -->
+
+	<!-- 1. Configuration where mapping of header values to channels is required. -->
+	<!-- In this case we are using a header-value-router (this router is connected as a subscriber to the "directChannelToTestAHeaderValueRouter" direct channel, hence this router is an 
+		EventDrivenConsumer's instance), depending on message's headerValueToDetermineADestinationChannel header value this router forwards the message to a string queue channel or to a integer 
+		direct channel or to the nullChannel (if the header value is no mapped to a specific channel). Regarding the threads depending on the final destination channel, there are 3 possible 
+		paths. It all starts when the task scheduler opens a thread, create the message in the method "createMessage" and it sends it to the "directChannelToTestAHeaderValueRouter" direct channel, 
+		then the router depending on the headerValueToDetermineADestinationChannel header value it will send it to the 3 possible final channels mentioned previously. If the destination channel 
+		is the integer direct channel, the sender thread will block until the method "receiveMessage" consumes the message so that the sender thread can continue and finish, as you can see 
+		in this case the thread opened by the task scheduler will execute until the message is sent and consumed by the "receiveMessage" method specified in the "outboundChannelAdapterToTestAHeaderValueRouter" 
+		outbound channel adapter. If the destination channel is the stringQueueChannel, the sender thread will finish when the message arrives to the string queue channel, the same occurs when 
+		the destination channel is the null channel (this is so because the null channel is a pollable channel) -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAHeaderValueRouter" channel="directChannelToTestAHeaderValueRouter" ref="channelAdapterSenderToTestAHeaderValueRouter"
+		method="createMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<bean id="channelAdapterSenderToTestAHeaderValueRouter" class="spring.integration.test.adapter.sender.ChannelAdapterSender" p:headerValuesToDetermineADestinationChannel-ref="headerValuesToDetermineADestinationChannel" />
+
+	<util:list id="headerValuesToDetermineADestinationChannel">
+		<value>stringQueueChannel</value>
+		<value>integerDirectChannel</value>
+		<value>unknownChannel</value>
+	</util:list>
+
+	<int:channel id="directChannelToTestAHeaderValueRouter" />
+
+	<int:header-value-router id="headerValueRouter" input-channel="directChannelToTestAHeaderValueRouter" header-name="headerValueToDetermineADestinationChannel"
+		default-output-channel="nullChannel" resolution-required="false" auto-startup="false">
+		<int:mapping value="stringQueueChannel" channel="stringQueueChannel" />
+		<int:mapping value="integerDirectChannel" channel="integerDirectChannel" />
+	</int:header-value-router>
+
+	<int:channel id="stringQueueChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="integerDirectChannel" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestAHeaderValueRouter" channel="integerDirectChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+	<!-- 2. Configuration where mapping of header values to channel names is not required since header values themselves represent channel names. -->
+	<!-- This case is the same as the previous one, the only difference is that the mapping of header values to channel names is not required (hence they don't specify) because the header 
+		values themselves represent channel names. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" channel="directChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired"
+		ref="channelAdapterSenderToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" method="createMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<bean id="channelAdapterSenderToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" class="spring.integration.test.adapter.sender.ChannelAdapterSender"
+		p:headerValuesToDetermineADestinationChannel-ref="headerValuesToDetermineADestinationChannelAndTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" />
+
+	<util:list id="headerValuesToDetermineADestinationChannelAndTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired">
+		<value>stringQueueChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired</value>
+		<value>integerDirectChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired</value>
+		<value>unknownChannel</value>
+	</util:list>
+
+	<int:channel id="directChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" />
+
+	<int:header-value-router id="headerValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" input-channel="directChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired"
+		header-name="headerValueToDetermineADestinationChannel" default-output-channel="nullChannel" resolution-required="false" auto-startup="false" />
+
+	<int:channel id="stringQueueChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="integerDirectChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired" channel="integerDirectChannelToTestAHeaderValueRouterWhereMappingOfHeaderValuesToChannelNamesIsNotRequired"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<!-- ***************** RECIPIENT LIST ROUTER *********************** -->
+	<!-- In this case we are testing a recipient-list-router, this router is a Polling Consumer for the queue channel called "queueChannelToTestARecipientLisRouter". When messages are 
+		consumed by this router, it sends it to the two channels defined in its list. When this router sends the message to the string queue channel, the message is consumed by a channel adapter 
+		called "outboundChannelAdapterToTestARecipientLisRouterForStringQueueChannelToTestARecipientLisRouter", on the other hand, when this router sends the message to the integer direct channel, 
+		the message is dispatched to the "receiveMessage" handler method specified in the outbound channel adapter called "ouboundChannelAdapterToTestARecipientLisRouter". Regarding the threads, 
+		there are two flows, the first flows is since when the inbound channel adapter creates the message until it sends it to the queue channel called "queueChannelToTestARecipientLisRouter". 
+		The message are stored here waiting being consumed. The second flow starts when the recipient-list-router (Polling Consumer) consumes the message to send it to the channels. Depending 
+		on the channel selected by the router there will be another two paths: 1. When the message by the router is sent to the string queue channel, the message is stored in the queue waiting 
+		being consumed, the thread that sends the message finishes its execution when the message arrives to the queue, then the outbound channel adapter (Polling Consumer) called outboundChannelAdapterToTestARecipientLisRouterForStringQueueChannelToTestARecipientLisRouter 
+		open a thread to consume the message in the method "receiveMessage", when the message is consumed this thread opened finishes its execution. 2. When the message by the router is sent 
+		to the integer direct channel, this router open a thread to send the message, this thread blocks until the method "receiveMessage" of the outbound channel adapter (called ouboundChannelAdapterToTestARecipientLisRouter, 
+		which is specified as a subscriber for this channel) finishes to continue and finish with its execution. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestARecipientLisRouter" channel="queueChannelToTestARecipientLisRouter" ref="channelAdapterSender"
+		method="createMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="queueChannelToTestARecipientLisRouter">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:recipient-list-router id="recipientoListRouter" input-channel="queueChannelToTestARecipientLisRouter" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+		<int:recipient channel="stringQueueChannelToTestARecipientLisRouter" />
+		<int:recipient channel="integerDirectChannelToTestARecipientLisRouter" />
+	</int:recipient-list-router>
+
+	<int:channel id="stringQueueChannelToTestARecipientLisRouter">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="integerDirectChannelToTestARecipientLisRouter" />
+
+	<int:outbound-channel-adapter id="ouboundChannelAdapterToTestARecipientLisRouter" channel="integerDirectChannelToTestARecipientLisRouter" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestARecipientLisRouterForStringQueueChannelToTestARecipientLisRouter" ref="channelAdapterReceiver"
+		method="receiveMessage" channel="stringQueueChannelToTestARecipientLisRouter" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing a recipient-list-router, this router sends the message depending on its content: 1. If the message contains the header key called 'myheader1' will 
+		be sent to the string queue channel, but if the message contains the number 5 in its payload will be sent to the integer direct channel. -->
+
+	<bean id="channelAdapterSenderToTestArecipientListRouterSelectingRecipientChannels" class="spring.integration.test.adapter.sender.ChannelAdapterSender" p:headers-ref="headersMapToTestArecipientListRouterSelectingRecipientChannels"
+		p:numberOfMessagesToApplyHeaders="4" />
+
+	<util:map id="headersMapToTestArecipientListRouterSelectingRecipientChannels">
+		<entry key="myHeader1" value="MyValue1" />
+		<entry key="myHeader2" value="MyValue2" />
+	</util:map>
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestArecipientListRouterSelectingRecipientChannels" channel="directChannelToTestArecipientListRouterSelectingRecipientChannels"
+		ref="channelAdapterSenderToTestArecipientListRouterSelectingRecipientChannels" method="createMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="directChannelToTestArecipientListRouterSelectingRecipientChannels" />
+
+	<int:recipient-list-router id="recipientListRouterSelectingRecipientChannels" input-channel="directChannelToTestArecipientListRouterSelectingRecipientChannels"
+		apply-sequence="true" auto-startup="false" default-output-channel="nullChannel">
+		<int:recipient channel="stringQueueChannelToTestArecipientListRouterSelectingRecipientChannels" selector-expression="headers.containsKey('myHeader1')" />
+		<int:recipient channel="integerDirectChannelToTestArecipientListRouterSelectingRecipientChannels" selector-expression="payload.contains('5')" />
+	</int:recipient-list-router>
+
+	<int:channel id="stringQueueChannelToTestArecipientListRouterSelectingRecipientChannels">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="integerDirectChannelToTestArecipientListRouterSelectingRecipientChannels" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestArecipientListRouterSelectingRecipientChannels" ref="channelAdapterReceiver" method="receiveMessage"
+		channel="integerDirectChannelToTestArecipientListRouterSelectingRecipientChannels" auto-startup="false" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestArecipientListRouterSelectingRecipientChannelsForStringQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" channel="stringQueueChannelToTestArecipientListRouterSelectingRecipientChannels" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- ***************** ROUTING AND ERROR HANDLING *********************** -->
+	<!-- In this case we are testing an exception-type-router, this router is connected as a subscriber to a direct channel. The router depending on exception causes forwards the error 
+		message to channel specified in the mappings for that exception type. Regarding the threads in this test we have three thread paths. The first path is: inboundChannelAdapterToTestAExceptionTypeRouter 
+		-> inputDirectChannelToTestAExceptionTypeRouter -> exception-type-router -> nullPointerExceptionChannel, the inputDirectChannelToTestAExceptionTypeRouter send method continues its execution 
+		when the message arrives to the nullPointerExceptionChannel queue channel. The second path is: inboundChannelAdapterWhatSendsAnIllegalArgumentExceptionToTestAExceptionTypeRouter -> 
+		inputDirectChannelToTestAExceptionTypeRouter -> illegalExceptionChannel -> ouboundChannelAdapterToTestAExceptionTypeRouter, the inputDirectChannelToTestAExceptionTypeRouter send method 
+		continues its execution when the "receiveMessage" method consumes the message (this sender thread can continue and finish its execution). The third path is: inboundChannelAdapterWhatSendsARuntimeExceptionToTestAExceptionTypeRouter 
+		-> inputDirectChannelToTestAExceptionTypeRouter -> null channel, the inputDirectChannelToTestAExceptionTypeRouter send method continues its execution when the message arrives to the 
+		null channel. In any given moment there are at least 3 threads in execution, each one opened by poller's task executor of the inbound channel adapters, if the task executors were overloaded 
+		there could be more than 3 threads, this is so because the default task executor has a default pool size of 1 and a max size unbounded and the task-executor has a pool size of 10 and 
+		a max size unbounded. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAExceptionTypeRouter" channel="inputDirectChannelToTestAExceptionTypeRouter"
+		expression="new NullPointerException('This is a null pointer exception')" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="10" />
+	</int:inbound-channel-adapter>
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterWhatSendsAnIllegalArgumentExceptionToTestAExceptionTypeRouter" channel="inputDirectChannelToTestAExceptionTypeRouter"
+		expression="new IllegalArgumentException('This is an illegal argument exception')" auto-startup="false">
+		<int:poller fixed-rate="1000" task-executor="task-executor" />
+	</int:inbound-channel-adapter>
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterWhatSendsARuntimeExceptionToTestAExceptionTypeRouter" channel="inputDirectChannelToTestAExceptionTypeRouter"
+		expression="new RuntimeException('This is a runtime exception')" auto-startup="false">
+		<int:poller fixed-rate="1000" max-messages-per-poll="10" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="inputDirectChannelToTestAExceptionTypeRouter" />
+
+	<int:exception-type-router id="exception-type-router" input-channel="inputDirectChannelToTestAExceptionTypeRouter" auto-startup="false"
+		default-output-channel="nullChannel">
+		<int:mapping exception-type="java.lang.IllegalArgumentException" channel="illegalExceptionChannel" />
+		<int:mapping exception-type="java.lang.NullPointerException" channel="nullPointerExceptionChannel" />
+	</int:exception-type-router>
+
+	<int:channel id="nullPointerExceptionChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="illegalExceptionChannel" />
+
+	<int:outbound-channel-adapter id="ouboundChannelAdapterToTestAExceptionTypeRouter" channel="illegalExceptionChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- ***************** GENERIC ROUTER *********************** -->
+	<!-- Content Based Router with XML -->
+	<!-- 1. Case 1. In this case we are testing a generic router which is implemented by the bean "payloadTypeRouter", the bean looks for a "destinationChannelForPayloadTypeRouter" channel 
+		(specified in the list called "destinationChannels_payloadTypeRouter"), then the router sends the message (the one received from the iinputToTestAGenericPayloadTypeRouter direct channel) 
+		to that channel. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAGenericPayloadTypeRouter" channel="iinputToTestAGenericPayloadTypeRouter" expression="'This message is going out through wall!!'"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="iinputToTestAGenericPayloadTypeRouter" />
+
+	<int:router id="myPayloadTypeRouter" ref="payloadTypeRouter" input-channel="iinputToTestAGenericPayloadTypeRouter" default-output-channel="defaultOutputToTestAGenericPayloadTypeRouter"
+		auto-startup="false" />
+
+	<util:list id="destinationChannels_payloadTypeRouter" value-type="org.springframework.integration.MessageChannel">
+		<ref bean="destinationChannelForPayloadTypeRouter" />
+	</util:list>
+
+	<int:channel id="destinationChannelForPayloadTypeRouter">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="defaultOutputToTestAGenericPayloadTypeRouter">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<!-- 2. Case 2. In this case we are testing a generic router which is implemented by the bean "recipientListRouter", the bean looks for a "destinationChannelForRecipientListRouter" 
+		channel (specified in the list called "destinationChannelNames_recipientListRouter"), but that channel doesn't exist and therefore the router sends the message (the one received from 
+		the iinputToTestAGenericRecipientListRouter direct channel) to the defaultOutputToTestAGenericRecipientListRouter channel. In this case the input channel called "iinputToTestAGenericRecipientListRouter" 
+		is created by default by the router (we haven't created it). -->
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAGenericRecipientListRouter" channel="iinputToTestAGenericRecipientListRouter"
+		expression="'This is a messaje sent to a generic recipient list router...'" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:router ref="recipientListRouter" input-channel="iinputToTestAGenericRecipientListRouter" default-output-channel="defaultOutputToTestAGenericRecipientListRouter"
+		auto-startup="true" />
+
+	<util:list id="destinationChannelNames_recipientListRouter" value-type="java.lang.String" list-class="java.util.ArrayList">
+		<value type="java.lang.String">destinationChannelForRecipientListRouter</value>
+	</util:list>
+
+	<int:channel id="defaultOutputToTestAGenericRecipientListRouter">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<!-- 3. Case 3 . In this case we are testing a generic router which is implemented by the bean "myCustomRouter", the bean looks for the channels specified in the list called "destinationChannels_myCustomRouter", 
+		then the router sends the message (the one received from the "iinputToTestACustomRouter" direct channel) to the channels from the list (in this case it sends it to the direct channel 
+		called "destinationDirectChannelFormMyCustomRouter"). Regarding threads the thread opened by the task executor when the polling task is invoked (in this case once per poll) continues 
+		and finishes its execution after the "receiveMessage" method of the "outboundChannelToTestACustomRouter" oubound channel adapter consumes the message. Take into account that the iinputToTestACustomRouter 
+		channel is created by the router (we haven't created it). -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestACustomRouter" channel="iinputToTestACustomRouter" expression="'This is a message sent to a generic custom router'"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:router id="myCustomRouter" input-channel="iinputToTestACustomRouter" default-output-channel="defaultOutputToTestAGenericCustomRouter" method="handleMessage"
+		auto-startup="false">
+		<bean id="myCustomRouter" class="spring.integration.test.router.MyCustomRouter" />
+	</int:router>
+
+	<util:list id="destinationChannels_myCustomRouter" value-type="org.springframework.integration.MessageChannel">
+		<ref bean="destinationDirectChannelFormMyCustomRouter" />
+	</util:list>
+
+	<int:channel id="destinationDirectChannelFormMyCustomRouter" />
+
+	<int:outbound-channel-adapter id="outboundChannelToTestACustomRouter" channel="destinationDirectChannelFormMyCustomRouter" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="defaultOutputToTestAGenericCustomRouter">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<!-- 4. Case 4. A SpEL expression is evaluated and the result is mapped to a channel. -->
+	<!-- In this case we are testing a generic router configured with a expression, payload's type is PayloadType and if the property payloadType of this payload (whose class is PayloadType) 
+		is CASH then the router sends the message to the "cashPaymentDirectChannel", on the other hand it sends it to the "authorizePaymentQueueChannel" queue channel. Take into account that 
+		the iinputDirectChannelToTestARouterWithAExpression channel is created by the router (we haven't created it). -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestARouterWithAExpression" channel="iinputDirectChannelToTestARouterWithAExpression"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.PaymentType('CASH') : new spring.integration.test.var.PaymentType('CREDIT')" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:router id="genericRouterWithAExpression" input-channel="iinputDirectChannelToTestARouterWithAExpression" expression="payload.paymentType" auto-startup="false">
+		<int:mapping value="CASH" channel="cashPaymentDirectChannel" />
+		<int:mapping value="CREDIT" channel="authorizePaymentQueueChannel" />
+		<int:mapping value="DEBIT" channel="authorizePaymentQueueChannel" />
+	</int:router>
+
+	<int:channel id="cashPaymentDirectChannel" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestARouterWithAExpression" ref="channelAdapterReceiver" method="receiveMessage" channel="cashPaymentDirectChannel"
+		auto-startup="false" />
+
+	<int:channel id="authorizePaymentQueueChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<!-- In this case we are testing a generic router configured with a expression, the expression simply concatenates the value of the payload with the literal String 'Channel'. The router 
+		forwards each consumed message to the suitable channel. Take into account that the iinputDirectChannelToTestAgenericRouterWithAExpressionWhichContainsPartOfTheChannelName channel is 
+		created by the router (we haven't created it). -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAgenericRouterWithAExpressionWhichContainsPartOfTheChannelName" channel="iinputDirectChannelToTestAgenericRouterWithAExpressionWhichContainsPartOfTheChannelName"
+		expression="T(java.lang.Math).random() > 0.5 ? 'myExpressionDirect' : 'myExpressionQueue'" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:router id="genericRouterWithAExpressionWhichContainsPartOfTheChannelName" input-channel="iinputDirectChannelToTestAgenericRouterWithAExpressionWhichContainsPartOfTheChannelName"
+		expression="payload + 'Channel'" auto-startup="false" />
+
+	<int:channel id="myExpressionDirectChannel" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestAgenericRouterWithAExpressionWhichContainsPartOfTheChannelName" channel="myExpressionDirectChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="myExpressionQueueChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterForMyExpressionQueueChannelToTestAgenericRouterWithAExpressionWhichContainsPartOfTheChannelName"
+		channel="myExpressionQueueChannel" ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing a generic router configured with a expression "headers.channels". When the router is configured in this way the message will be sent to each channel 
+		in the list, and this is so because the property called channels that is in the header of the message has its value of List type. Take into account that the iinputDirectChannelToTestAGenericRouterWithTheHeaderCalledChannels 
+		channel is created by the router (we haven't created it). When the router consumes the message received from the direct channel forwards each consumed message to the directChannelToTestAGenericRouterWithTheHeaderCalledChannels 
+		and the queueChannelToTestAGenericRouterWithTheHeaderCalledChannels channels. Regarding the threads, the poller's default task executor of the inbound channel adapter opens a thread 
+		to create the message in the method createMessage, then it sends it to the iinputDirectChannelToTestAGenericRouterWithTheHeaderCalledChannels direct channel, the router which is a subscriber 
+		of this channel receives (consumes) and sends the message to the directChannelToTestAGenericRouterWithTheHeaderCalledChannels direct channel and the queueChannelToTestAGenericRouterWithTheHeaderCalledChannels 
+		queue channel, the router sends the message to the channels using a loop (one by one), namely, if the channel to send the message is a queue channel the send method invoked in the loop 
+		will return immediately (if the queue has not reached its capacity) otherwise until either room is available or timeout period elapses, but if the channel to send the messages is a 
+		direct channel the send method invoked in the loop will return when the "receiveMessage" method specified in the outbound channel adapter of this direct channel finishes its execution 
+		so that the method "send" invoked in the loop can continue and return. By other hand there is another thread opened by the poller's task executor of the outbound channel adapter of 
+		the queue channel outboundChannelAdapterForqueueChannelToTestAGenericRouterWithTheHeaderCalledChannels which consumes the message of this queue channel. -->
+	<util:list id="headerNamesToTestAGenericRouterWithTheHeaderCalledChannels">
+		<value>directChannelToTestAGenericRouterWithTheHeaderCalledChannels</value>
+		<value>queueChannelToTestAGenericRouterWithTheHeaderCalledChannels</value>
+	</util:list>
+
+	<util:map id="headersMapToTestAGenericRouterWithTheHeaderCalledChannels">
+		<entry key="channels" value-ref="headerNamesToTestAGenericRouterWithTheHeaderCalledChannels" />
+	</util:map>
+
+	<bean id="channelAdapterSenderiinputDirectChannelToTestAGenericRouterWithTheHeaderCalledChannels" class="spring.integration.test.adapter.sender.ChannelAdapterSender"
+		p:headers-ref="headersMapToTestAGenericRouterWithTheHeaderCalledChannels" p:numberOfMessagesToApplyHeaders="100" />
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAGenericRouterWithTheHeaderCalledChannels" channel="iinputDirectChannelToTestAGenericRouterWithTheHeaderCalledChannels"
+		ref="channelAdapterSenderiinputDirectChannelToTestAGenericRouterWithTheHeaderCalledChannels" method="createMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:router id="genericRouterToTestAGenericRouterWithTheHeaderCalledChannels" input-channel="iinputDirectChannelToTestAGenericRouterWithTheHeaderCalledChannels"
+		expression="headers.channels" apply-sequence="true" auto-startup="false" />
+
+	<int:channel id="directChannelToTestAGenericRouterWithTheHeaderCalledChannels">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterToTestAGenericRouterWithTheHeaderCalledChannels" channel="directChannelToTestAGenericRouterWithTheHeaderCalledChannels"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="queueChannelToTestAGenericRouterWithTheHeaderCalledChannels">
+		<int:queue capacity="50" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterForqueueChannelToTestAGenericRouterWithTheHeaderCalledChannels" channel="queueChannelToTestAGenericRouterWithTheHeaderCalledChannels"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="4000" max-messages-per-poll="1" />
+	</int:outbound-channel-adapter>
+
+	<!-- *************************************** CONFIGURING A ROUTING WITH ANNOTATIONS ******************************* -->
+	<!-- In this case we are testing a router configured with annotations. The router is called "myRouterWithAnnotations" and has the channel called "iinputDirectChannelToTestARouterConfiguredWithAnnotations" 
+		as a input channel. The router only receives message with a payload of the type myMessagePayload (on the other hand the router will reject the message with an exception) and maps to 
+		a header value of the type MyMessagePayload with the annotation @Header, if the message comes with a header attribute called "myMessagePayload" and its type is MyMessagePayload the 
+		router will accept it, on the other hand the router will reject it with an exception like this: "Method call: Method route(spring.integration.test.var.MyMessagePayload,java.lang.String) 
+		cannot be found on spring.integration.test.router.withAnnotations.MyRouterWithAnnotations type". Regarding the threads, the poller's default task executor of the inbound channel adapter 
+		opens a thread to create the message in the method generateMessage, then it sends it to the iinputDirectChannelToTestARouterConfiguredWithAnnotations direct channel, the router which 
+		is a subscriber of this channel receives (consumes) and sends the message to the destinationDirectChannelToTestARouterConfiguredWithAnnotations direct channel and the destinationQueueChannelToTestARouterConfiguredWithAnnotations 
+		queue channel, the router sends the message to the channels using a loop (one by one), namely, if the channel to send the message is a queue channel the send method invoked in the loop 
+		will return immediately (if the queue has not reached its capacity) otherwise until either room is available or timeout period elapses, but if the channel to send the messages is a 
+		direct channel the send method invoked in the loop will return when the "receiveMessage" method specified in the outbound channel adapter of this direct channel finishes its execution 
+		so that the method "send" invoked in the loop can continue and return. By other hand there is another thread opened by the poller's task executor of the outbound channel adapter of 
+		the queue channel destinationQueueChannelToTestARouterConfiguredWithAnnotations which consumes the message of this queue channel. -->
+	<bean id="myMessagePayloadGeneratorToTestARouterConfiguredWithAnnotations" class="spring.integration.test.generator.impl.MyMessagePayloadGenerator"
+		p:setPayloadRandomlyInTheHeader="true" />
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestARouterConfiguredWithAnnotations" channel="iinputDirectChannelToTestARouterConfiguredWithAnnotations"
+		ref="myMessagePayloadGeneratorToTestARouterConfiguredWithAnnotations" method="generateMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="iinputDirectChannelToTestARouterConfiguredWithAnnotations" />
+
+	<util:list id="destinationChannels_myRouterWithAnnotations" value-type="org.springframework.integration.MessageChannel">
+		<ref bean="destinationDirectChannelToTestARouterConfiguredWithAnnotations" />
+		<ref bean="destinationQueueChannelToTestARouterConfiguredWithAnnotations" />
+	</util:list>
+
+	<int:channel id="destinationDirectChannelToTestARouterConfiguredWithAnnotations">
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="ouboundChannelAdapterdestinationDirectChannelToTestARouterConfiguredWithAnnotations" channel="destinationDirectChannelToTestARouterConfiguredWithAnnotations"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="destinationQueueChannelToTestARouterConfiguredWithAnnotations">
+		<int:queue capacity="50" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterFordestinationQueueChannelToTestARouterConfiguredWithAnnotations" channel="destinationQueueChannelToTestARouterConfiguredWithAnnotations"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- ******************************************************* DYNAMIC ROUTERS ********************************************************* -->
+	<!-- Dynamic Header value Router -->
+
+	<util:list id="dynamicHeaderValuesToDetermineADestinationChannel">
+		<value>kermitDynamicDirectChannel</value>
+		<value>dynamicIntegerQueueChannel</value>
+		<value>dynamicUnknownChannel</value>
+		<value>kk</value>
+	</util:list>
+
+	<bean id="dynamicChannelAdapterSender" class="spring.integration.test.adapter.sender.ChannelAdapterSender" p:headerValuesToDetermineADestinationChannel-ref="dynamicHeaderValuesToDetermineADestinationChannel" />
+
+	<int:inbound-channel-adapter id="dynamicInboundChannelAdapter" channel="dynamicInputDirectChannel" ref="dynamicChannelAdapterSender" method="createMessage"
+		auto-startup="false">
+		<int:poller fixed-rate="10000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="dynamicInputDirectChannel" />
+
+<!-- 	<int:header-value-router id="dynamicHeaderValueRouter" input-channel="dynamicInputDirectChannel" header-name="headerValueToDetermineADestinationChannel" -->
+<!-- 		resolution-required="false" default-output-channel="nullChannel" auto-startup="true" /> -->
+		
+	<int:router id="dynamicHeaderValueRouter" ref="customHeaderValueRouter" input-channel="dynamicInputDirectChannel" default-output-channel="nullChannel"
+		auto-startup="true" resolution-required="false" />
+		
+<!-- 	<bean id="customHeaderValueRouter" class="spring.integration.test.router.CustomHeaderValueRouter"> -->
+<!-- 		<constructor-arg name="headerName" value="headerValueToDetermineADestinationChannel" />		 -->
+<!-- 	</bean>		 -->
+
+	<int:channel id="kermitDynamicDirectChannel" />
+
+	<int:outbound-channel-adapter id="dynamicOuboundChannelAdapterForDynamicInputDirectChannel" channel="kermitDynamicDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="dynamicIntegerQueueChannel">
+		<int:queue capacity="50" />
+	</int:channel>
+
+	<int:channel id="dynamicUnknownChannel" />
+
+	<int:outbound-channel-adapter id="dynamicOutboundChannelAdapterForDynamicUnknownChannel" channel="dynamicUnknownChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="dynamicSimpsonQueueChannel">
+		<int:queue capacity="50" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>		
+	</int:channel>
+	
+	<int:outbound-channel-adapter id="dynamicOutboundChannelAdapterForDynamicSimpsonQueueChannel" channel="dynamicSimpsonQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" >
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+</beans>

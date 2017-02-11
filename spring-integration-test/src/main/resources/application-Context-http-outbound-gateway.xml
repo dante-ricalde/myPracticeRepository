@@ -1,0 +1,197 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- -->
+	<!-- <int:inbound-channel-adapter id="httpOutboundGatewayInbundChannelAdapter" channel="httpOutboundGatewayOutputDirectChannel" expression="T(java.lang.Math).random() > 0.5 ? 'Kelly' 
+		: 'Dante'" -->
+	<!-- auto-startup="true"> -->
+	<!-- <int:poller fixed-rate="1000" /> -->
+	<!-- </int:inbound-channel-adapter> -->
+
+	<int:gateway id="httpOutboundGatewayGateway" service-interface="spring.integration.test.gateway.client.Cafe" default-request-channel="httpOutboundGatewayOutputDirectChannel"
+		default-reply-timeout="1000" />
+
+	<int:channel id="httpOutboundGatewayOutputDirectChannel" /> <!-- to use queue channel to see if works synchronously, namely in the same thread- -->
+
+	<int:channel id="httpOutboundGatewayReplyDirectChannel" /> <!-- to use queue channel to see if works synchronously, namely in the same thread- -->
+
+	<bean id="httpOutboundGatewayHttpOutboundGateway" class="org.springframework.integration.http.outbound.HttpRequestExecutingMessageHandler">
+		<constructor-arg value="http://localhost:8080/example" />
+		<property name="outputChannel" ref="httpOutboundGatewayOutputDirectChannel" />
+		<property name="expectedResponseType" value="java.lang.String" />
+		<property name="transferCookies" value="true" />
+	</bean>
+
+	<!-- <int:service-activator id="httpOutboundGatewayServiceActivator" input-channel="httpOutboundGatewayOutputDirectChannel" ref="myExecutorChannelHandler" -->
+	<!-- auto-startup="true" /> -->
+
+	<!--In this case we are testing and http outbound gateway to execute HTTP messages against a server (in this case a http inbound gateway), delegating to a RestTemplate, that template 
+		in turn delegates to a list of HttpMessageConverters to generate the HHTP request body from the Message payload. You can configure those converters as well as the ClientHttpRequestFactory 
+		instance. By default the HTTP request will be generated using an instance of SimpleClientHttpRequestFactory which uses the JDK HttpURLConnection. Use of the Apache Commons HTTP Client 
+		is also supported through the provided CommonsClientHttpRequestFactory. In the case of the Outbound Gateway, the reply message produced by the gateway will contain all Message Headers 
+		present in the request message. In this case we have set the transfer-cookies attribute on the outbound gateway. When set to true (default is false), a Set-Cookie header received from 
+		the server in a response will be converted to Cookie in the reply message. This header will then be used on subsequent sends. This enables simple stateful interactions, such as......->logonGateway->...->doWorkGateway->...->logoffGateway->....To 
+		test this attribute we have to create another outbound-gateways which have to be invoked after the first gateway, those gateways would use the cookie on subsequent sends. Regarding 
+		the threads, in this case we have two principal threads. The first one is the thread used by the gateway to send and receive the message (the http request is syncronous), we have tested 
+		that when the http outbound gateway sends the message, the gateway waits blocked for the response; the another thread is the used by the inbound gateway httpInboundGatewayThatReturnsANewMessageInboundGateWay 
+		(Server) to process the http request and return the response (an html, which you can see if you have invoked the server from a browser), in this case all the html of the view (jsp) 
+		returned by the server (http inbound gateway), which is received as payload for the http outbound gateway. We have thought that is better in this case to make the reply channel of the 
+		http outbound gateway a queue channel, so that another thread using an outbound channel adapter in this case can consume the reply message avoiding that the thread of the gateway (the 
+		same thread opened by the inbound channel adapter of this test) stays blocked and can finish its execution faster. In this case we have used SerializingHttpMessageConverter to allow 
+		Java serialization over HTTP, we also have used the org.springframework.http.converter.StringHttpMessageConverter to convert the http response to String. In this case with the property 
+		mapped-response-headers="HTTP_RESPONSE_HEADERS, X-myCookie" (myCookie in the HTTP response (HTTP Inbound Gateway) but you have to add the X as a prefix) I am mapping all the http response 
+		header and the myCookie http response header to the gateway. -->
+
+	<int:inbound-channel-adapter id="simpleHttpOutboundGatewayInbundChannelAdapter" channel="simpleHttpOutboundGatewayRequestDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('Dante', 'Ricalde', 'Delgado')"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleHttpOutboundGatewayRequestDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="simpleHttpOutboundGatewayReplyQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:outbound-gateway id="simpleHttpOutboundGatewayHttpOutboundGateway"
+		url="http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/name/{name}/first-name/{firstName}/last-name/{lastName}" request-channel="simpleHttpOutboundGatewayRequestDirectChannel"
+		http-method="POST" extract-request-payload="false" expected-response-type="java.lang.String" charset="UTF-8" reply-channel="simpleHttpOutboundGatewayReplyQueueChannel"
+		message-converters="messageConvertersList" transfer-cookies="true" mapped-response-headers="HTTP_RESPONSE_HEADERS, X-myCookie" auto-startup="false">
+		<int-http:uri-variable name="name" expression="payload.name" />
+		<int-http:uri-variable name="firstName" expression="payload.getFirstName()" />
+		<int-http:uri-variable name="lastName" expression="payload.lastName" />
+	</int-http:outbound-gateway>
+
+	<util:list id="messageConvertersList">
+		<bean id="serializingHttpMessageConverter" class="org.springframework.integration.http.converter.SerializingHttpMessageConverter" />
+		<bean id="stringHttpMessageConverter" class="org.springframework.http.converter.StringHttpMessageConverter" />
+	</util:list>
+
+	<int:outbound-channel-adapter id="simpleHttpOutboundGatewayOutboundChannelAdapter" channel="simpleHttpOutboundGatewayReplyQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- This gateway is very similar to the previous one, the difference is that in this gateway we are receiving an object serialized (over HTTP), this object in this case is converted 
+		to a GenericMessage because is the expected-response-type (not a html string as in the previous example), that object is then sent to the reply channel. The object serialized received 
+		is convert to the object GenericMessage with the SerializingHttpMessageConverter message converter, this converter is also used to convert the request message to the http request to 
+		send. In this case the property mapped-response-headers="HTTP_RESPONSE_HEADERS, X-myCookie" has not been necessary because we are converting the entirely object serialized into the 
+		GenericMessage with all its headers and hence we are receiving the entirely generic message. That object received is going to be sent as the reply Message, namely the GenericMessage 
+		obtained after the conversion is not going to be the payload of the reply message, it's going to be the reply Message itself without changes. -->
+	<int:inbound-channel-adapter id="simpleHttpOutboundGatewayWithoutViewResponseInbundChannelAdapter" channel="simpleHttpOutboundGatewayWithoutViewResponseRequestDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('Dante', 'Ricalde', 'Delgado')"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" fixed-delay="" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleHttpOutboundGatewayWithoutViewResponseRequestDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="simpleHttpOutboundGatewayWithoutViewResponseReplyQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:outbound-gateway id="simpleHttpOutboundGatewayWithoutViewResponseHttpOutboundGateway"
+		url="http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/fullName/{name}/first-name/{firstName}/last-name/{lastName}" request-channel="simpleHttpOutboundGatewayWithoutViewResponseRequestDirectChannel"
+		http-method="POST" extract-request-payload="false" expected-response-type="org.springframework.integration.message.GenericMessage" reply-channel="simpleHttpOutboundGatewayWithoutViewResponseReplyQueueChannel"
+		message-converters="messageConvertersListWithoutViewResponse" auto-startup="false" request-factory="simpleHttpOutboundGatewayWithoutViewResponseRequestFactory" transfer-cookies="true">
+		<int-http:uri-variable name="name" expression="payload.name" />
+		<int-http:uri-variable name="firstName" expression="payload.getFirstName()" />
+		<int-http:uri-variable name="lastName" expression="payload.lastName" />
+	</int-http:outbound-gateway>
+
+	<bean id="simpleHttpOutboundGatewayWithoutViewResponseRequestFactory" class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
+		<property name="connectTimeout" value="1000" />
+		<property name="readTimeout" value="1000" />
+	</bean>
+
+	<util:list id="messageConvertersListWithoutViewResponse">
+		<bean id="serializingHttpMessageConverter" class="org.springframework.integration.http.converter.SerializingHttpMessageConverter" />
+	</util:list>
+
+	<int:outbound-channel-adapter id="simpleHttpOutboundGatewayWithoutViewResponseOutboundChannelAdapter" channel="simpleHttpOutboundGatewayWithoutViewResponseReplyQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing a http-outbound-gateway that sends in the http request the Message payload serialized (the object spring.integration.test.var.Person), the gateway 
+		can do that with the SerializingHttpMessageConverter converter (this converter serializes the request Message to the http request), this converter is also used to deserialize the http 
+		response into a GenericMessage, that GenericMessage itself is going to be the reply message namely it has all the header properties that came in with the http response (remember that 
+		the http response in this case is a GenericMessage serialized, the invoked http inbound gateway returned it). I have noticed in this case that if I specify a diferent value for the 
+		expected-response-type property (i.e Integer, String) the gateway always works ok returning the entirely reply Message with all its headers (the same Message returned serialized by 
+		the invoked http inbound gateway) and I think it's that way because the SerializingHttpMessageConverter knows that the http response is a GenericMessage serialized, but if you don't 
+		specify this property the payload of the reply Message would contain the ResponseEntity as long as it's http status is a success (non-successful status codes will throw Exceptions) 
+		(the body of that ResponseEntity will be a 200 if it all was ok). -->
+	<int:inbound-channel-adapter id="httpOutboundGatewayWithAObjectPayloadInbundChannelAdapter" channel="httpOutboundGatewayWithAObjectPayloadRequestDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('Kelly', 'Rivera', 'Cordero') : new spring.integration.test.var.Person('Dante', 'Ricalde', 'Delgado')"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="httpOutboundGatewayWithAObjectPayloadRequestDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="httpOutboundGatewayWithAObjectPayloadReplyQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:outbound-gateway id="httpOutboundGatewayWithAObjectPayloadHttpOutboundGateway" url="http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/completeName/{completeName}"
+		request-channel="httpOutboundGatewayWithAObjectPayloadRequestDirectChannel" http-method="POST" extract-request-payload="true" expected-response-type="org.springframework.integration.message.GenericMessage"
+		reply-channel="httpOutboundGatewayWithAObjectPayloadReplyQueueChannel" message-converters="httpOutboundGatewayWithAObjectPayloadMessageConvertersList" auto-startup="false"
+		request-factory="httpOutboundGatewayWithAObjectPayloadRequestFactory" transfer-cookies="true">
+		<int-http:uri-variable name="completeName" expression="payload" />
+	</int-http:outbound-gateway>
+
+	<bean id="httpOutboundGatewayWithAObjectPayloadRequestFactory" class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
+		<property name="connectTimeout" value="1000" />
+		<property name="readTimeout" value="1000" />
+	</bean>
+
+	<util:list id="httpOutboundGatewayWithAObjectPayloadMessageConvertersList">
+		<bean id="serializingHttpMessageConverter" class="org.springframework.integration.http.converter.SerializingHttpMessageConverter" />
+	</util:list>
+
+	<int:outbound-channel-adapter id="httpOutboundGatewayWithAObjectPayloadOutboundChannelAdapter" channel="httpOutboundGatewayWithAObjectPayloadReplyQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+
+</beans>

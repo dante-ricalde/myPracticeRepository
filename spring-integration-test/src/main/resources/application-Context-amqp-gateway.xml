@@ -1,0 +1,123 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- In this case I am testing the "int-amqp:inbound-gateway" and the "int-amqp:outbound-gateway", I am specifying the "reply-channel" property to both endpoints. In the case of the 
+		"int-amqp:outbound-gateway" the reply channel is where the reply message sent to the "anonymousOutboundGatewayReplyQueue" is sent, that reply-queue is specified in the template used 
+		by the "amqp-outobound-gateway" and also is specified in the headers named "amqp_springReplyToStack" of the message that arrives to the "int-amqp:outbound-gateway", you also need to 
+		specify the header "amqp_springReplyCorrelation" in the same message to know to which message send matches the reply message received. ................................................................................................................................................................................. 
+		When the message is consumed by the "int-amqp:inbound-gateway" the message is sent to the "request-channel" of this endpoint being consumed by the service activator "marketDataAmqpInboundGatewayRequestChannelServiceActivator", 
+		then a reply-message is returned by this service-activator to the "amqp-inbound-gateway" specifically to the property reply-channel of this endpoint, then this endpoint sends that reply 
+		message using its rabbit template to the default direct exchange with the routing key "anonymousOutboundGatewayReplyQueue", which is in this case the "anonymousOutboundGatewayReplyQueue" 
+		specified previously when the message is sent to the "marketDataTopicExchange" by the "int-amqp:outbound-gateway" ................................................................................................................................... 
+		Then the "rabbit:reply-listener" specified in the "marketDataGatewayTemplate" consumes the reply message sent by the "int-amqp:inbound-gateway" to the "anonymousOutboundGatewayReplyQueue" 
+		amqp queue and finally the "int-amqp:outbound-gateway" consumes that replied message to send it to its reply channel "marketDataAmqpOutboundGatewayReplyChannel" to be received by the 
+		service activator "marketDataAmqpOutboundGatewayReplyChannelServiceActivator"............................................................................................................................... 
+		We have four thread paths in this case: ................................................................................................................................................................................. 
+		1. marketDataAmqpOutboundGatewayRequestChannel -> AmqpOutboundEndpoint -> RabbitTemplate. The thread to send to the "marketDataTopicExchange" through "int-amqp:outbound-gateway" ........................................................................................................... 
+		2. SimpleMessageListenerContainer -> AmqpInboundGateway -> listener.BlockinQueueConsumer -> marketDataAmqpInboundGatewayRequestChannel -> ServiceActivatorCustomizable -> marketDataAmqpInboundGatewayReplyChannel 
+		-> RabbitTemplate -> default direct exchange (direct:///anonymousOutboundGatewayReplyQueue). The thread to consume the messages of the queues by the "int-amqp:inbound-gateway" and to 
+		send the reply-message to the amqp reply queue "anonymousOutboundGatewayReplyQueue" ............................................................................................................................. 
+		3. BlockingQueueConsumer (Received message: (Body:') -> RabbitTeample (Reply received for b). The thread of the "marketDataGatewayTemplate"'s rabbit:reply-listener to consume the message 
+		of the queue "anonymousOutboundGatewayReplyQueue" ............................................................................................................................................................... 
+		4. PollingConsumer -> AmqpOutboundEndpoint -> marketDataAmqpOutboundGatewayReplyChannel -> SimpleGenericServiceActivator. Another thread opened by the "int-amqp:outbound-gateway" to 
+		send the reply message (received from the queue "anonymousOutboundGatewayReplyQueue") to send it to the "int-amqp:outbound-gateway"'s reply channel............................................................... 
+		******************************************************************************************************************************************************************************************************************* 
+		Regarding transactions, in this case I am using transactions in "int-amqp:outbound-gateway" and "marketDataAmqpInboundGateway" gateways, besides I am using spring-retry (specifying 
+		the property "int-amqp:inbound-gateway"'s "advice-chain") to retry when a fail happens when the "int-amqp:inbound-gateway" consumes the message and I have seen that when a fail happens 
+		the message is re-queued and retried again by spring-retry and when retries are exhausted for a specific message the exception ImmediateAcknowledgeAmqpException is thrown acknowledging 
+		(not doing rollback) the message so that it can't be re-queued and consumed again. I have observed that the property "backOffPolicy" in the StatefulRetryOperationsInterceptor is not 
+		working because the retries are executing immediately, although the concept of Stateful Retry is working correctly because the message is rollbacked when a fail happens (re-queing the 
+		message) and being consumed again by the BlockingQueueConsumer in each retry............................................................................................................................................................................................................. 
+		In this case I haven't used "Returns" and "Confirms" -->
+	<int:inbound-channel-adapter id="marketDataGatewayInboundChannelAdapter" channel="marketDataAmqpOutboundGatewayRequestChannel" ref="gatewayRabbitMarketGenerator"
+		method="generateMarketData" auto-startup="true">
+		<int:poller fixed-rate="5000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="marketDataAmqpOutboundGatewayRequestChannel">
+		<int:queue capacity="5000" />
+	</int:channel>
+
+	<int:channel id="marketDataAmqpOutboundGatewayReplyChannel" />
+
+	<int:service-activator id="marketDataAmqpOutboundGatewayReplyChannelServiceActivator" input-channel="marketDataAmqpOutboundGatewayReplyChannel" ref="simpleGenericServiceActivator"
+		requires-reply="false" auto-startup="true" />
+
+	<int-amqp:outbound-gateway id="marketDataAmqpOutboundGateway" request-channel="marketDataAmqpOutboundGatewayRequestChannel" reply-channel="marketDataAmqpOutboundGatewayReplyChannel"
+		amqp-template="marketDataGatewayTemplate" exchange-name="marketDataTopicExchange" routing-key-expression="'app.stock.quotes.' + payload.stockExchange + '.' + payload.ticker"
+		header-mapper="defaultRequestMapper" />
+	<!-- mapped-request-headers="spring_reply_correlation,spring_reply_to,amqp_replyTo" mapped-reply-headers="spring_reply_correlation,spring_reply_to,amqp_replyTo" /> -->
+
+	<bean id="defaultRequestMapper" class="org.springframework.integration.amqp.support.DefaultAmqpHeaderMapper"></bean>
+
+	<int-amqp:inbound-gateway id="marketDataAmqpInboundGateway" request-channel="marketDataAmqpInboundGatewayRequestChannel" reply-channel="marketDataAmqpInboundGatewayReplyChannel"
+		connection-factory="marketDataGatewayConnectionFactory" channel-transacted="true" queue-names="anonymousNyseMarketDateQueue, anonymousNasdaqMarketDataQueue" message-converter="jsonMessageConverter"
+		header-mapper="defaultRequestMapper" advice-chain="amqpInboundChannelAdapterAdviceChain" auto-startup="true" />
+	<!-- mapped-request-headers="spring_reply_correlation,spring_reply_to,amqp_replyTo" mapped-reply-headers="spring_reply_correlation,spring_reply_to,amqp_replyTo" auto-startup="true" 
+		/> -->
+
+	<bean id="amqpinboundGatewayAdviceChain" class="org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor">
+		<property name="retryOperations">
+			<bean class="org.springframework.retry.support.RetryTemplate">
+				<property name="retryPolicy">
+					<bean class="org.springframework.retry.policy.SimpleRetryPolicy" p:maxAttempts="2" />
+				</property>
+				<property name="backOffPolicy">
+					<bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy" p:initialInterval="10000" p:multiplier="2" />
+				</property>
+			</bean>
+		</property>
+		<property name="recoverer" ref="myCustomMethodInvocationRecoverer" />
+		<property name="keyGenerator" ref="myCustomRetryKeyGenerator" />
+	</bean>
+
+	<int:channel id="marketDataAmqpInboundGatewayRequestChannel" />
+
+	<int:channel id="marketDataAmqpInboundGatewayReplyChannel" />
+
+	<bean id="serviceActivatorThatSometimesThrowsException" class="spring.integration.test.handler.ServiceActivatorCustomizable" p:sometimesThrowsException="true" />
+
+	<int:service-activator id="marketDataAmqpInboundGatewayRequestChannelServiceActivator" input-channel="marketDataAmqpInboundGatewayRequestChannel" ref="serviceActivatorThatSometimesThrowsException"
+		requires-reply="true" output-channel="marketDataAmqpInboundGatewayReplyChannel" auto-startup="true">
+	</int:service-activator>
+
+	<!--****************************************************** RabbitMQ Configuration ************************************************************ -->
+
+	<rabbit:connection-factory id="marketDataGatewayConnectionFactory" />
+
+	<rabbit:template id="marketDataGatewayTemplate" connection-factory="marketDataGatewayConnectionFactory" message-converter="jsonMessageConverter"
+		channel-transacted="true" reply-queue="anonymousOutboundGatewayReplyQueue">
+		<rabbit:reply-listener id="replyListener" auto-startup="true" channel-transacted="true" />
+	</rabbit:template>
+
+	<rabbit:queue id="anonymousOutboundGatewayReplyQueue" name="anonymousOutboundGatewayReplyQueue" />
+
+	<rabbit:queue id="anonymousNyseMarketDateQueue" name="anonymousNyseMarketDateQueue" />
+
+	<rabbit:queue id="anonymousNasdaqMarketDataQueue" name="anonymousNasdaqMarketDataQueue" />
+
+	<rabbit:admin id="marketDataGatewayRabbitAdmin" connection-factory="marketDataGatewayConnectionFactory" auto-startup="true" />
+
+	<!-- In this case I am going to test this adapter using transactions and not "Confirms and returns" -->
+</beans>

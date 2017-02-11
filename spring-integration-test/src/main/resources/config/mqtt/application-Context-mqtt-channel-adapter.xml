@@ -1,0 +1,96 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:int-jpa="http://www.springframework.org/schema/integration/jpa" xmlns:int-jms="http://www.springframework.org/schema/integration/jms" xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:int-mail="http://www.springframework.org/schema/integration/mail" xmlns:int-mqtt="http://www.springframework.org/schema/integration/mqtt"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.0.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration/jpa http://www.springframework.org/schema/integration/jpa/spring-integration-jpa-3.0.xsd
+		http://www.springframework.org/schema/integration/mail http://www.springframework.org/schema/integration/mail/spring-integration-mail-4.0.xsd
+		http://www.springframework.org/schema/integration/mqtt http://www.springframework.org/schema/integration/mqtt/spring-integration-mqtt-4.1.xsd">
+
+	<!-- In this case I am testing a simple inbound (message-driven) channel adapter to receive the messages from the publically accessible sandbox server for the Eclipse IoT projects. 
+		To send the messages I use the same sandbox server and a mqtt-outbound-channel-adapter. The messages I send are not retained in the server namely the server must not store the message 
+		and must not remove or replace any existing retained messages. When I send and consume a message I need to specify a topic which is the label attached to an Application Message which 
+		is matched against the Subscriptions known to the Server. The Server sends a copy of the Application Message to each Client that has a matching Subscription. When I consume the message 
+		I only subscribe with a single topic 'dantericalde'. In this case I am using a single topic and not the Topic Level Separator which is used to separate each level within a topic tree 
+		and provide a hierarchical structure to the Topic Names, i.e if a Client subscribes to “sport/tennis/player1/#”, it would receive messages published using these topic names: “sport/tennis/player1”, 
+		“sport/tennis/player1/ranking”, “sport/tennis/player1/score/wimbledon”. It exists a web application for iot.eclipse.org that provides a bridge between HTTP and MQTT using a RESTish 
+		interface. It is possible to GET, POST, PUT and DELETE retained messages on the remote MQTT server. I use this application when I want to get a message from the MQTT server, but the 
+		message needs to be sent as retained. 
+		
+		A snippet of the logs are:
+		
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: GenericMessage [payload=Item [id=d559a8d0-b30f-4efe-8392-692cd91c27cf, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974350885, id=034a8d29-3a53-6df6-3d1b-a111e8c2716e, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler]  - org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler#0 received message: GenericMessage [payload=Item [id=d559a8d0-b30f-4efe-8392-692cd91c27cf, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974350886, id=d7daf01e-6770-35ad-6516-1e67761beb61, history=simpleMqttOutboundChannelAdapterInboundChannelAdapter,simpleMqttOutboundChannelAdapterChannel, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMqttOutboundChannelAdapterChannel', message: GenericMessage [payload=Item [id=d559a8d0-b30f-4efe-8392-692cd91c27cf, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974350886, id=d7daf01e-6770-35ad-6516-1e67761beb61, history=simpleMqttOutboundChannelAdapterInboundChannelAdapter,simpleMqttOutboundChannelAdapterChannel, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#28 received message: GenericMessage [payload=Item [id=d559a8d0-b30f-4efe-8392-692cd91c27cf, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974351033, id=8127abea-e948-8dbb-0f68-8f7bd6650b92, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_retained=false, mqtt_duplicate=false}]
+		 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: GenericMessage [payload=Item [id=d559a8d0-b30f-4efe-8392-692cd91c27cf, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974351033, id=935feff4-a2a8-eb10-267b-dffd96d02d53, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel,simpleMqttMessageDrivenChannelAdapterChannelOutboundChannelAdapter, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_duplicate=false, mqtt_retained=false}]*********END OF THE MESSAGE *************************
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMqttMessageDrivenChannelAdapterChannel', message: GenericMessage [payload=Item [id=d559a8d0-b30f-4efe-8392-692cd91c27cf, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974351033, id=8127abea-e948-8dbb-0f68-8f7bd6650b92, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_retained=false, mqtt_duplicate=false}]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: GenericMessage [payload=Item [id=1a806847-4ac2-4dc2-8d21-6641b4553258, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974410886, id=20a102c5-6fa2-f72c-9d72-b392f21ba332, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler]  - org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler#0 received message: GenericMessage [payload=Item [id=1a806847-4ac2-4dc2-8d21-6641b4553258, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974410887, id=78fa202a-d449-dcb8-3a5b-f50723dcc4d4, history=simpleMqttOutboundChannelAdapterInboundChannelAdapter,simpleMqttOutboundChannelAdapterChannel, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMqttOutboundChannelAdapterChannel', message: GenericMessage [payload=Item [id=1a806847-4ac2-4dc2-8d21-6641b4553258, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974410887, id=78fa202a-d449-dcb8-3a5b-f50723dcc4d4, history=simpleMqttOutboundChannelAdapterInboundChannelAdapter,simpleMqttOutboundChannelAdapterChannel, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#28 received message: GenericMessage [payload=Item [id=1a806847-4ac2-4dc2-8d21-6641b4553258, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974411024, id=23131342-2aaf-44be-5462-b8b0c624da03, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_retained=false, mqtt_duplicate=false}]
+		 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: GenericMessage [payload=Item [id=1a806847-4ac2-4dc2-8d21-6641b4553258, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974411025, id=e212387d-f088-33b3-2edb-daa559ebabba, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel,simpleMqttMessageDrivenChannelAdapterChannelOutboundChannelAdapter, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_duplicate=false, mqtt_retained=false}]*********END OF THE MESSAGE *************************
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMqttMessageDrivenChannelAdapterChannel', message: GenericMessage [payload=Item [id=1a806847-4ac2-4dc2-8d21-6641b4553258, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974411024, id=23131342-2aaf-44be-5462-b8b0c624da03, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_retained=false, mqtt_duplicate=false}]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: GenericMessage [payload=Item [id=eef05847-5681-484d-89c9-2fbe127aa67f, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974470884, id=df6dea07-6a28-7958-7b5b-3e1da3a3b38b, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler]  - org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler#0 received message: GenericMessage [payload=Item [id=eef05847-5681-484d-89c9-2fbe127aa67f, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974470885, id=26d4b4e2-29b7-6302-0865-a6be695298b6, history=simpleMqttOutboundChannelAdapterInboundChannelAdapter,simpleMqttOutboundChannelAdapterChannel, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMqttOutboundChannelAdapterChannel', message: GenericMessage [payload=Item [id=eef05847-5681-484d-89c9-2fbe127aa67f, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974470885, id=26d4b4e2-29b7-6302-0865-a6be695298b6, history=simpleMqttOutboundChannelAdapterInboundChannelAdapter,simpleMqttOutboundChannelAdapterChannel, mqtt_retained=false}]
+		 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#28 received message: GenericMessage [payload=Item [id=eef05847-5681-484d-89c9-2fbe127aa67f, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974471024, id=65939bc2-55b2-1633-4590-3a24f5734ac6, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_retained=false, mqtt_duplicate=false}]
+		 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: GenericMessage [payload=Item [id=eef05847-5681-484d-89c9-2fbe127aa67f, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974471024, id=feb2f99c-53ff-e771-575b-bdf62b6286c5, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel,simpleMqttMessageDrivenChannelAdapterChannelOutboundChannelAdapter, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_duplicate=false, mqtt_retained=false}]*********END OF THE MESSAGE *************************
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMqttMessageDrivenChannelAdapterChannel', message: GenericMessage [payload=Item [id=eef05847-5681-484d-89c9-2fbe127aa67f, code=Dantito Ricalde Rivera, description=Dantito Ricalde Rivera, status=1, created_date=null, message=null], headers={timestamp=1420974471024, id=65939bc2-55b2-1633-4590-3a24f5734ac6, history=simpleMqttMessageDrivenChannelAdapter,simpleMqttMessageDrivenChannelAdapterChannel, mqtt_qos=0, mqtt_topic=dantericalde, mqtt_retained=false, mqtt_duplicate=false}]
+		
+		-->
+
+	<int:inbound-channel-adapter id="simpleMqttOutboundChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 
+ 		'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('mqtt_retained', false).build():
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera',
+		'Danielito Ricalde Rivera', 2)).setHeader('mqtt_retained', false).build()"
+		channel="simpleMqttOutboundChannelAdapterChannel" auto-startup="true">
+		<int:poller fixed-rate="60000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleMqttOutboundChannelAdapterChannel" />
+
+	<int-mqtt:outbound-channel-adapter id="simpleMqttOutboundChannelAdapter" client-id="dantericalde.outbound" url="tcp://iot.eclipse.org:1883"
+		channel="simpleMqttOutboundChannelAdapterChannel" default-topic="dantericalde" converter="customPahoMessageConverter" auto-startup="true"></int-mqtt:outbound-channel-adapter>
+
+	<!-- -->
+
+	<int-mqtt:message-driven-channel-adapter id="simpleMqttMessageDrivenChannelAdapter" client-id="dantericalde.inbound" url="tcp://iot.eclipse.org:1883"
+		channel="simpleMqttMessageDrivenChannelAdapterChannel" topics="dantericalde" converter="customPahoMessageConverter" auto-startup="true" />
+
+	<int:channel id="simpleMqttMessageDrivenChannelAdapterChannel" />
+
+	<int:outbound-channel-adapter id="simpleMqttMessageDrivenChannelAdapterChannelOutboundChannelAdapter" channel="simpleMqttMessageDrivenChannelAdapterChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="true" />
+</beans>

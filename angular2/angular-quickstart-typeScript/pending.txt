@@ -1,0 +1,15 @@
+I need to review the tests from this quickstart example in the quickstart project in github: https://github.com/angular/quickstart
+
+https://angular.io/docs/ts/latest/quickstart.html
+
+http://plnkr.co/edit/?p=preview&open=app%2Fapp.component.ts
+
+https://angular.io/docs/ts/latest/guide/index.html
+
+https://angular.io/docs/ts/latest/guide/setup.html
+
+https://angular.io/docs/ts/latest/guide/setup.html#!#develop-locally
+
+http://plnkr.co/edit/?p=preview&open=app%2Fapp.component.ts
+
+https://github.com/angular/quickstart

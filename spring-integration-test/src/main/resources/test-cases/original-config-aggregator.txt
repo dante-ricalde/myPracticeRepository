@@ -1,0 +1,75 @@
+<int:inbound-channel-adapter id="usingAMessageGroupStoreInboundChannelAdapter" channel="usingAMessageGroupStoreInputDirectChannel"
+		expression="T(java.util.Arrays).asList('Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)), 'Mesage' + T(java.lang.String).valueOf(T(java.lang.Math).round(T(java.lang.Math).random()*100)))"
+		auto-startup="true">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="usingAMessageGroupStoreInputDirectChannel" />
+
+	<int:splitter id="usingAMessageGroupStoreSplitter" input-channel="usingAMessageGroupStoreInputDirectChannel" output-channel="usingAMessageGroupStoreSplitterOutputQueueChannel"
+		auto-startup="true" />
+
+	<int:channel id="usingAMessageGroupStoreSplitterOutputQueueChannel">
+		<int:queue capacity="500" />
+		<int:interceptors>
+			<int:ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:aggregator id="usingAMessageGroupStoreAggregator" input-channel="usingAMessageGroupStoreSplitterOutputQueueChannel" output-channel="usingAMessageGroupStoreOutputChannel"
+		ref="customAggregatorImplementation" method="aggregatePayloads" correlation-strategy="myCorrelationStrategy" correlation-strategy-method="getCorrelationKey"
+		release-strategy="myReleaseStrategyImplementingTheReleaseStrategyInterfaceInterface" release-strategy-method="canRelease" message-store="persistentMessageStore" auto-startup="true">
+		<int:poller fixed-rate="10">
+			<int:transactional />
+		</int:poller>
+	</int:aggregator>
+
+	<int-jdbc:message-store id="persistentMessageStore" data-source="dataSource" />
+
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="dataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/mymessagegroupdb" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<int:channel id="usingAMessageGroupStoreOutputChannel" />
+
+	<int:outbound-channel-adapter id="usingAMessageGroupStoreOutboundChannelAdapter" channel="usingAMessageGroupStoreOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="true" />
+
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="transactionManager" order="100" />

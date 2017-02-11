@@ -1,0 +1,36 @@
+25/11/2015
+	I left at: 10.3 Upgrading from an earlier version of Spring Boot
+1/12/2015
+	Part III. Using Spring Boot
+	
+16/11
+	I left trying to show an error message when the rest call fails. (100%)
+
+17/11
+	I need to configure to use the appropriate id to the make the get() method, I think it is recovered from the path param. (100%)
+
+23/11
+	I need to show the loading messages when a route changes. (100%)
+24/11
+	I need to configure a loading image to show the loading message (not necessary) (100%)
+
+18/12/2016
+	https://github.com/marceljuenemann/angular-drag-and-drop-lists
+	. When I drag the elements, the elements disappear from the origin and then appear in the destination. (100% Now They don't appear in the destination-they are about to be deleted)
+	. I need to implement the CTRL button to stop selecting all the element when I leave the button CTRL and I press in the blank part
+	  of the list or in any other element from the list. (100% In this case I haven't used the CTRL button, but I unselect all the projects when I click in other part that the list of projects)
+	. Only I select several elements from the list if I have pressed the CTRL button. (100% In this case I don't have CTRL button implemented)
+
+10/01/2017
+	I need to implement this: $scope.delete = function() {
+		. If I confirm delete, I call the rest server method delete to delete the projects and I reload the view calling @RequestMapping("/angular/projects") -> List<Project> getProjects(), so that all starts again (100%)
+		. If I cancel the deletion I need to add the elements to delete to the list, namely add to  $scope.models[0].items maintaining its position, I need to save the position in the element project or use sth like @index to restore 
+			in the appropriare position (100% - it was not necessary to use the position)
+
+11/01/2017
+	Review the log4j configuration. (100%)
+	It's not founding the external file specified at application.properties (logging.config=log4j-spring.properties), instead is taking
+	the log4j properties from the file application.properties. (100%)
+	I need to specify that spring boot uses the external file log4j-spring.properties specified in the file application.properties (100%)
+	I have renamed the file log4j.properties to file log4j-spring.properties only to test if the file is gotten by spring boot,
+	 change the name to the original name log4j.properties if necessary (100% It's loading the file log4j2-spring.xml specified at application.properties)

@@ -1,0 +1,114 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd">
+
+	<!-- In this case I am testing a example of a JPA Retrieving Outbound Gateway which is configured purely through Java. In typical usage scenarios you will most likely prefer the XML 
+		Namespace Support described further below. However, the example illustrates how the classes are wired up. Understanding the inner workings can also be very helpful for debugging or 
+		customizing the individual JPA components. First, we instantiate a JpaExecutor using an EntityManager as constructor argument. The JpaExecutor is then in return used as constructor 
+		argument for the o.s.i.jpa.outbound.JpaOutboundGateway and the JpaOutboundGateway will be passed as constructor argument into the EventDrivenConsumer. -->
+
+	<int:inbound-channel-adapter id="simpleStatelessRetryInbundChannelAdapter" channel="getStudentChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.StudentDomain('1', 'Kelly', 'Rivera Cordero') : new spring.integration.test.var.StudentDomain('2', 'Dantito', 'Ricalde Rivera')"
+		auto-startup="true">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<bean id="jpaExecutor" class="org.springframework.integration.jpa.core.JpaExecutor">
+		<constructor-arg name="entityManager" ref="entityManager" />
+		<property name="entityClass" value="spring.integration.test.var.StudentDomain" />
+		<property name="jpaQuery" value="select s from Student s where s.id = :id" />
+		<property name="expectSingleResult" value="true" />
+		<property name="jpaParameters">
+			<util:list>
+				<bean class="org.springframework.integration.jpa.support.JpaParameter">
+					<property name="name" value="id" />
+					<property name="expression" value="payload.id" />
+				</bean>
+			</util:list>
+		</property>
+	</bean>
+
+	<bean id="jpaOutboundGateway" class="org.springframework.integration.jpa.outbound.JpaOutboundGateway">
+		<constructor-arg ref="jpaExecutor" />
+		<property name="gatewayType" value="RETRIEVING" />
+		<property name="outputChannel" ref="studentReplyChannel" />
+	</bean>
+
+	<bean id="getStudentEndpoint" class="org.springframework.integration.endpoint.EventDrivenConsumer">
+		<constructor-arg name="inputChannel" ref="getStudentChannel" />
+		<constructor-arg name="handler" ref="jpaOutboundGateway" />
+	</bean>
+
+	<int:channel id="studentReplyChannel" />
+
+	<int:channel id="getStudentChannel" />
+
+	<int:outbound-channel-adapter id="javaConfigurationStudentOutboundChannelAdapter" channel="studentReplyChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="true" />
+
+
+	<!-- *************************** JPA (HIBERNATE) AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean id="entityManager" class="org.springframework.orm.jpa.support.SharedEntityManagerBean">
+		<property name="entityManagerFactory" ref="entityManagerFactoryBean" />
+	</bean>
+
+	<bean id="entityManagerFactoryBean" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="persistenceUnitName" value="spring-jpa" />
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+				<property name="showSql" value="true" />
+				<property name="generateDdl" value="false" />
+				<property name="database" value="MYSQL" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="dataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/jpatest" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="jpaTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactoryBean" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="jpaTransactionManager" order="100" />
+</beans>

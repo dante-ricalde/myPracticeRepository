@@ -1,0 +1,822 @@
+/** *  */ var
+_canLog = true;
+  (function ($
+) {   "use st
+rict";   if (
+!window.chat) {.
+ .window.chat =
+{}; .}   if
+(!chat.view) {.
+ .chat.view = {
+}; .}   if (
+!chat.view.UserV
+iew) {  chat.v
+iew.UserView = f
+unction (options
+, container, con
+tainerSettings,
+userLi, messageR
+esolver) {  .c
+onsole.log("User
+View creation i
+nvoked");  .va
+r that = this; 
+ .this.$contain
+erSettings = con
+tainerSettings;.
+  $(window).bl
+ur(function(){ 
+  console.log(
+'you have lost t
+he focus.'); 
+th
+at.$containerSet
+tings.hasFocus =
+false;  .});.
+  $(window).fo
+cus(function(){.
+  .console.log
+('you have recov
+ered the focus.'
+); 
+that.$contai
+nerSettings.hasF
+ocus = true; 
+if
+(that.isUserWin
+dowOpen()) { 
+.t
+hat.lookForConfi
+rmingReadMessage
+s(); 
+}  .});.
+  .this.$use
+rWindow = $("<di
+v id = 'window"
++ $(container).t
+ext() + "' class
+='chat-window'>"
+); . .this.$
+userLi = userLi;
+.    .th
+is.options = $.e
+xtend({ .  
+language: "en",.
+   display:
+true, .  m
+essageResolver:
+function () {},.
+   width: 5
+00,   height:
+400,   posit
+ion: {x: 'center
+', y: 'center'},
+   title: "",
+   buttonText
+: "" . .}, o
+ptions || {}); 
+. .this.$mess
+ages = $("<div c
+lass='chat-text-
+messages'>"); .
+.this.queueM
+essages = []; .
+.this.$userW
+indow.append(thi
+s.$messages); .
+.this.$messa
+geInput = $("<in
+put>"); . .t
+his.$userWindow.
+append(this.$mes
+sageInput); .
+.this.$buttonS
+ubmit = $("<butt
+on>"); . .va
+r buttonText = (
+that.options.but
+tonText ? that.o
+ptions.buttonTex
+t : messageResol
+ver.getMessage("
+chat.window.butt
+on.defaultText")
+); . .this.$
+buttonSubmit.tex
+t(buttonText); 
+. .this.$user
+Window.append(th
+is.$buttonSubmit
+);.    .
+this.stompClient
+Destination=cont
+ainer.stompClien
+tDestination; .
+ .
+if (this.opti
+ons.display) { 
+ // .stompClie
+ntDestination.su
+bscribe('/appCha
+tRelay/chat/rece
+iveMessage', fun
+ction (frame) {.
+  .that.
+stompClientDesti
+nation.done(func
+tion () { .
+ // We make
+a subscribe to
+listen for messa
+ges sent from a
+contact (or from
+a sender) .
+ that.stom
+pClientDestinati
+on.subscribe('/e
+xchange/chatDire
+ctExchange/messa
+ges-' + that.$co
+ntainerSettings.
+params.userName
++ '-' + that.$us
+erLi.text(), fun
+ction (frame) {.
+      var
+$p = $("<p class
+='chat-received-
+message'>");  
+  var message
+= JSON.parse(fra
+me.body);   .
+.that.addMessage
+(message, messag
+e.sender !== tha
+t.$containerSett
+ings.params.user
+Name);    th
+at._init(); //.
+  .if (!that.$
+userWindow.dialo
+g("isOpen")) { 
+//   .that.sh
+ow(that.options.
+position.x, that
+.options.positio
+n.y); //   }
+// If the messag
+e is received fr
+om the sender an
+d it's not a con
+firmation that i
+t has been recei
+ved by the serve
+r    .// and
+also it's not a
+confirmation th
+at the client ha
+s received the m
+essage    if
+(!message.recei
+vedByServer && !
+message.received
+ByClient) {  .
+  that.confirm
+ReceivedMessage(
+message);   .
+.}    //fram
+e.ack({'id':mess
+age.id});   .
+}, /*{ack: 'clie
+nt-individual'}*
+/ {}); .
+ that._connect
+(); .  
+console.log('loa
+ding the message
+s .'); .
+ that._loadMe
+ssages();  
+.that.$user
+Li.click(functio
+n (event) {  
+ //that.
+_loadMessages();
+    th
+at._connect(); 
+   that
+.show(that.optio
+ns.position.x, t
+hat.options.posi
+tion.y);  
+.}); .
+.}); .
+}  };   .
+.chat.view.UserV
+iew.prototype =
+{      _lo
+adMessages: func
+tion () {   .
+var that = this;
+   .// We loa
+d the messages s
+tored in our que
+ue. Remember tha
+t in that queue
+are stored the m
+essages sent fro
+m us to our cont
+act, and the  
+ .// messages s
+ent by our conta
+ct to us    
+this.stompClient
+Destination.subs
+cribe('/appChatR
+elay/chat/getMes
+sages/'+this.$co
+ntainerSettings.
+params.userName
++ '-' + this.$us
+erLi.text(), fun
+ction (frame) {.
+   .var messa
+ges = JSON.parse
+(frame.body); .
+  .$.each(mess
+ages, function (
+index, message)
+{     tha
+t.addMessage(mes
+sage, message.se
+nder !== that.$c
+ontainerSettings
+.params.userName
+, messages);  
+     .});
+   .});   
+},   _connect
+: function () {.
+   var that =
+this; .  .
+  .that.$butto
+nSubmit.click(fu
+nction () {  .
+cons
+ole.log('clickin
+g send with mess
+age: ' + that.$m
+essageInput.val(
+));  .
+if (that.$me
+ssageInput.val()
+) {  .
+.var message
+Chat = {  .
+ "mess
+age": that.$mess
+ageInput.val(),.
+  
+ "sender": that
+.$containerSetti
+ngs.params.userN
+ame,  .
+ "recipien
+t": that.$userLi
+.text(), // .
+ "ti
+me": new Date().
+toString(),  .
+ "u
+serWindowTimeZon
+e": new Date().t
+oString().match(
+/GMT\+[0-9][0-9]
+[0-9][0-9]/)[0],
+  .
+ "id": new Dat
+e().getTime(), 
+ . .
+."state": "PENDI
+NG_TO_SEND"  .
+.};.
+  
+.that.addMessage
+(messageChat, fa
+lse);    .th
+at.$messageInput
+.val('');   .
+ that.$messageI
+nput.focus(); .
+   that.stomp
+ClientDestinatio
+n.send('/appChat
+Relay/chat/sendM
+essage/' + messa
+geChat.sender +
+'/' + messageCha
+t.recipient, {},
+JSON.stringify(
+messageChat)); 
+// .
+.stompClientDes
+tination.send('/
+appChatRelay/cha
+t/sendMessage',
+{'simpUser': "ke
+luchis"}, JSON.s
+tringify(message
+Chat));  .
+}  .
+});   }
+,   _disconne
+ct: function ()
+{      .},
+   _init: fun
+ction () {   
+.var that = this
+;   .if (!tha
+t.options.hasLoa
+ded) {    th
+at.$userWindow.d
+ialog({    .
+autoOpen: false,
+    .width:
+that.options.wid
+th,    .heig
+ht: that.options
+.height,    
+.open: function
+(event, ui) { .
+   .that.$mes
+sageInput.focus(
+);     if (
+that.$containerS
+ettings.hasFocus
+!= false) {  
+   .that.look
+ForConfirmingRea
+dMessages();  
+   }    .
+},    .close
+: function (even
+t, ui) {    
+ that.options.h
+asLoaded = false
+;      tha
+t.$userWindow.di
+alog('destroy');
+    .}   
+ });    tha
+t.options.hasLoa
+ded = true;  .
+ }   .if (!t
+hat.isUserWindow
+Open()) {   .
+.that.$userWindo
+w.dialog('open')
+;   .}   .
+that.$messages.p
+rop('scrollTop',
+this.$messages.
+prop('scrollHeig
+ht'));   }, 
+  show: functi
+on (x, y) {  .
+ var that = thi
+s;   .that._i
+nit();   .//t
+hat.$userWindow.
+dialog("open");.
+  .},   add
+Message: functio
+n (message, rece
+ived, messages)
+{   .this.que
+ueMessages.push(
+message);   .
+var $p = $('span
+:data(messageId)
+', this.$userWin
+dow).filter(func
+tion () {return
+$(this).data('me
+ssageId') == mes
+sage.id});   
+.if (message.use
+rTimeZone) {  
+  //   .} e
+lse if (message.
+time && message.
+userWindowTimeZo
+ne) {    //
+I convert the me
+ssage using the
+time zone of the
+window of the u
+ser    messa
+ge.time = moment
+(message.time).u
+tcOffset(message
+.userWindowTimeZ
+one).format('YYY
+Y-MM-DD HH:mm Z'
+);   .}   
+.var timeText =
+message.time ? "
+<span class='cha
+t-message-time'>
+"+ message.time.
+match(/(2[0-3]|[
+01]?[0-9]):([0-5
+]?[0-9])/)[0] +
+"</span>" : '';.
+   var tick =
+'<span class="c
+hat-message-tick
+default">\u2713
+</span>';   .
+// If the messag
+e that I sent ha
+s been received
+by the server or
+I have received
+the notificatio
+n by the client
+(user destinatio
+n)    .// tha
+t He has receive
+d the message .
+  var tickText
+= (message.rece
+ivedByServer ||
+message.received
+ByClient) && !re
+ceived ? tick :
+'';   .// If
+the message is i
+n the window  
+  .if ($p && $
+p.length>0){  
+  // If the me
+ssage text hasn'
+t double ckeck .
+  . I can add
+a check    
+if ($('.chat-mes
+sage-tick', $p).
+length < 2) { .
+   // If the
+messages text ha
+sn't the time ad
+ded I add it  
+  .$p.html($p.
+html()+ (!$p.htm
+l().match(/(2[0-
+3]|[01]?[0-9]):(
+[0-5]?[0-9])/) ?
+timeText : '')
++ tickText);  
+     .}  
+ .} else { // I
+f the message is
+not in the wind
+ow is going to b
+e added to the w
+indow    var
+$msgChatDiv = (
+received ? $("<d
+iv class='messag
+e received-messa
+ge'></div>") : $
+("<div class='me
+ssage sent-messa
+ge'></div>")); 
+      var
+$p = (received ?
+$("<span class=
+'chat-message ch
+at-received-mess
+age'>") : $("<sp
+an class='chat-m
+essage chat-sent
+-message'>")); 
+   $p.data('m
+essage-id', mess
+age.id);    
+if (message.stat
+e === 'DELIVERED
+') {    .tic
+kText+=tickText;
+    }   .
+.$p.html(message
+.message + timeT
+ext + tickText);
+    this.$me
+ssages.append($m
+sgChatDiv.append
+('<span class="t
+ail-container hi
+ghlight"></span>
+').append($p));.
+        
+ }    .if (
+message.state ==
+= 'PENDING_TO_SE
+ND' && messages
+&& messages.leng
+th > 1) {   .
+.// We look for
+a message RECEIV
+ED by the same i
+d in the message
+s received   
+ var receivedMe
+ssage = $.grep(m
+essages, functio
+n (a) { return a
+.id === message.
+id && a.state ==
+= 'RECEIVED'; })
+;    if (!(r
+eceivedMessage &
+& receivedMessag
+e.length > 0)) {
+    .this.co
+nfirmReceivedMes
+sage(message); 
+   }   .}
+else if (message
+.state === 'READ
+' && !received)
+{    $('.cha
+t-message-tick',
+$p).removeClass
+('default').addC
+lass('read'); .
+  }   .$p.d
+ata('state', mes
+sage.state);  
+ .this.$message
+s.prop('scrollTo
+p', this.$messag
+es.prop('scrollH
+eight'));   }
+,   getChatWi
+ndow: function (
+) {   .return
+this.$userWindo
+w;   },   
+cleanMessage: fu
+nction (message)
+{   .message
+.message=null; 
+  .message.tim
+e=null;   .re
+turn message; .
+ .},   confi
+rmReceivedMessag
+e: function (mes
+sage) {   .va
+r that = this; 
+  .message.rec
+eivedByClient=tr
+ue;   .// We
+sent a message t
+o the sender ind
+icating that we
+have received it
+s message (so th
+at the sender ca
+n mark double ch
+eck in its user
+chat window)  
+ .message.state
+="DELIVERED"; .
+     .//tha
+t.stompClientDes
+tination.send('/
+exchange/chatDir
+ectExchange/mess
+ages-' + message
+.sender + '-noti
+fication', {}, d
+eliveredMessage)
+;   .// We se
+nd the message a
+gain to the send
+er so that its q
+ueue to store th
+e new state (DEL
+IVERED) of this
+message    t
+hat.stompClientD
+estination.send(
+'/exchange/chatD
+irectExchange/me
+ssages-' + messa
+ge.sender + '-'
++ message.recipi
+ent, {}, JSON.st
+ringify(that.cle
+anMessage(messag
+e)));   .// W
+e send a message
+again to our qu
+eue to store the
+new state (RECE
+IVED) of this me
+ssage   .mess
+age.state="RECEI
+VED";   .that
+.stompClientDest
+ination.send('/e
+xchange/chatDire
+ctExchange/messa
+ges-' + message.
+recipient + '-'
++ message.sender
+, {}, JSON.strin
+gify(that.cleanM
+essage(message))
+);   .// If t
+he window is ope
+n and the browse
+r has the focus.
+   //window.a
+lert(that.isUser
+WindowOpen() + '
+and' + that.$con
+tainerSettings.h
+asFocus);   .
+if (that.isUserW
+indowOpen() && t
+hat.$containerSe
+ttings.hasFocus
+!= false) {  .
+ .message.state
+="READ";    
+// We send the m
+essage again to
+the sender so th
+at its queue to
+store the new st
+ate (READ) of th
+is message   
+ .that.stompCli
+entDestination.s
+end('/exchange/c
+hatDirectExchang
+e/messages-' + m
+essage.sender +
+'-' + message.re
+cipient, {}, JSO
+N.stringify(that
+.cleanMessage(me
+ssage)));   .
+}   },   c
+onfirmReadMessag
+e: function (mes
+sage) {   .va
+r that = this; 
+  .message.rec
+eivedByClient=tr
+ue;   .// We
+sent a message t
+o the sender ind
+icating that we
+have received it
+s message (so th
+at the sender ca
+n mark double ch
+eck in its user
+chat window)  
+ .message.state
+="READ";    
+   //that.sto
+mpClientDestinat
+ion.send('/excha
+nge/chatDirectEx
+change/messages-
+' + message.send
+er + '-notificat
+ion', {}, delive
+redMessage);  
+ .// We send th
+e message again
+to the sender so
+that its queue
+to store the new
+state (DELIVERE
+D) of this messa
+ge    that.s
+tompClientDestin
+ation.send('/exc
+hange/chatDirect
+Exchange/message
+s-' + message.se
+nder + '-' + mes
+sage.recipient,
+{}, JSON.stringi
+fy(that.cleanMes
+sage(message)));
+   .// We sen
+d a message agai
+n to our queue t
+o store the new
+state (RECEIVED)
+of this message
+      that
+.stompClientDest
+ination.send('/e
+xchange/chatDire
+ctExchange/messa
+ges-' + message.
+recipient + '-'
++ message.sender
+, {}, JSON.strin
+gify(that.cleanM
+essage(message))
+);     .},.
+  .lookForConf
+irmingReadMessag
+es: function ()
+{   .var that
+= this;   ./
+/var $receivedMs
+gs = $('.message
+.received-messag
+e span:data(mess
+ageId)', that.$u
+serWindow).filte
+r(function () {r
+eturn $(this).da
+ta('state') ===
+'RECEIVED'}); .
+  // We retriv
+ed the RECEIVED
+messages from ou
+r queue   .va
+r receivedMessag
+es = $.grep(that
+.queueMessages,
+function (a) { r
+eturn a.state ==
+= 'RECEIVED'; })
+;   .//$deliv
+eredP.index("[da
+ta-state='RECEIV
+ED']") this does
+n't work, I need
+to tried increa
+sing the version
+of jquery   
+.//var $received
+P = $receivedMsg
+s.filter(functio
+n () {return $(t
+his).data('state
+') === 'RECEIVED
+'});      
+$.each(receivedM
+essages, functio
+n (index, messag
+e) {    // W
+e look for a mes
+sage READ by the
+same id in our
+browser stored m
+essages    /
+/ replace grep b
+y findOne or fin
+d from underscor
+e to get only on
+e element and no
+t looping all th
+e messages else
+stoping    /
+/ when the first
+message is foun
+d    var rea
+dMessage = _.fin
+d(that.queueMess
+ages, function (
+a) { return a.id
+=== message.id
+&& a.state === '
+READ'; });   
+ if (!readMessa
+ge) {    .th
+at.confirmReadMe
+ssage(message);.
+   .}    
+});   },  .
+.isUserWindowOpe
+n: function () {
+   .return th
+is.options.hasLo
+aded && this.$us
+erWindow.dialog(
+'isOpen');   
+}  } .}  .}
+)(jQuery);

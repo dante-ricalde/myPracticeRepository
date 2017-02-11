@@ -1,0 +1,77 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- In this case I am testing the endpoints inbound and outbound ApplicationEvents. In the "int-event:inbound-channel-adapter" I have specified its property "event-types" to spring.integration.test.event.BlackListEvent 
+		to specify the event types that I want to receive. "int-event:outbound-channel-adapter" publishes all messages that are in the channel "eventOutboundQueueChannel", in this case the 
+		messages that have a payload BlackListEvent will be passed as is, otherwise the messages that have a payload of type Person will be wrapped in a MessagingEvent instance. When the "int-event:inbound-channel-adapter" 
+		receives the events in addition to only to receive the BlackListEvent event type if a received event has a Message instance as its source (case of Person) then that will be passed as-is 
+		(although in this case only BlackListEvent types are accepted), otherwise, if the event's source is not a Message instance and no "payloadExpression" has been provided, then the ApplicationEvent 
+		itself will be passed as the payload (case of BlackListEvent type)........................................................................................................................................................ 
+		Regarding threads when the "int-event:outbound-channel-adapter" consumes the messages, those are published as ApplicationEvents to any relevant Application Listeners instances that 
+		are registered within the same Spring Application Context, in that publishing happens in the same thread in this case because the channel "eventChannel" is a direct channel(if that 
+		channel was a polable channel only the communication between this endpoint "int-event:outbound-channel-adapter" and "int-event:inbound-channel-adapter" was in the same thread), for 
+		that reason when a exception is thrown by a downstream component, in this case by the service activator "serviceActivatorThatSometimesThrowsException" a MessagingException containing 
+		the failed message and exception will be sent to the channel named 'eventErrorChannel'. If no "error-channel" is specified and the downstream channels are synchronous (as in this case), 
+		the Exception will be propagated to the caller (namely to the publisher "int-event:outbound-channel-adapter"), in this case we have specified a error-channel and those exceptions are 
+		consumed by the outbound-channel-adapter "errorOutboundChannelAdapter"..................................................................................................................................................... 
+		The thread paths are: .......................................................................................................................................................................................................... 
+		1.) int:inbound-channel-adapter-> eventOutboundQueueChannel .................................................................................................................................................................... 
+		2.) int-event:outbound-channel-adapter -> int-event:inbound-channel-adapter -> eventChannel -> eventReceiverServiceActivator (flow ok) ......................................................................................... 
+		3.) int-event:outbound-channel-adapter -> int-event:inbound-channel-adapter -> eventChannel -> eventReceiverServiceActivator -> eventErrorChannel -> errorOutboundChannelAdapter (flow 
+		with exception thrown) -->
+
+	<int:inbound-channel-adapter id="eventSourceInboundChannelAdapter" channel="eventOutboundQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Person('01', 'Dantito', 'Ricalde', 'Rivera') : new spring.integration.test.event.BlackListEvent('dantito@hotmail.com', 'Dantito text')"
+		auto-startup="true">
+		<int:poller fixed-rate="10000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="eventOutboundQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int-event:outbound-channel-adapter id="eventOutboundChannelAdapter" channel="eventOutboundQueueChannel" auto-startup="true">
+		<int:poller max-messages-per-poll="1" task-executor="eventOutboundTaskExecutor" fixed-rate="1000" />
+	</int-event:outbound-channel-adapter>
+
+	<task:executor id="eventOutboundTaskExecutor" pool-size="5" />
+
+	<int-event:inbound-channel-adapter id="eventReceiverChannelAdaper" error-channel="eventErrorChannel" channel="eventChannel"
+		event-types="spring.integration.test.event.BlackListEvent" auto-startup="true" />
+
+	<int:channel id="eventChannel" />
+
+	<int:channel id="eventErrorChannel" />
+
+	<bean id="serviceActivatorThatSometimesThrowsException" class="spring.integration.test.handler.MyAnotherExecutorChannelHandler" p:sometimesThrowsException="true" />
+
+	<int:service-activator id="eventReceiverServiceActivator" input-channel="eventChannel" ref="serviceActivatorThatSometimesThrowsException" requires-reply="false"
+		auto-startup="true" />
+
+	<int:outbound-channel-adapter id="errorOutboundChannelAdapter" channel="eventErrorChannel" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="true" />
+
+</beans>

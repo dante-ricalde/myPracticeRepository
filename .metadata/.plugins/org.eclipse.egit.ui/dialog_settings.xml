@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<list key="CommitDialog.authorValues">
+		<item value="Dante Ricalde &lt;Dante Ricalde@192.168.1.36&gt;"/>
+		<item value="Dante Ricalde &lt;Dante Ricalde@192.168.1.35&gt;"/>
+		<item value="Dante Ricalde &lt;Dante Ricalde@192.168.1.33&gt;"/>
+	</list>
+	<list key="CommitDialog.committerValues">
+		<item value="Dante Ricalde &lt;Dante Ricalde@192.168.1.36&gt;"/>
+		<item value="Dante Ricalde &lt;Dante Ricalde@192.168.1.35&gt;"/>
+		<item value="Dante Ricalde &lt;Dante Ricalde@192.168.1.33&gt;"/>
+	</list>
+	<section name="GitCommitMessageComponent">
+	</section>
+	<section name="org.eclipse.egit.ui.internal.staging.StagingView">
+		<item value="621,378" key="STAGING_SASH_FORM_WEIGHT"/>
+		<item value="true" key="sortItemState"/>
+		<item value="500,500" key="HORIZONTAL_SASH_FORM_WEIGHT"/>
+	</section>
+</section>

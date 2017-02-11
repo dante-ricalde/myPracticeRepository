@@ -1,0 +1,118 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd">
+
+	<!-- In this case I am testing a simple int-ip:tcp-outbound-channel-adapter and int-ip:tcp-inbound-channel-adapter. I am using two connections factories, one for client and the other 
+		for server. I am using java standar (de)serializer for both connection factories. In this configuration, messages arriving in channel 'tcpInput' are serialized over connections created 
+		by 'client' received at the server and placed on channel 'loop'. Since 'loop' is the input channel for 'outboundServer' the message is simply looped back over the same connection and 
+		received by 'inboundClient' and deposited in channel 'replies'. Java serialization is used on the wire. Regarding thread We have the following paths: ****************************************** 
+		1.) int:inbound-channel-adapter -> tcpInput -> int-ip:tcp-outbound-channel-adapter (outboundClient) -> host ************************************************************************************ 
+		2.) int-ip:tcp-inbound-channel-adapter (inboundServer) -> channel (loop) -> int-ip:tcp-outbound-channel-adapter (outboundServer) *************************************************************** 
+		3.) int-ip:tcp-inbound-channel-adapter (inboundClient) -> channel (replies) ******************************************************************************************************************** 
+		You need to take into account the header ip_connection_id, this is the header that will help you to follow the trace of the message(Tip: Reply messages will only be routed to the connection 
+		if the reply contains the header ip_connection_id that was inserted into the original message by the connection factory.).
+		These are traces of the complete travel of a message originated in int:inbound-channel-adapter (simpleTcpChannelAdapter):
+		
+		DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397909, id=e4c233b1-5d6b-4fab-b1ae-9dc468b5d7a6, anotherPaymentType=DEBIT}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'tcpInput', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397910, id=a4010cd8-4772-4e7d-bc90-4f356a82370f, anotherPaymentType=DEBIT, history=simpleTcpChannelAdapter,tcpInput}]
+		 DEBUG [org.springframework.integration.ip.tcp.TcpSendingMessageHandler]  - org.springframework.integration.ip.tcp.TcpSendingMessageHandler#0 received message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397910, id=a4010cd8-4772-4e7d-bc90-4f356a82370f, anotherPaymentType=DEBIT, history=simpleTcpChannelAdapter,tcpInput}]
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNetClientConnectionFactory]  - Opening new socket connection to localhost:1234
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioServerConnectionFactory]  - Removing closed channel
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNetConnection]  - New connection localhost:1234:f89282b0-e30c-4244-9863-09f1b00eac9e
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioServerConnectionFactory]  - Removing closed channel
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioServerConnectionFactory]  - New accept
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNetConnection]  - Reading...
+		 DEBUG [org.springframework.integration.ip.tcp.TcpSendingMessageHandler]  - Got Connection localhost:1234:f89282b0-e30c-4244-9863-09f1b00eac9e
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - New connection 127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNetConnection]  - Message sent [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397911, id=e046b8a7-0c3f-4f35-92f5-7a260ae7c19f, history=simpleTcpChannelAdapter,tcpInput,outboundClient, anotherPaymentType=DEBIT}]
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - 127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a Reading...
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'tcpInput', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397910, id=a4010cd8-4772-4e7d-bc90-4f356a82370f, anotherPaymentType=DEBIT, history=simpleTcpChannelAdapter,tcpInput}]
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - Read 29 into raw buffer
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'loop', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397919, id=c85c2a7d-31f6-444e-b035-a6f544bc35be, history=inboundServer,loop, ip_tcp_remotePort=54385, ip_address=127.0.0.1, ip_hostname=127.0.0.1, ip_connectionId=127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a}]
+		 DEBUG [org.springframework.integration.ip.tcp.TcpSendingMessageHandler]  - org.springframework.integration.ip.tcp.TcpSendingMessageHandler#1 received message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397919, id=c85c2a7d-31f6-444e-b035-a6f544bc35be, history=inboundServer,loop, ip_tcp_remotePort=54385, ip_address=127.0.0.1, ip_hostname=127.0.0.1, ip_connectionId=127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a}]
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - 127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a writing 4
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - 127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a writing 25
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - Message sent [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397920, id=4e46a36a-1df9-4e08-8832-3519618ce188, history=inboundServer,loop,outboundServer, ip_address=127.0.0.1, ip_tcp_remotePort=54385, ip_hostname=127.0.0.1, ip_connectionId=127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a}]
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioConnection]  - Closing single-use connection127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNetConnection]  - Message received [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397921, id=8dc97bf6-4714-4d18-9ad7-34953ff8b124, ip_tcp_remotePort=1234, ip_address=127.0.0.1, ip_hostname=localhost, ip_connectionId=localhost:1234:f89282b0-e30c-4244-9863-09f1b00eac9e}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'loop', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397919, id=c85c2a7d-31f6-444e-b035-a6f544bc35be, history=inboundServer,loop, ip_tcp_remotePort=54385, ip_address=127.0.0.1, ip_hostname=127.0.0.1, ip_connectionId=127.0.0.1:54385:dd512687-bd38-4059-b0e8-31a73896535a}]
+		 DEBUG [org.springframework.integration.channel.QueueChannel]  - preSend on channel 'replies', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397922, id=57871b95-1933-46eb-a46e-cf6159f788ae, history=inboundClient,replies, ip_tcp_remotePort=1234, ip_address=127.0.0.1, ip_hostname=localhost, ip_connectionId=localhost:1234:f89282b0-e30c-4244-9863-09f1b00eac9e}]
+		 DEBUG [org.springframework.integration.channel.QueueChannel]  - postSend (sent=true) on channel 'replies', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1382771397922, id=57871b95-1933-46eb-a46e-cf6159f788ae, history=inboundClient,replies, ip_tcp_remotePort=1234, ip_address=127.0.0.1, ip_hostname=localhost, ip_connectionId=localhost:1234:f89282b0-e30c-4244-9863-09f1b00eac9e}]
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNetConnection]  - Closing single use socket after inbound message localhost:1234:f89282b0-e30c-4244-9863-09f1b00eac9e
+		 DEBUG [org.springframework.integration.ip.tcp.connection.TcpNioServerConnectionFactory]  - Removing closed channel
+		
+		 --->
+
+	<bean id="javaSerializer" class="org.springframework.core.serializer.DefaultSerializer" />
+
+	<bean id="javaDeserializer" class="org.springframework.core.serializer.DefaultDeserializer" />
+
+	<int-ip:tcp-connection-factory id="server" type="server" port="1234" deserializer="javaDeserializer" serializer="javaSerializer" using-nio="true"
+		single-use="true" />
+
+	<int-ip:tcp-connection-factory id="client" type="client" host="localhost" port="#{server.port}" single-use="true" so-timeout="10000" deserializer="javaDeserializer"
+		serializer="javaSerializer" />
+
+	<int:inbound-channel-adapter id="simpleTcpChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload('Dantito Ricalde Rivera').setHeader('anotherPaymentType', 'DEBIT').build(): 
+		T(org.springframework.integration.support.MessageBuilder).withPayload('Danielito Ricalde Rivera').setHeader('anotherPaymentType', 'PERSONAL CHECK').build()"
+		channel="tcpInput" auto-startup="true">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="tcpInput">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="replies">
+		<int:queue />
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-ip:tcp-outbound-channel-adapter id="outboundClient" channel="tcpInput" connection-factory="client" />
+
+	<int-ip:tcp-inbound-channel-adapter id="inboundClient" channel="replies" connection-factory="client" />
+
+	<int-ip:tcp-inbound-channel-adapter id="inboundServer" channel="loop" connection-factory="server" />
+
+	<int-ip:tcp-outbound-channel-adapter id="outboundServer" channel="loop" connection-factory="server" />
+
+	<int:channel id="loop">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+</beans>

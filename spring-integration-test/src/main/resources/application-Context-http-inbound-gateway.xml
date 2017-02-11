@@ -1,0 +1,245 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- In this case we are testing a simple http inbound gateway using a Spring's HttpRequestHandler by providing a servlet definition in the web.xml, as servlet-mappinp we have specified 
+		the following <url-pattern>*.html</url-pattern> in the web.xml too so that only accepts urls that finishes in .html. In the http inbound gateway httpInbound we can specify the path 
+		property, in this case we have uncommented it because it's not necessary but if you specify it the example works correctly, too; you can use it to restrict the urls to process, namely 
+		if you specify /hola.html in the path property the http inbound gateway only will accept urls that finishes in hola.html. To test the example we have to open a browser and enter the 
+		following address, for example: "http://localhost:8080/spring-integration-application-sample-webapp/test.html?name=Dante&apellido=Ricalde", in this case we are going to receive a message 
+		with a payload of type MultiValueMap where each key of the message is the parameter name and the value is the parameter value, in this case would have a <key> ==> <value> (name ==> 
+		Dante) and another <key> ==> <value> (apellido ==> Ricalde). In this case seems that the request has been wrapped as a MultipartHttpServletRequest and when this happens the default 
+		converters (The converters allow customization of the mapping from HttpServletRequest to Message and The HttpRequestHandlingMessagingGateway accepts a list of HttpMessageConverter instances, 
+		too) will convert the request to a MultiValueMap containing values that may be byte arrays, Strings, or instances of Spring's MultipartFile depending on the content type of the individual 
+		parts. -->
+
+	<int:channel id="withServletMappingHttpRequestChannel" />
+
+	<int:channel id="withServletMappingHttpReplyChannel" />
+
+	<bean id="httpInbound" class="org.springframework.integration.http.inbound.HttpRequestHandlingMessagingGateway">
+		<property name="requestChannel" ref="withServletMappingHttpRequestChannel" />
+		<property name="replyChannel" ref="withServletMappingHttpReplyChannel" />
+		<!-- <property name="path" value="/hola.html" /> -->
+	</bean>
+
+	<int:outbound-channel-adapter id="withServletMappingOutboundChannelAdapter" channel="withServletMappingHttpRequestChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="true" />
+
+	<!-- In this case we are testing a gateway configured to serve as a Spring MVC Controller with a view name, because of the constructor arg value of TRUE, it wait for a reply. We are 
+		using a service activator to receive the message (the message already converted from the http message) and send the response to the reply message. The reply message is available in 
+		the Model map (In this case we only print its value in the jsp), the key that is used for that map entry by default is 'reply', but this can be overriden by setting the 'replyKey' property 
+		on this endpoint's configuration. As we have set the value of the extractReplyPayload property to true, the reply property will contain the entirely message, namely in the jsp it will 
+		be printed the payload and all the headers of the message, otherwise it only will be printed the payload of the reply message. In this case as we are working with spring web flow, we 
+		have had to specify the following mapping: /hola=gatewayAsAMVCControllerHttpGateway in the bean org.springframework.web.servlet.handler.SimpleUrlHandlerMapping so that the http message 
+		can get the gatewayAsAMVCControllerHttpGateway bean. Only the http requests (/springIntegrationSample/hola) whose address ends in /hola will be processed by this http gateway. When 
+		we use this controller (org.springframework.integration.http.inbound.HttpRequestHandlingController), this will be used with a DispatcherServlet front controller, it is for this reason 
+		that we have to provide http addresses with the mapping /springIntegrationSample/hola because the servlet-mapping of the DispathServlet has this url-pattern: /springIntegrationSample/*. 
+		Another important aspect in this case is that all the request is synchronous, since the message arrives to the request channel, then goes to the service activator, then the reply message 
+		of the service activator goes to the gatewayAsAMVCControllerReplyDirectChannel reply channel and finally the reply message goes to the page, all in the same thread. You can test this 
+		case opening a browser and writing the following address: http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/hola?name=Dante&lastName=Ricalde -->
+
+	<int:channel id="gatewayAsAMVCControllerRequestDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="gatewayAsAMVCControllerReplyDirectChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<bean id="gatewayAsAMVCControllerHttpGateway" class="org.springframework.integration.http.inbound.HttpRequestHandlingController" name="/hola">
+		<constructor-arg value="true" />
+		<property name="requestChannel" ref="gatewayAsAMVCControllerRequestDirectChannel" />
+		<property name="replyChannel" ref="gatewayAsAMVCControllerReplyDirectChannel" />
+		<!-- <property name="path" value="/hola" /> -->
+		<property name="viewName" value="gatewayAsAMVCControllerView" />
+		<property name="extractReplyPayload" value="false" />
+		<property name="supportedMethodNames">
+			<list>
+				<value>GET</value>
+				<value>DELETE</value>
+			</list>
+		</property>
+	</bean>
+
+	<int:service-activator id="gatewayAsAMVCControllerServiceActivator" input-channel="gatewayAsAMVCControllerRequestDirectChannel" ref="serviceActivatorWithAnOutputChannel"
+		output-channel="gatewayAsAMVCControllerReplyDirectChannel" requires-reply="true" auto-startup="true" />
+
+	<!-- In this case we are testing a http inbound gateway. When you use a HTTP Inbound Gateway or an HTTP ChannelAdapter you must define a UriPathHandlerMapping, this particular implementation 
+		of the Handler Mapping matches against the value of the path attribute. In this case we are using the path attribute with the payload-expression and the header sub-element to have a 
+		high degree of flexibility for mapping inbound request data. In this example, an http inbound gateway is configured to accept requests using the following URI: /first-name/{firstName}/last-name/{lastName}. 
+		Using the payload-expression attribute, the URI template variable {firstName} is mapped to the Message payload, while the {lastName} URI template variable will map to the lname Message 
+		header. We have had to add the following handler (it's another one added) to serving static resources so that the images, js, css can be loaded: <mvc:resources location="/, classpath:/META-INF/web-resources/" 
+		mapping="/first-name/{first-name}/last-name/resources/**"/>. To test this example you have to open a browser and type the following url: http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/first-name/Dante/last-name/Ricalde. 
+		To the http request can be perfectly asynchronous we have had to specify the request and reply channels as direct channels. If you specify the request channel as a queue channel, the 
+		message never arrives to the reply view because that message is processed after (it's consumed after) in another thread. And if you specify the reply channel as a queue channel, the 
+		message arrives to the reply view (because the gateway makes a sendAndReceive) but that queue is always consumed by the gateway (I think that by tomcat) when there are no http requests. -->
+
+	<bean class="org.springframework.integration.http.inbound.UriPathHandlerMapping" />
+
+	<int:channel id="inboundGatewayWithExpressionsRequestQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="inboundGatewayWithExpressionsReplyQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:inbound-gateway id="inboundGatewayWithExpressionsInboundGateWay" path="/first-name/{firstName}/last-name/{lastName}" request-channel="inboundGatewayWithExpressionsRequestQueueChannel"
+		payload-expression="#pathVariables.firstName" reply-channel="inboundGatewayWithExpressionsReplyQueueChannel" view-name="gatewayAsAMVCControllerView" extract-reply-payload="false">
+		<int-http:header name="lname" expression="#pathVariables.lastName" />
+	</int-http:inbound-gateway>
+
+	<int:service-activator id="inboundGatewayWithExpressionsServiceActivator" input-channel="inboundGatewayWithExpressionsRequestQueueChannel" output-channel="inboundGatewayWithExpressionsReplyQueueChannel"
+		ref="serviceActivatorWithAnOutputChannel" requires-reply="true" auto-startup="true" />
+
+	<!-- This example is the same as the previous one. The only difference is that in this case the server (the http inbound gateway), using the service activator returns a new message, 
+		not returns the same message as the previous test. The path of the http inbound gateway is a bit different. In this case the property mapped-response-headers="myCookie, HTTP_RESPONSE_HEADERS" 
+		is mapping the message header myCookie and the all the HTTP_RESPONSE_HEADERS (Set-Cookie) from the message headers to the Http Response. In this case the default converter org.springframework.http.converter.StringHttpMessageConverter 
+		is used to convert the http request to the GenericMessage when this gateway receives a http request and also is used to convert the http response from the reply Message because the 
+		converter SerializingHttpMessageConverter is not added by default, for this reason this attribute is mandatory mapped-response-headers="myCookie, HTTP_RESPONSE_HEADERS" if you want 
+		to add a header of the reply message to the http response because with the StringHttpMessageConverter only the payload will be converted to string and added to the http response. -->
+
+	<int:channel id="httpInboundGatewayThatReturnsANewMessageRequestQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="httpInboundGatewayThatReturnsANewMessageReplyQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:inbound-gateway id="httpInboundGatewayThatReturnsANewMessageInboundGateWay" path="/name/{name}/first-name/{firstName}/last-name/{lastName}"
+		request-channel="httpInboundGatewayThatReturnsANewMessageRequestQueueChannel" payload-expression="#pathVariables.firstName" reply-channel="httpInboundGatewayThatReturnsANewMessageReplyQueueChannel"
+		view-name="gatewayAsAMVCControllerView" extract-reply-payload="false" mapped-response-headers="myCookie, HTTP_RESPONSE_HEADERS">
+		<int-http:header name="lname" expression="#pathVariables.lastName" />
+		<int-http:header name="name" expression="#pathVariables.name" />
+	</int-http:inbound-gateway>
+
+	<int:service-activator id="httpInboundGatewayThatReturnsANewMessageServiceActivator" input-channel="httpInboundGatewayThatReturnsANewMessageRequestQueueChannel"
+		output-channel="httpInboundGatewayThatReturnsANewMessageReplyQueueChannel" ref="httpInboundGatewayThatReturnsANewMessageServiceActivatorRef" requires-reply="true" auto-startup="true" />
+
+	<bean id="httpInboundGatewayThatReturnsANewMessageServiceActivatorRef" class="spring.integration.test.handler.serviceActivator.GenericServiceActivator" p:setCookie="true" />
+
+	<!-- This case is very similar to the previous one, the only difference is that in this case the http-inbound-gateway doesn't have a view-name property, namely that this http-inbound-gateway 
+		won't return an html to a specific view (a jsp), although if you open a browser an enter the following address: http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/fullName/Dante/first-name/Ricalde/last-name/Delgado, 
+		the gateway will show the Message toString in a blank web page and that is possible using the converter ObjectToStringHttpMessageConverter, because the accep-type in the response in 
+		that case is html/text. If you invoke this gateway (Server) using an http-oubound-gateway, this gateway will return the GenericMessage serialized and that is possible using the SerializingHttpMessageConverter. 
+		In this case the property mapped-response-headers="myCookie, HTTP_RESPONSE_HEADERS" is not neccesary because we are serializing the reply GenericMessage message and the enterely message 
+		is serialized with all its headers. -->
+	<int:channel id="httpInboundGatewayWithoutViewRequestQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="httpInboundGatewayWithoutViewReplyQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:inbound-gateway id="httpInboundGatewayWithoutViewInboundGateWay" path="/fullName/{name}/first-name/{firstName}/last-name/{lastName}"
+		request-channel="httpInboundGatewayWithoutViewRequestQueueChannel" payload-expression="#pathVariables.firstName" reply-channel="httpInboundGatewayWithoutViewReplyQueueChannel"
+		extract-reply-payload="false" message-converters="httpInboundGatewayWithoutViewMessageConverters">
+		<int-http:header name="lname" expression="#pathVariables.lastName" />
+		<int-http:header name="fullName" expression="#pathVariables.name" />
+	</int-http:inbound-gateway>
+
+	<util:list id="httpInboundGatewayWithoutViewMessageConverters">
+		<bean id="serializingHttpMessageConverter" class="org.springframework.integration.http.converter.SerializingHttpMessageConverter" />
+		<bean id="objectToStringHttpMessageConverter" class="org.springframework.http.converter.ObjectToStringHttpMessageConverter">
+			<constructor-arg ref="integrationConversionService" />
+		</bean>
+	</util:list>
+
+	<int:service-activator id="httpInboundGatewayWithoutViewServiceActivator" input-channel="httpInboundGatewayWithoutViewRequestQueueChannel" output-channel="httpInboundGatewayWithoutViewReplyQueueChannel"
+		ref="httpInboundGatewayWithoutViewServiceActivatorRef" requires-reply="true" auto-startup="true" />
+
+	<bean id="httpInboundGatewayWithoutViewServiceActivatorRef" class="spring.integration.test.handler.serviceActivator.GenericServiceActivator" p:setCookie="true" />
+
+	<!-- In this test we are testing a http inbound gateway with a request-payload-type attributes set to spring.integration.test.var.Person, this means that when the http-inbound-gateway 
+		deserializes the http request will deserialize the payload to a spring.integration.test.var.Person type, to get this we have had to set the payload-expression="#this.body" attribute 
+		that way, when the class HttpRequestHandlingMessagingGateway of the http inbound gateway handles the http request, the http request message keeps it stored in an object of type HttpEntity 
+		and "this" represents that object, it's supposed that object has the property "body" (in that property is stored the object Person which has been deserialized), it also has the property 
+		"headers" of type HttpHeaders. This gateway to deserialize the http request into the type Person has used the SerializingHttpMessageConverter converter. This gateway serializes its 
+		entirely reply Message to its http response with the SerializingHttpMessageConverter converter when the gateway is invoked from an http-outbound-gateway returning a http response. When 
+		this gateway is invoked from the browser : http://localhost:8080/spring-integration-application-sample-webapp/springIntegrationSample/completeName/Person%2520%255Bid=null,%2520name=Kelly,%2520firstName=Rivera,%2520lastName=Cordero%255D, 
+		this gateway returns to the browser its reply Message toString and that is possible using the converter ObjectToStringHttpMessageConverter, because the accep-type in the response in 
+		that case is html/text. -->
+	<int:channel id="httpInboundGatewayWithAPayloadObjectRequestQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int:channel id="httpInboundGatewayWithAPayloadObjectReplyQueueChannel">
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<int-http:inbound-gateway id="httpInboundGatewayWithAPayloadObjectHttpInboundGateWay" path="/completeName/{completeName}" request-channel="httpInboundGatewayWithAPayloadObjectRequestQueueChannel"
+		payload-expression="#this.body" reply-channel="httpInboundGatewayWithAPayloadObjectReplyQueueChannel" extract-reply-payload="false"
+		message-converters="httpInboundGatewayWithAPayloadObjectMessageConverters" request-payload-type="spring.integration.test.var.Person">
+	</int-http:inbound-gateway>
+
+	<util:list id="httpInboundGatewayWithAPayloadObjectMessageConverters">
+		<bean id="serializingHttpMessageConverter" class="org.springframework.integration.http.converter.SerializingHttpMessageConverter" />
+		<bean id="objectToStringHttpMessageConverter" class="org.springframework.http.converter.ObjectToStringHttpMessageConverter">
+			<constructor-arg ref="integrationConversionService" />
+		</bean>
+	</util:list>
+
+	<int:service-activator id="httpInboundGatewayWithAPayloadObjectServiceActivator" input-channel="httpInboundGatewayWithAPayloadObjectRequestQueueChannel"
+		output-channel="httpInboundGatewayWithAPayloadObjectReplyQueueChannel" ref="httpInboundGatewayWithAPayloadObjectServiceActivatorRef" requires-reply="true" auto-startup="true" />
+
+	<bean id="httpInboundGatewayWithAPayloadObjectServiceActivatorRef" class="spring.integration.test.handler.serviceActivator.GenericServiceActivator" p:setCookie="true" />
+
+	<!-- *************** Multipart HTTP request - RestTemplate (client) and Http Inbound Gateway (server).***************** -->
+	<!-- The 'httpInboundAdapterWithMultipartHttpInboundChannelAdapter' inbound channel adapter will receive the request, convert it to a Message with a payload that is a LinkedMultiValueMap. 
+		We then are parsing that in the 'multipartReceiver' service-activator. You should see the following output: ### Successfully received multipart request ### company - SpringSource company-logo 
+		- as UploadedMultipartFile: spring09_logo.png. Starting with this release MultiPart File support was implemented. If the request has been wrapped as a MultipartHttpServletRequest, when 
+		using the default converters, that request will be converted to a Message payload that is a MultiValueMap containing values that may be byte arrays, Strings, or instances of Spring's 
+		MultipartFile depending on the content type of the individual parts. The HTTP inbound Endpoint will locate a MultipartResolver in the context if one exists with the bean name "multipartResolver" 
+		(the same name expected by Spring's DispatcherServlet). If it does in fact locate that bean, then the support for MultipartFiles will be enabled on the inbound request mapper. Otherwise, 
+		it will fail when trying to map a multipart-file request to a Spring Integration Message. -->
+	<int:channel id="httpInboundAdapterWithMultipartReceiveDirectChannel" />
+
+	<int-http:inbound-channel-adapter id="httpInboundAdapterWithMultipartHttpInboundChannelAdapter" channel="httpInboundAdapterWithMultipartReceiveDirectChannel"
+		path="/inboundAdapter.htm" supported-methods="GET, POST" />
+
+	<int:service-activator id="httpInboundAdapterWithMultipartServiceActivator" input-channel="httpInboundAdapterWithMultipartReceiveDirectChannel">
+		<bean class="spring.integration.test.handler.serviceActivator.MultipartReceiverServiceActivator" />
+	</int:service-activator>
+
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
+
+</beans>

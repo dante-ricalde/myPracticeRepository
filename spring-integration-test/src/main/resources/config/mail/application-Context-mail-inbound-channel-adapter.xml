@@ -1,0 +1,1324 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:int-jpa="http://www.springframework.org/schema/integration/jpa" xmlns:int-jms="http://www.springframework.org/schema/integration/jms" xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:int-mail="http://www.springframework.org/schema/integration/mail"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.1.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration/jpa http://www.springframework.org/schema/integration/jpa/spring-integration-jpa-3.0.xsd
+		http://www.springframework.org/schema/integration/mail http://www.springframework.org/schema/integration/mail/spring-integration-mail-4.0.xsd">
+
+	<!-- In this case I am testing a simple inbound channel adapter that polls a mailbox for mail messages sin SSL. The adapter is polling the mailbox of my hMailServer installed in my local machine. 
+		I had to specify a instance of javax.mail.Authenticator to provide the user and the password properly because in this case the user has to include the domain and if I specify that in 
+		the url then the host, the user and the password are not gotten correctly.
+		
+		A snippet of the logs is:
+		
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - opening folder [pop3://dante.ricalde:*****@127.0.0.1/INBOX]
+		 INFO  [org.springframework.integration.mail.Pop3MailReceiver]  - attempting to receive mail from folder [INBOX]
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - found 1 new messages
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - Received 1 messages
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - USER flags are not supported by this mail server. Flagging message with system flag
+		 DEBUG [org.springframework.integration.mail.MailReceivingMessageSource]  - received mail message [org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@199bffc7]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@199bffc7][Headers={id=e5da1f55-242c-cfe7-873a-d51c1189d84c, timestamp=1407992614272}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simplePop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@199bffc7][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel, id=27d744c3-a861-4d1c-aa6c-165ce8885361, timestamp=1407992614272}]
+		 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#28 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@199bffc7][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel, id=27d744c3-a861-4d1c-aa6c-165ce8885361, timestamp=1407992614272}]
+		 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@199bffc7][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel,simplePop3AdapterOutboundChannelAdapter, id=c1777947-793f-6a82-80a7-d003b81050c8, timestamp=1407992614272}]*********END OF THE MESSAGE *************************
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simplePop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@199bffc7][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel, id=27d744c3-a861-4d1c-aa6c-165ce8885361, timestamp=1407992614272}]
+		 
+		 
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - opening folder [pop3://dante.ricalde:*****@127.0.0.1/INBOX]
+		 INFO  [org.springframework.integration.mail.Pop3MailReceiver]  - attempting to receive mail from folder [INBOX]
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - found 1 new messages
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - Received 1 messages
+		 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - USER flags are not supported by this mail server. Flagging message with system flag
+		 DEBUG [org.springframework.integration.mail.MailReceivingMessageSource]  - received mail message [org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4d979e91]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4d979e91][Headers={id=ff04b06a-868a-f475-d62b-33a811c291d4, timestamp=1407992674323}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simplePop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4d979e91][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel, id=42eab415-ab83-b8d5-1eba-73ff720516f6, timestamp=1407992674323}]
+		 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#28 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4d979e91][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel, id=42eab415-ab83-b8d5-1eba-73ff720516f6, timestamp=1407992674323}]
+		 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4d979e91][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel,simplePop3AdapterOutboundChannelAdapter, id=259700b4-d7d5-ca90-d32f-5db386bff3c7, timestamp=1407992674323}]*********END OF THE MESSAGE *************************
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simplePop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4d979e91][Headers={history=simplePop3Adapter,simplePop3AdapterMailDestinationChannel, id=42eab415-ab83-b8d5-1eba-73ff720516f6, timestamp=1407992674323}]
+		
+		A snippet of the logs from the hMailServer is:
+		
+			"POP3D"	2228	8	"2014-08-14 07:00:34.404"	"127.0.0.1"	"SENT: +OK POP3"
+			"POP3D"	2228	8	"2014-08-14 07:00:34.407"	"127.0.0.1"	"RECEIVED: CAPA"
+			"POP3D"	2228	8	"2014-08-14 07:00:34.408"	"127.0.0.1"	"SENT: +OK CAPA list follows[nl]USER[nl]UIDL[nl]TOP[nl]."
+			"POP3D"	2252	8	"2014-08-14 07:00:34.416"	"127.0.0.1"	"RECEIVED: USER dante.ricalde"
+			"POP3D"	2252	8	"2014-08-14 07:00:34.416"	"127.0.0.1"	"SENT: +OK Send your password"
+			"POP3D"	2252	8	"2014-08-14 07:00:34.418"	"127.0.0.1"	"RECEIVED: PASS ***"
+			"POP3D"	2252	8	"2014-08-14 07:00:34.420"	"127.0.0.1"	"SENT: -ERR Invalid user name or password. Please use full email address as user name."
+			"POP3D"	2252	8	"2014-08-14 07:00:34.421"	"127.0.0.1"	"RECEIVED: QUIT"
+			"POP3D"	2252	8	"2014-08-14 07:00:34.421"	"127.0.0.1"	"SENT: +OK POP3 server saying goodbye..."
+			"POP3D"	2228	9	"2014-08-14 07:00:34.426"	"127.0.0.1"	"SENT: +OK POP3"
+			"POP3D"	2228	9	"2014-08-14 07:00:34.426"	"127.0.0.1"	"RECEIVED: CAPA"
+			"POP3D"	2228	9	"2014-08-14 07:00:34.427"	"127.0.0.1"	"SENT: +OK CAPA list follows[nl]USER[nl]UIDL[nl]TOP[nl]."
+			"POP3D"	2236	9	"2014-08-14 07:00:34.428"	"127.0.0.1"	"RECEIVED: USER dante.ricalde@ricalde.es"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.428"	"127.0.0.1"	"SENT: +OK Send your password"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.429"	"127.0.0.1"	"RECEIVED: PASS ***"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.434"	"127.0.0.1"	"SENT: +OK Mailbox locked and ready"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.444"	"127.0.0.1"	"RECEIVED: STAT"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.445"	"127.0.0.1"	"SENT: +OK 31 20369"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.447"	"127.0.0.1"	"RECEIVED: NOOP"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.447"	"127.0.0.1"	"SENT: +OK"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.461"	"127.0.0.1"	"RECEIVED: TOP 1 0"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.461"	"127.0.0.1"	"SENT: +OK 742 octets"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.465"	"127.0.0.1"	"SENT: Return-Path: "
+			"POP3D"	2236	9	"2014-08-14 07:00:34.465"	"127.0.0.1"	"SENT: Content-Type: text/plain; charset="utf-8""
+			"POP3D"	2236	9	"2014-08-14 07:00:34.466"	"127.0.0.1"	"SENT: MIME-Version: 1.0"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.466"	"127.0.0.1"	"SENT: Return-Path: <>"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.467"	"127.0.0.1"	"SENT: Message-ID: <CE9E1B90-5A0A-43F5-BD83-8F07CFC0B3F9@127.0.0.1>"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.467"	"127.0.0.1"	"SENT: Date: Sat, 9 Aug 2014 14:43:25 +0200"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.468"	"127.0.0.1"	"SENT: From: mailer-daemon@127.0.0.1"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.468"	"127.0.0.1"	"SENT: To: dante.ricalde@QTTest.info"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.469"	"127.0.0.1"	"SENT: Subject: Message undeliverable: "
+			"POP3D"	2236	9	"2014-08-14 07:00:34.469"	"127.0.0.1"	"SENT: Content-Transfer-Encoding: quoted-printable"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.470"	"127.0.0.1"	"SENT: X-hMailServer-LoopCount: 1"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.470"	"127.0.0.1"	"SENT: "
+			"POP3D"	2236	9	"2014-08-14 07:00:34.471"	"127.0.0.1"	"SENT: [nl]."
+			"POP3D"	2228	9	"2014-08-14 07:00:34.476"	"127.0.0.1"	"RECEIVED: LIST 1"
+			"POP3D"	2228	9	"2014-08-14 07:00:34.476"	"127.0.0.1"	"SENT: +OK 1 742"
+			"POP3D"	2252	9	"2014-08-14 07:00:34.478"	"127.0.0.1"	"RECEIVED: RETR 1"
+			"POP3D"	2252	9	"2014-08-14 07:00:34.479"	"127.0.0.1"	"SENT: ."
+			"POP3D"	2236	9	"2014-08-14 07:00:34.479"	"127.0.0.1"	"RECEIVED: NOOP"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.480"	"127.0.0.1"	"SENT: +OK"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.480"	"127.0.0.1"	"RECEIVED: QUIT"
+			"POP3D"	2236	9	"2014-08-14 07:00:34.481"	"127.0.0.1"	"SENT: +OK POP3 server saying goodbye..."
+		
+			"POP3D"	2228	10	"2014-08-14 07:01:34.251"	"127.0.0.1"	"SENT: +OK POP3"
+			"POP3D"	2228	10	"2014-08-14 07:01:34.253"	"127.0.0.1"	"RECEIVED: CAPA"
+			"POP3D"	2228	10	"2014-08-14 07:01:34.254"	"127.0.0.1"	"SENT: +OK CAPA list follows[nl]USER[nl]UIDL[nl]TOP[nl]."
+			"POP3D"	2248	10	"2014-08-14 07:01:34.256"	"127.0.0.1"	"RECEIVED: USER dante.ricalde@ricalde.es"
+			"POP3D"	2248	10	"2014-08-14 07:01:34.257"	"127.0.0.1"	"SENT: +OK Send your password"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.259"	"127.0.0.1"	"RECEIVED: PASS ***"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.283"	"127.0.0.1"	"SENT: +OK Mailbox locked and ready"
+			"POP3D"	2264	10	"2014-08-14 07:01:34.286"	"127.0.0.1"	"RECEIVED: STAT"
+			"POP3D"	2264	10	"2014-08-14 07:01:34.287"	"127.0.0.1"	"SENT: +OK 31 20369"
+			"POP3D"	2264	10	"2014-08-14 07:01:34.289"	"127.0.0.1"	"RECEIVED: NOOP"
+			"POP3D"	2264	10	"2014-08-14 07:01:34.291"	"127.0.0.1"	"SENT: +OK"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.298"	"127.0.0.1"	"RECEIVED: TOP 1 0"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.299"	"127.0.0.1"	"SENT: +OK 742 octets"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.303"	"127.0.0.1"	"SENT: Return-Path: "
+			"POP3D"	2216	10	"2014-08-14 07:01:34.304"	"127.0.0.1"	"SENT: Content-Type: text/plain; charset="utf-8""
+			"POP3D"	2216	10	"2014-08-14 07:01:34.306"	"127.0.0.1"	"SENT: MIME-Version: 1.0"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.307"	"127.0.0.1"	"SENT: Return-Path: <>"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.308"	"127.0.0.1"	"SENT: Message-ID: <CE9E1B90-5A0A-43F5-BD83-8F07CFC0B3F9@127.0.0.1>"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.310"	"127.0.0.1"	"SENT: Date: Sat, 9 Aug 2014 14:43:25 +0200"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.311"	"127.0.0.1"	"SENT: From: mailer-daemon@127.0.0.1"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.313"	"127.0.0.1"	"SENT: To: dante.ricalde@QTTest.info"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.314"	"127.0.0.1"	"SENT: Subject: Message undeliverable: "
+			"POP3D"	2216	10	"2014-08-14 07:01:34.315"	"127.0.0.1"	"SENT: Content-Transfer-Encoding: quoted-printable"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.316"	"127.0.0.1"	"SENT: X-hMailServer-LoopCount: 1"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.317"	"127.0.0.1"	"SENT: "
+			"POP3D"	2216	10	"2014-08-14 07:01:34.317"	"127.0.0.1"	"SENT: [nl]."
+			"POP3D"	2216	10	"2014-08-14 07:01:34.318"	"127.0.0.1"	"RECEIVED: LIST 1"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.318"	"127.0.0.1"	"SENT: +OK 1 742"
+			"POP3D"	2244	10	"2014-08-14 07:01:34.319"	"127.0.0.1"	"RECEIVED: RETR 1"
+			"POP3D"	2244	10	"2014-08-14 07:01:34.320"	"127.0.0.1"	"SENT: ."
+			"POP3D"	2216	10	"2014-08-14 07:01:34.321"	"127.0.0.1"	"RECEIVED: NOOP"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.321"	"127.0.0.1"	"SENT: +OK"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.322"	"127.0.0.1"	"RECEIVED: QUIT"
+			"POP3D"	2216	10	"2014-08-14 07:01:34.322"	"127.0.0.1"	"SENT: +OK POP3 server saying goodbye..."
+
+		 -->
+
+	<int-mail:inbound-channel-adapter id="simplePop3Adapter" store-uri="pop3://dante.ricalde:pescadito@127.0.0.1/INBOX" authenticator="ricaldeesCustomMailAuthenticator"
+		should-delete-messages="false" should-mark-messages-as-read="false" channel="simplePop3AdapterMailDestinationChannel" auto-startup="false">
+		<int:poller max-messages-per-poll="1" fixed-rate="60000" />
+	</int-mail:inbound-channel-adapter>
+
+	<int:channel id="simplePop3AdapterMailDestinationChannel" />
+
+	<int:outbound-channel-adapter id="simplePop3AdapterOutboundChannelAdapter" channel="simplePop3AdapterMailDestinationChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<util:properties id="javaMailProperties">
+		<prop key="mail.pop3.socketFactory.class">javax.net.SocketFactory</prop>
+		<prop key="mail.pop3.socketFactory.fallback">false</prop>
+		<prop key="mail.store.protocol">pop3</prop>
+		<prop key="mail.debug">true</prop>
+		<prop key="mail.pop3.ssl.enable">false</prop>
+	</util:properties>
+
+	<bean id="ricaldeesCustomMailAuthenticator" class="spring.integration.test.mail.CustomMailAuthenticator">
+		<constructor-arg index="0" value="dante.ricalde@ricalde.es" />
+		<constructor-arg index="1" value="pescadito" />
+	</bean>
+
+	<!-- In this case I am testing a simple mail inbound channel adapter that polls the mailbox of my gmail account for mail messages. The pop3 server of gmail
+	uses SSL. For that reason I have configured this adapter to use SSL.
+	
+		A snippet of the logs is:
+		
+		 	DEBUG POP3: mail.pop3s.apop.enable: false
+			DEBUG POP3: mail.pop3s.disablecapa: false
+			DEBUG POP3: connecting to host "pop.gmail.com", port 995, isSSL true
+			+OK Gpop ready for requests from 88.10.173.51 t59mb235401202wek
+			CAPA
+			+OK Capability list follows
+			USER
+			RESP-CODES
+			EXPIRE 0
+			LOGIN-DELAY 300
+			TOP
+			UIDL
+			X-GOOGLE-RICO
+			SASL PLAIN XOAUTH2
+			.
+			DEBUG POP3: authentication command trace suppressed
+			DEBUG POP3: authentication command succeeded
+			DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - opening folder [pop3s://dante.ricalde.delgado@gmail.com:*****@pop.gmail.com/INBOX]
+			 STAT
+			+OK 414 92245863
+			INFO  [org.springframework.integration.mail.Pop3MailReceiver]  - attempting to receive mail from folder [INBOX]
+			 NOOP
+			+OK
+			DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - found 1 new messages
+			 TOP 1 0
+			+OK message follows
+			MIME-Version: 1.0
+			Received: by 10.216.85.1; Mon, 4 Apr 2011 05:57:55 -0700 (PDT)
+			Date: Mon, 4 Apr 2011 05:57:55 -0700
+			Message-ID: <BANLkTikKhf5N7FhTCK3DR0XaSgWUVXxGOw@mail.gmail.com>
+			Subject: =?ISO-8859-1?Q?Obtener_Gmail_en_tu_tel=E9fono_m=F3vil?=
+			From: El equipo de Gmail <mail-noreply@google.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=000e0ce049daed068a04a0174e0f
+			
+			.
+			LIST 1
+			+OK 1 2735
+			DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - Received 1 messages
+			 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - USER flags are not supported by this mail server. Flagging message with system flag
+			 DEBUG POP3: streaming msg 1
+			RETR 1
+			+OK message follows
+			MIME-Version: 1.0
+			Received: by 10.216.85.1; Mon, 4 Apr 2011 05:57:55 -0700 (PDT)
+			Date: Mon, 4 Apr 2011 05:57:55 -0700
+			Message-ID: <BANLkTikKhf5N7FhTCK3DR0XaSgWUVXxGOw@mail.gmail.com>
+			Subject: =?ISO-8859-1?Q?Obtener_Gmail_en_tu_tel=E9fono_m=F3vil?=
+			From: El equipo de Gmail <mail-noreply@google.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=000e0ce049daed068a04a0174e0f
+			
+			000e0ce049daed068a04a0174e0f
+			Content-Type: text/plain; charset=ISO-8859-1
+			Content-Transfer-Encoding: quoted-printable
+			
+			 [image: Access Gmail on your mobile phone]
+			<http://www.google.com/intl/es/mobile/default/mail.html>
+			
+			Ya hace mucho tiempo que no necesitas tu ordenador para acceder a tu carpet=
+			a
+			"Recibidos". Ahora, puedes utilizar Gmail en el tel=E9fono m=F3vil para
+			consultar tu correo electr=F3nico desde cualquier lugar.
+			       Obt=E9n Gmail para tu tel=E9fono
+			=BB<http://www.google.com/intl/es/mobile/default/mail.html#utm_source=3Dwel=
+			-eml&utm_medium=3Deml&utm_campaign=3Des>
+			
+			000e0ce049daed068a04a0174e0f
+			Content-Type: text/html; charset=ISO-8859-1
+			Content-Transfer-Encoding: quoted-printable
+			
+			<html>
+			<font face=3D"Arial, Helvetica, sans-serif">
+			<p>
+			<a href=3D"http://www.google.com/intl/es/mobile/default/mail.html">
+			  <img src=3D"https://www.google.com/intl/es/mobile/images/phones.gif"
+			       alt=3D"Access Gmail on your mobile phone"
+			       style=3D"border:0px;"/>
+			</a>
+			</p>
+			<p>Ya hace mucho tiempo que no necesitas tu ordenador para acceder a tu car=
+			peta "Recibidos". Ahora, puedes utilizar Gmail en el tel=E9fono m=F3vil par=
+			a consultar tu correo electr=F3nico desde cualquier lugar.</p>
+			
+			<table cellpadding=3D"0" cellspacing=3D"0">
+			  <col style=3D"width: 1px;"/>
+			  <col/>
+			  <col style=3D"width: 1px;"/>
+			  <tr>
+			    <td></td>
+			    <td height=3D"1px" style=3D"background-color: #ddd"></td>
+			    <td></td>
+			  </tr>
+			  <tr>
+			    <td style=3D"background-color: #ddd"></td>
+			    <td background=3D"https://mail.google.com/mail/images/welcome-button-ba=
+			ckground.png"
+			        style=3D"background-color: #ddd; background-repeat: repeat-x;
+			            padding: 10px; font-size: larger">
+			          <a href=3D"http://www.google.com/intl/es/mobile/default/mail.html=
+			#utm_source=3Dwel-eml&utm_medium=3Deml&utm_campaign=3Des"
+			            style=3D"font-weight: bold; color: #000; text-decoration: none;
+			            display: block;">
+			      Obt=E9n Gmail para tu tel=E9fono &#187;</a>
+			    </td>
+			    <td style=3D"background-color: #ddd"></td>
+			  </tr>
+			 <tr>
+			    <td></td>
+			    <td height=3D"1px" style=3D"background-color: #ddd"></td>
+			    <td></td>
+			  </tr>
+			</table>
+			</p>
+			</font>
+			</html>
+			
+			==00e0ce049daed068a04a0174e0f==
+			.
+			NOOP
+			+OK
+			QUIT
+			+OK Farewell.
+			DEBUG [org.springframework.integration.mail.MailReceivingMessageSource]  - received mail message [org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@28f890ac]
+			 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@28f890ac][Headers={id=3fa2ed46-000e-b2f7-74da-da4e1ceeccd8, timestamp=1408171869848}]
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'gmailPop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@28f890ac][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel, id=164c937f-7933-5ba6-1ec4-19d8293eb822, timestamp=1408171869849}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#29 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@28f890ac][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel, id=164c937f-7933-5ba6-1ec4-19d8293eb822, timestamp=1408171869849}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@28f890ac][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel,gmailPop3AdapterMailDestinationChannelOutboundChannelAdapter, id=6331a1b9-2b70-687d-9828-3d0cc2d03f62, timestamp=1408171869849}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'gmailPop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@28f890ac][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel, id=164c937f-7933-5ba6-1ec4-19d8293eb822, timestamp=1408171869849}]
+			 
+			 
+			 
+			 DEBUG POP3: mail.pop3s.apop.enable: false
+			DEBUG POP3: mail.pop3s.disablecapa: false
+			DEBUG POP3: connecting to host "pop.gmail.com", port 995, isSSL true
+			+OK Gpop ready for requests from 88.10.173.51 z6mb159816735wiv
+			CAPA
+			+OK Capability list follows
+			USER
+			RESP-CODES
+			EXPIRE 0
+			LOGIN-DELAY 300
+			TOP
+			UIDL
+			X-GOOGLE-RICO
+			SASL PLAIN XOAUTH2
+			.
+			DEBUG POP3: authentication command trace suppressed
+			DEBUG POP3: authentication command succeeded
+			DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - opening folder [pop3s://dante.ricalde.delgado@gmail.com:*****@pop.gmail.com/INBOX]
+			 STAT
+			+OK 414 92273302
+			INFO  [org.springframework.integration.mail.Pop3MailReceiver]  - attempting to receive mail from folder [INBOX]
+			 NOOP
+			+OK
+			DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - found 1 new messages
+			 TOP 1 0
+			+OK message follows
+			MIME-Version: 1.0
+			Received: by 10.216.85.1; Mon, 4 Apr 2011 05:57:56 -0700 (PDT)
+			Date: Mon, 4 Apr 2011 05:57:56 -0700
+			Message-ID: <BANLkTi=_uNWAsagKW+cD-hZ-oJho6fjPiA@mail.gmail.com>
+			Subject: Personaliza Gmail con colores y temas.
+			From: El equipo de Gmail <mail-noreply@google.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=000e0cdfc802f2d91104a0174e74
+			
+			.
+			LIST 1
+			+OK 1 3064
+			DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - Received 1 messages
+			 DEBUG [org.springframework.integration.mail.Pop3MailReceiver]  - USER flags are not supported by this mail server. Flagging message with system flag
+			 DEBUG POP3: streaming msg 1
+			RETR 1
+			+OK message follows
+			MIME-Version: 1.0
+			Received: by 10.216.85.1; Mon, 4 Apr 2011 05:57:56 -0700 (PDT)
+			Date: Mon, 4 Apr 2011 05:57:56 -0700
+			Message-ID: <BANLkTi=_uNWAsagKW+cD-hZ-oJho6fjPiA@mail.gmail.com>
+			Subject: Personaliza Gmail con colores y temas.
+			From: El equipo de Gmail <mail-noreply@google.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=000e0cdfc802f2d91104a0174e74
+			
+			==000e0cdfc802f2d91104a0174e74
+			Content-Type: text/plain; charset=ISO-8859-1
+			Content-Transfer-Encoding: quoted-printable
+			
+			Para darle vida a "Recibidos" con diversos colores y temas, echa un vistazo
+			a la pesta=F1a "Temas" en "Configuraci=F3n".
+			     Personalizar Gmail =BB <https://mail.google.com/mail/#settings/themes>
+			
+			=A1Que lo disfrutes!
+			
+			- El equipo de Gmail
+			[image: Themes thumbnails]
+			
+			Ten en cuenta que la pesta=F1a "Temas" no est=E1 disponible en Internet Exp=
+			lorer
+			6.0. Para sacarle partido a las =FAltimas funciones de Gmail, instala la
+			=FAltima versi=F3n de un navegador que sea totalmente
+			compatible<http://mail.google.com/support/bin/answer.py?answer=3D6557&hl=3D=
+			es&utm_source=3Dwel-eml&utm_medium=3Deml&utm_campaign=3Des>
+			..
+			
+			==000e0cdfc802f2d91104a0174e74
+			Content-Type: text/html; charset=ISO-8859-1
+			Content-Transfer-Encoding: quoted-printable
+			
+			<html>
+			<font face=3D"Arial, Helvetica, sans-serif">
+			<p>Para darle vida a "Recibidos" con diversos colores y temas, echa un vist=
+			azo a la pesta=F1a "Temas" en "Configuraci=F3n".</p>
+			
+			<table cellpadding=3D"0" cellspacing=3D"0">
+			<col style=3D"width: 1px;"/><col/><col style=3D"width: 1px;"/>
+			<tr>
+			  <td></td>
+			  <td height=3D"1px" style=3D"background-color: #ddd"></td>
+			  <td></td>
+			</tr>
+			<tr>
+			  <td style=3D"background-color: #ddd"></td>
+			  <td background=3D"https://mail.google.com/mail/images/welcome-button-back=
+			ground.png"
+			        style=3D"background-color: #ddd; background-repeat: repeat-x;
+			            padding: 10px; font-size: larger"><a href=3D"https://mail.googl=
+			e.com/mail/#settings/themes"
+			            style=3D"font-weight: bold; color: #000; text-decoration: none;
+			            display: block;">Personalizar Gmail &#187;</a>
+			  </td><td style=3D"background-color: #ddd">
+			</td>
+			</tr>
+			  <tr><td>
+			  </td><td height=3D"1px" style=3D"background-color: #ddd">
+			  </td><td>
+			</td>
+			</tr>
+			  </table><p>
+			 =20
+			 =20
+			
+			
+			
+			=A1Que lo disfrutes!</p>
+			
+			<p>- El equipo de Gmail</p>
+			
+			<img width=3D"398" height=3D"256" src=3D"https://mail.google.com/mail/image=
+			s/gmail_themes.png" alt=3D"Themes thumbnails" />
+			
+			<p><font size=3D"-2" color=3D"#999">Ten en cuenta que la pesta=F1a "Temas" =
+			no est=E1 disponible en Internet Explorer 6.0. Para sacarle partido a las =
+			=FAltimas funciones de Gmail, <a href=3D"http://mail.google.com/support/bin=
+			/answer.py?answer=3D6557&hl=3Des&utm_source=3Dwel-eml&utm_medium=3Deml&utm_=
+			campaign=3Des"><font color=3D"#999">
+			instala la =FAltima versi=F3n de un navegador que sea totalmente compatible=
+			</font></a>.</font></p>
+			
+			</font>
+			</html>
+			
+			==000e0cdfc802f2d91104a0174e74==
+			.
+			NOOP
+			+OK
+			QUIT
+			+OK Farewell.
+			DEBUG [org.springframework.integration.mail.MailReceivingMessageSource]  - received mail message [org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@47414b57]
+			 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@47414b57][Headers={id=4d93d512-8524-54b5-815b-fb6472b6fa1b, timestamp=1408171929974}]
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'gmailPop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@47414b57][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel, id=679d6a55-ba28-80c6-a222-58152b81d463, timestamp=1408171929975}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#29 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@47414b57][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel, id=679d6a55-ba28-80c6-a222-58152b81d463, timestamp=1408171929975}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@47414b57][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel,gmailPop3AdapterMailDestinationChannelOutboundChannelAdapter, id=b8e25aad-cd4c-cd0a-b466-8ca6cda2af6b, timestamp=1408171929976}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'gmailPop3AdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@47414b57][Headers={history=gmailPop3Adapter,gmailPop3AdapterMailDestinationChannel, id=679d6a55-ba28-80c6-a222-58152b81d463, timestamp=1408171929975}]
+	
+	-->
+	
+	<int-mail:inbound-channel-adapter id="gmailPop3Adapter" store-uri="pop3s://dante.ricalde.delgado%40gmail.com:Pescadito1@pop.gmail.com/INBOX"
+		should-delete-messages="false" should-mark-messages-as-read="false" channel="gmailPop3AdapterMailDestinationChannel" java-mail-properties="javaSSLMailProperties" auto-startup="false">
+		<int:poller max-messages-per-poll="1" fixed-rate="60000" />
+	</int-mail:inbound-channel-adapter>
+
+	<int:channel id="gmailPop3AdapterMailDestinationChannel" />
+
+	<int:outbound-channel-adapter id="gmailPop3AdapterMailDestinationChannelOutboundChannelAdapter" channel="gmailPop3AdapterMailDestinationChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+	
+	<util:properties id="javaSSLMailProperties">
+		<prop key="mail.pop3s.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+		<prop key="mail.pop3s.socketFactory.fallback">false</prop>
+		<prop key="mail.store.protocol">pop3s</prop>
+		<prop key="mail.debug">true</prop>
+		<prop key="mail.pop3s.ssl.enable">true</prop>
+	</util:properties>
+	
+	<!-- In this case I am testing a simple mail imap-idle-channel-adapter. You need to activate imap on your gmail account to activate the 'idle' command. This command
+		enables event-driven notifications (no poller is necessary for this adapter). This adapter will send a Message to the specified channel as soon as it receives the 
+		notification that new mail is available. I had to increase this property: ail.imap.connectionpoolsize to 10 so that the adapter receives the emails immediately.
+		By default, the ImapMailReceiver will search for Messages based on the default SearchTerm which is All mails that are RECENT (if supported), that are NOT ANSWERED, 
+		that are NOT DELETED, that are NOT SEEN and have not been processed by this mail receiver (enabled by the use of the custom USER flag or simply NOT FLAGGED 
+		if not supported). 
+		This adapter relies on the DefaultSearchTermStrategy that uses the default SearchTerm.
+		
+		A snippet of the logs is:
+		
+			* OK Gimap ready for requests from 88.10.173.51 s15mb238488730wjq
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! s15mb238488730wjq
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: protocolConnect login, host=imap.gmail.com, user=dante.ricalde.delgado@gmail.com, password=<non-null>
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+			A3 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A3 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG IMAPS: connection available == size: 1
+			A4 SELECT INBOX
+			* FLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter)
+			* OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter \*)] Flags permitted.
+			* OK [UIDVALIDITY 650960940] UIDs valid.
+			* 682 EXISTS
+			* 0 RECENT
+			* OK [UIDNEXT 1653] Predicted next UID.
+			* OK [HIGHESTMODSEQ 336364]
+			A4 OK [READ-WRITE] INBOX selected. (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A5 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH 681 682
+			A5 OK SEARCH completed (Success)
+			* OK Gimap ready for requests from 88.10.173.51 ul10mb238552005wjc
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! ul10mb238552005wjc
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A3 NOOP
+			A3 OK Success
+			A6 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A6 OK Success
+			INFO  [org.springframework.integration.mail.ImapMailReceiver]  - attempting to receive mail from folder [INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A7 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH 681 682
+			A7 OK SEARCH completed (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - found 2 new messages
+			 A8 FETCH 681:682 (ENVELOPE INTERNALDATE RFC822.SIZE FLAGS BODYSTRUCTURE)
+			* 681 FETCH (RFC822.SIZE 714 INTERNALDATE "16-Aug-2014 09:16:37 +0000" FLAGS () ENVELOPE ("Sat, 16 Aug 2014 11:16:37 +0200" "Otro Test" (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) NIL NIL NIL "<CAAOh7S41C_TmeK4RkgP1uKaJt41VzrBLSD0hT_isehWg1KBUPA@mail.gmail.com>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a113439b25187940500bb98dd") NIL NIL))
+			* 682 FETCH (RFC822.SIZE 715 INTERNALDATE "16-Aug-2014 09:18:46 +0000" FLAGS () ENVELOPE ("Sat, 16 Aug 2014 11:18:46 +0200" "Nuevo Mail" (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) NIL NIL NIL "<CAAOh7S5+OsKHCeUBpOcBMuYsvWSTnTNUO1jCkFQT9mgNUB2VtQ@mail.gmail.com>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a1137f52c01a9840500bba034") NIL NIL))
+			A8 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - Received 2 messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 A9 STORE 681 +FLAGS (spring-integration-mail-adapter)
+			* 681 FETCH (FLAGS (spring-integration-mail-adapter))
+			A9 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 A10 STORE 682 +FLAGS (spring-integration-mail-adapter)
+			* 682 FETCH (FLAGS (spring-integration-mail-adapter))
+			A10 OK Success
+			A11 FETCH 681 (BODY.PEEK[]<0.16384>)
+			* 681 FETCH (BODY[]<0> {714}
+			MIME-Version: 1.0
+			Received: by 10.114.84.5 with HTTP; Sat, 16 Aug 2014 02:16:37 -0700 (PDT)
+			Date: Sat, 16 Aug 2014 11:16:37 +0200
+			Delivered-To: dante.ricalde.delgado@gmail.com
+			Message-ID: <CAAOh7S41C_TmeK4RkgP1uKaJt41VzrBLSD0hT_isehWg1KBUPA@mail.gmail.com>
+			Subject: Otro Test
+			From: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=001a113439b25187940500bb98dd
+			
+			==001a113439b25187940500bb98dd
+			Content-Type: text/plain; charset=UTF-8
+			
+			
+			
+			==001a113439b25187940500bb98dd
+			Content-Type: text/html; charset=UTF-8
+			
+			<div dir="ltr"><br></div>
+			
+			==001a113439b25187940500bb98dd==)
+			A11 OK Success
+			A12 FETCH 682 (BODY.PEEK[]<0.16384>)
+			* 682 FETCH (BODY[]<0> {715}
+			MIME-Version: 1.0
+			Received: by 10.114.84.5 with HTTP; Sat, 16 Aug 2014 02:18:46 -0700 (PDT)
+			Date: Sat, 16 Aug 2014 11:18:46 +0200
+			Delivered-To: dante.ricalde.delgado@gmail.com
+			Message-ID: <CAAOh7S5+OsKHCeUBpOcBMuYsvWSTnTNUO1jCkFQT9mgNUB2VtQ@mail.gmail.com>
+			Subject: Nuevo Mail
+			From: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=001a1137f52c01a9840500bba034
+			
+			==001a1137f52c01a9840500bba034
+			Content-Type: text/plain; charset=UTF-8
+			
+			
+			
+			==001a1137f52c01a9840500bba034
+			Content-Type: text/html; charset=UTF-8
+			
+			<div dir="ltr"><br></div>
+			
+			==001a1137f52c01a9840500bba034==)
+			A12 OK Success
+			DEBUG IMAP: pool is full, not adding an Authenticated connection
+			A13 LOGOUT
+			* BYE LOGOUT Requested
+			A13 OK 73 good day (Success)
+			DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - received 2 mail messages
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - Task completed successfully. Re-scheduling it again right away.
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - waiting for mail
+			 DEBUG IMAPS: IMAPProtocol noop
+			A4 NOOP
+			DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@633b882d][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=a8e18f84-edb5-a0a2-41f1-bab6cef3b01c, timestamp=1408183484464}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#30 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@633b882d][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=a8e18f84-edb5-a0a2-41f1-bab6cef3b01c, timestamp=1408183484464}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@633b882d][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel,simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=de2d8a3f-80e3-7f7c-d971-32ae2d5907ca, timestamp=1408183484465}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@633b882d][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=a8e18f84-edb5-a0a2-41f1-bab6cef3b01c, timestamp=1408183484464}]
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4b9d29bf][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=1ad9f946-f9f5-4159-5b8a-e77370636e81, timestamp=1408183484469}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#30 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4b9d29bf][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=1ad9f946-f9f5-4159-5b8a-e77370636e81, timestamp=1408183484469}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4b9d29bf][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel,simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=7715138a-0e5b-e32f-fc70-c510277bc5e1, timestamp=1408183484469}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4b9d29bf][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=1ad9f946-f9f5-4159-5b8a-e77370636e81, timestamp=1408183484469}]
+			 
+			 
+			 A4 OK Success
+			A5 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A5 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG IMAPS: connection available == size: 1
+			A6 SELECT INBOX
+			* FLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter)
+			* OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter \*)] Flags permitted.
+			* OK [UIDVALIDITY 650960940] UIDs valid.
+			* 682 EXISTS
+			* 0 RECENT
+			* OK [UIDNEXT 1653] Predicted next UID.
+			* OK [HIGHESTMODSEQ 336375]
+			A6 OK [READ-WRITE] INBOX selected. (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A7 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH
+			A7 OK SEARCH completed (Success)
+			A8 IDLE
+			+ idling
+			* OK Gimap ready for requests from 88.10.173.51 g4mb238809683wjx
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! g4mb238809683wjx
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A3 NOOP
+			A3 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A4 NOOP
+			A4 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A5 NOOP
+			A5 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A6 NOOP
+			A6 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A7 NOOP
+			A7 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A8 NOOP
+			A8 OK Success
+			* 683 EXISTS
+			DONE
+			A8 OK IDLE terminated (Success)
+			A9 FETCH 683 (BODYSTRUCTURE)
+			* 683 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a11c3832484f3b20500bc49e5") NIL NIL))
+			A9 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A9 NOOP
+			A9 OK Success
+			A10 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A10 OK Success
+			INFO  [org.springframework.integration.mail.ImapMailReceiver]  - attempting to receive mail from folder [INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A11 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH 683
+			A11 OK SEARCH completed (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - found 1 new messages
+			 A12 FETCH 683 (ENVELOPE INTERNALDATE RFC822.SIZE FLAGS BODYSTRUCTURE)
+			* 683 FETCH (RFC822.SIZE 720 INTERNALDATE "16-Aug-2014 10:06:10 +0000" FLAGS () ENVELOPE ("Sat, 16 Aug 2014 12:06:10 +0200" "Otro nuevo mail" (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) NIL NIL NIL "<CAAOh7S7pmVEcx5pigd9MYH7ubYKwFr2ELBFigdeXrPPtx76G_w@mail.gmail.com>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a11c3832484f3b20500bc49e5") NIL NIL))
+			A12 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - Received 1 messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 A13 STORE 683 +FLAGS (spring-integration-mail-adapter)
+			* 683 FETCH (FLAGS (spring-integration-mail-adapter))
+			A13 OK Success
+			A14 FETCH 683 (BODY.PEEK[]<0.16384>)
+			* 683 FETCH (BODY[]<0> {720}
+			MIME-Version: 1.0
+			Received: by 10.114.84.5 with HTTP; Sat, 16 Aug 2014 03:06:10 -0700 (PDT)
+			Date: Sat, 16 Aug 2014 12:06:10 +0200
+			Delivered-To: dante.ricalde.delgado@gmail.com
+			Message-ID: <CAAOh7S7pmVEcx5pigd9MYH7ubYKwFr2ELBFigdeXrPPtx76G_w@mail.gmail.com>
+			Subject: Otro nuevo mail
+			From: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=001a11c3832484f3b20500bc49e5
+			
+			==001a11c3832484f3b20500bc49e5
+			Content-Type: text/plain; charset=UTF-8
+			
+			
+			
+			==001a11c3832484f3b20500bc49e5
+			Content-Type: text/html; charset=UTF-8
+			
+			<div dir="ltr"><br></div>
+			
+			==001a11c3832484f3b20500bc49e5==)
+			A14 OK Success
+			DEBUG IMAP: pool is full, not adding an Authenticated connection
+			A15 LOGOUT
+			* BYE LOGOUT Requested
+			A15 OK 73 good day (Success)
+			DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - received 1 mail messages
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - Task completed successfully. Re-scheduling it again right away.
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - waiting for mail
+			 DEBUG IMAPS: IMAPProtocol noop
+			A10 NOOP
+			DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@10b7415b][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=978c0d42-4acc-65ff-a02b-4062faa2614e, timestamp=1408183546584}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#30 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@10b7415b][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=978c0d42-4acc-65ff-a02b-4062faa2614e, timestamp=1408183546584}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@10b7415b][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel,simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=dc84ee86-15b0-4bd1-77a1-8d2060b6e800, timestamp=1408183546586}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@10b7415b][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=978c0d42-4acc-65ff-a02b-4062faa2614e, timestamp=1408183546584}]
+			
+			
+			 A10 OK Success
+			A11 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A11 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG IMAPS: connection available == size: 1
+			A12 SELECT INBOX
+			* FLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter)
+			* OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter \*)] Flags permitted.
+			* OK [UIDVALIDITY 650960940] UIDs valid.
+			* 683 EXISTS
+			* 0 RECENT
+			* OK [UIDNEXT 1654] Predicted next UID.
+			* OK [HIGHESTMODSEQ 336431]
+			A12 OK [READ-WRITE] INBOX selected. (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A13 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH
+			A13 OK SEARCH completed (Success)
+			A14 IDLE
+			+ idling
+			* OK Gimap ready for requests from 88.10.173.51 gy52mb237260394web
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! gy52mb237260394web
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A3 NOOP
+			A3 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A4 NOOP
+			A4 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A5 NOOP
+			A5 OK Success
+			* 684 EXISTS
+			DONE
+			A14 OK IDLE terminated (Success)
+			A15 FETCH 684 (BODYSTRUCTURE)
+			* 684 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a1134ba545c0d610500bc4bf1") NIL NIL))
+			A15 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A6 NOOP
+			A6 OK Success
+			A16 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A16 OK Success
+			INFO  [org.springframework.integration.mail.ImapMailReceiver]  - attempting to receive mail from folder [INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A17 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH 684
+			A17 OK SEARCH completed (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - found 1 new messages
+			 A18 FETCH 684 (ENVELOPE INTERNALDATE RFC822.SIZE FLAGS BODYSTRUCTURE)
+			* 684 FETCH (RFC822.SIZE 714 INTERNALDATE "16-Aug-2014 10:06:41 +0000" FLAGS () ENVELOPE ("Sat, 16 Aug 2014 12:06:41 +0200" "Danielito" (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) NIL NIL NIL "<CAAOh7S4afuDvfyQpyQtjOEhj9xd+xOijsgf_RJeve2tJfQPT2Q@mail.gmail.com>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a1134ba545c0d610500bc4bf1") NIL NIL))
+			A18 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - Received 1 messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 A19 STORE 684 +FLAGS (spring-integration-mail-adapter)
+			* 684 FETCH (FLAGS (spring-integration-mail-adapter))
+			A19 OK Success
+			A20 FETCH 684 (BODY.PEEK[]<0.16384>)
+			* 684 FETCH (BODY[]<0> {714}
+			MIME-Version: 1.0
+			Received: by 10.114.84.5 with HTTP; Sat, 16 Aug 2014 03:06:41 -0700 (PDT)
+			Date: Sat, 16 Aug 2014 12:06:41 +0200
+			Delivered-To: dante.ricalde.delgado@gmail.com
+			Message-ID: <CAAOh7S4afuDvfyQpyQtjOEhj9xd+xOijsgf_RJeve2tJfQPT2Q@mail.gmail.com>
+			Subject: Danielito
+			From: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=001a1134ba545c0d610500bc4bf1
+			
+			==001a1134ba545c0d610500bc4bf1
+			Content-Type: text/plain; charset=UTF-8
+			
+			
+			
+			==001a1134ba545c0d610500bc4bf1
+			Content-Type: text/html; charset=UTF-8
+			
+			<div dir="ltr"><br></div>
+			
+			==001a1134ba545c0d610500bc4bf1==)
+			A20 OK Success
+			DEBUG IMAP: pool is full, not adding an Authenticated connection
+			A21 LOGOUT
+			* BYE LOGOUT Requested
+			A21 OK 73 good day (Success)
+			DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - received 1 mail messages
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - Task completed successfully. Re-scheduling it again right away.
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - waiting for mail
+			 DEBUG IMAPS: IMAPProtocol noop
+			A7 NOOP
+			DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4ec0dacb][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=7e63e7d5-2d63-7171-d905-d501020e90dd, timestamp=1408183578085}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#30 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4ec0dacb][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=7e63e7d5-2d63-7171-d905-d501020e90dd, timestamp=1408183578085}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4ec0dacb][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel,simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=805808fe-b444-5f9e-a2d7-4432be6a641f, timestamp=1408183578085}]*********END OF THE MESSAGE *************************
+			 
+			 
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@4ec0dacb][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=7e63e7d5-2d63-7171-d905-d501020e90dd, timestamp=1408183578085}]
+			 A7 OK Success
+			A8 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A8 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG IMAPS: connection available == size: 1
+			A9 SELECT INBOX
+			* FLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter)
+			* OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter \*)] Flags permitted.
+			* OK [UIDVALIDITY 650960940] UIDs valid.
+			* 684 EXISTS
+			* 0 RECENT
+			* OK [UIDNEXT 1655] Predicted next UID.
+			* OK [HIGHESTMODSEQ 336475]
+			A9 OK [READ-WRITE] INBOX selected. (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A10 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH
+			A10 OK SEARCH completed (Success)
+			A11 IDLE
+			+ idling
+			* OK Gimap ready for requests from 88.10.173.51 w44mb237226984wec
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! w44mb237226984wec
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A3 NOOP
+			A3 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A4 NOOP
+			A4 OK Success
+			* 685 EXISTS
+			DONE
+			A11 OK IDLE terminated (Success)
+			A12 FETCH 685 (BODYSTRUCTURE)
+			* 685 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a11c3d99c90abad0500bc4c34") NIL NIL))
+			A12 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A5 NOOP
+			A5 OK Success
+			A13 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A13 OK Success
+			INFO  [org.springframework.integration.mail.ImapMailReceiver]  - attempting to receive mail from folder [INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A14 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH 685
+			A14 OK SEARCH completed (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - found 1 new messages
+			 A15 FETCH 685 (ENVELOPE INTERNALDATE RFC822.SIZE FLAGS BODYSTRUCTURE)
+			* 685 FETCH (RFC822.SIZE 712 INTERNALDATE "16-Aug-2014 10:07:01 +0000" FLAGS () ENVELOPE ("Sat, 16 Aug 2014 12:07:01 +0200" "Dantito" (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) (("Dante Raphael Ricalde Delgado" NIL "dante.ricalde.delgado" "gmail.com")) NIL NIL NIL "<CAAOh7S7dXQF=9yNcxDU-MaEM3i2AE6ww75a1t8BROnuWPqJRLg@mail.gmail.com>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 27 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "001a11c3d99c90abad0500bc4c34") NIL NIL))
+			A15 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - Received 1 messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 A16 STORE 685 +FLAGS (spring-integration-mail-adapter)
+			* 685 FETCH (FLAGS (spring-integration-mail-adapter))
+			A16 OK Success
+			A17 FETCH 685 (BODY.PEEK[]<0.16384>)
+			* 685 FETCH (BODY[]<0> {712}
+			MIME-Version: 1.0
+			Received: by 10.114.84.5 with HTTP; Sat, 16 Aug 2014 03:07:01 -0700 (PDT)
+			Date: Sat, 16 Aug 2014 12:07:01 +0200
+			Delivered-To: dante.ricalde.delgado@gmail.com
+			Message-ID: <CAAOh7S7dXQF=9yNcxDU-MaEM3i2AE6ww75a1t8BROnuWPqJRLg@mail.gmail.com>
+			Subject: Dantito
+			From: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			To: Dante Raphael Ricalde Delgado <dante.ricalde.delgado@gmail.com>
+			Content-Type: multipart/alternative; boundary=001a11c3d99c90abad0500bc4c34
+			
+			==001a11c3d99c90abad0500bc4c34
+			Content-Type: text/plain; charset=UTF-8
+			
+			
+			
+			==001a11c3d99c90abad0500bc4c34
+			Content-Type: text/html; charset=UTF-8
+			
+			<div dir="ltr"><br></div>
+			
+			==001a11c3d99c90abad0500bc4c34==)
+			A17 OK Success
+			DEBUG IMAP: pool is full, not adding an Authenticated connection
+			A18 LOGOUT
+			* BYE LOGOUT Requested
+			A18 OK 73 good day (Success)
+			DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - received 1 mail messages
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - Task completed successfully. Re-scheduling it again right away.
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - waiting for mail
+			 DEBUG IMAPS: IMAPProtocol noop
+			A6 NOOP
+			DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@67ddcd34][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=735f80da-2e12-4d7a-0f0e-38725d0f9174, timestamp=1408183594623}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#30 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@67ddcd34][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=735f80da-2e12-4d7a-0f0e-38725d0f9174, timestamp=1408183594623}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@67ddcd34][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel,simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=126b30cd-463c-45e0-17b0-16d566bb876c, timestamp=1408183594625}]*********END OF THE MESSAGE *************************
+			 
+			 
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@67ddcd34][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=735f80da-2e12-4d7a-0f0e-38725d0f9174, timestamp=1408183594623}]
+			 A6 OK Success
+			A7 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A7 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG IMAPS: connection available == size: 1
+			A8 SELECT INBOX
+			* FLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter)
+			* OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter \*)] Flags permitted.
+			* OK [UIDVALIDITY 650960940] UIDs valid.
+			* 685 EXISTS
+			* 0 RECENT
+			* OK [UIDNEXT 1656] Predicted next UID.
+			* OK [HIGHESTMODSEQ 336519]
+			A8 OK [READ-WRITE] INBOX selected. (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A9 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH
+			A9 OK SEARCH completed (Success)
+			A10 IDLE
+			+ idling
+			* OK Gimap ready for requests from 88.10.173.51 ao9mb103969178wjc
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! ao9mb103969178wjc
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A3 NOOP
+			A3 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A4 NOOP
+			A4 OK Success
+			* 686 EXISTS
+			DONE
+			A10 OK IDLE terminated (Success)
+			A11 FETCH 686 (BODYSTRUCTURE)
+			* 686 FETCH (BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 56 1 NIL NIL NIL))
+			A11 OK Success
+			DEBUG IMAPS: IMAPProtocol noop
+			A5 NOOP
+			A5 OK Success
+			A12 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A12 OK Success
+			INFO  [org.springframework.integration.mail.ImapMailReceiver]  - attempting to receive mail from folder [INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A13 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH 686
+			A13 OK SEARCH completed (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - found 1 new messages
+			 A14 FETCH 686 (ENVELOPE INTERNALDATE RFC822.SIZE FLAGS BODYSTRUCTURE)
+			* 686 FETCH (RFC822.SIZE 773 INTERNALDATE "16-Aug-2014 10:07:24 +0000" FLAGS () ENVELOPE ("Sat, 16 Aug 2014 12:06:53 +0200" "[IPHost] Email settings test message" ((NIL NIL "dante.ricalde.delgado" "gmail.com")) ((NIL NIL "dante.ricalde.delgado" "gmail.com")) ((NIL NIL "dante.ricalde.delgado" "gmail.com")) ((NIL NIL "dante.ricalde.delgado" "gmail.com")) NIL NIL NIL "<00001414.20140816120653@gmail.com>") BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 56 1 NIL NIL NIL))
+			A14 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - Received 1 messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 A15 STORE 686 +FLAGS (spring-integration-mail-adapter)
+			* 686 FETCH (FLAGS (spring-integration-mail-adapter))
+			A15 OK Success
+			A16 FETCH 686 (BODY.PEEK[]<0.16384>)
+			* 686 FETCH (BODY[]<0> {773}
+			Return-Path: <dante.ricalde.delgado@gmail.com>
+			Received: from dantericalde-pc (51.Red-88-10-173.dynamicIP.rima-tde.net. [88.10.173.51])
+			        by mx.google.com with SMTP id u10sm15556735wix.14.2014.08.16.03.07.23
+			        for <dante.ricalde.delgado@gmail.com>
+			        (version=TLSv1 cipher=RC4-SHA bits=128/128);
+			        Sat, 16 Aug 2014 03:07:24 -0700 (PDT)
+			Date: Sat, 16 Aug 2014 12:06:53 +0200
+			Mime-Version: 1.0
+			Content-Type: text/plain; charset="utf-8"
+			From: dante.ricalde.delgado@gmail.com
+			To: dante.ricalde.delgado@gmail.com
+			Reply-To: dante.ricalde.delgado@gmail.com
+			Subject: [IPHost] Email settings test message
+			X-Mailer: IPHost Network Monitor
+			Message-ID: <00001414.20140816120653@gmail.com>
+			
+			This is a test message from the IPHost Network Monitor
+			)
+			A16 OK Success
+			DEBUG IMAP: pool is full, not adding an Authenticated connection
+			A17 LOGOUT
+			* BYE LOGOUT Requested
+			A17 OK 73 good day (Success)
+			DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - received 1 mail messages
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - Task completed successfully. Re-scheduling it again right away.
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - waiting for mail
+			 DEBUG IMAPS: IMAPProtocol noop
+			DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@3873be48][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=542c0935-1b2e-8afb-8c8d-76431f713036, timestamp=1408183616120}]
+			 A6 NOOP
+			DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#30 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@3873be48][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=542c0935-1b2e-8afb-8c8d-76431f713036, timestamp=1408183616120}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@3873be48][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel,simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=84a5165e-6a4b-585e-ad1f-a30fbede7456, timestamp=1408183616122}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@3873be48][Headers={history=simpleGmailImapIdleAdapter,simpleGmailImapIdleAdapterMailDestinationChannel, id=542c0935-1b2e-8afb-8c8d-76431f713036, timestamp=1408183616120}]
+			 
+			 
+			 A6 OK Success
+			A7 LIST "" INBOX
+			* LIST (\HasNoChildren) "/" "INBOX"
+			A7 OK Success
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG IMAPS: connection available == size: 1
+			A8 SELECT INBOX
+			* FLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter)
+			* OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $Phishing $NotPhishing spring-integration-mail-adapter \*)] Flags permitted.
+			* OK [UIDVALIDITY 650960940] UIDs valid.
+			* 686 EXISTS
+			* 0 RECENT
+			* OK [UIDNEXT 1657] Predicted next UID.
+			* OK [HIGHESTMODSEQ 336565]
+			A8 OK [READ-WRITE] INBOX selected. (Success)
+			DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 A9 SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL
+			* SEARCH
+			A9 OK SEARCH completed (Success)
+			A10 IDLE
+			+ idling
+			* OK Gimap ready for requests from 88.10.173.51 ew8mb168317679wjd
+			A0 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 XYZZY SASL-IR AUTH=XOAUTH AUTH=XOAUTH2 AUTH=PLAIN AUTH=PLAIN-CLIENTTOKEN
+			A0 OK Thats all she wrote! ew8mb168317679wjd
+			DEBUG IMAPS: AUTH: XOAUTH
+			DEBUG IMAPS: AUTH: XOAUTH2
+			DEBUG IMAPS: AUTH: PLAIN
+			DEBUG IMAPS: AUTH: PLAIN-CLIENTTOKEN
+			DEBUG IMAPS: AUTHENTICATE PLAIN command trace suppressed
+			DEBUG IMAPS: AUTHENTICATE PLAIN command result: A1 OK dante.ricalde.delgado@gmail.com Dante Raphael Ricalde Delgado authenticated (Success)
+			A2 CAPABILITY
+			* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA ID XLIST CHILDREN X-GM-EXT-1 UIDPLUS COMPRESS=DEFLATE ENABLE MOVE CONDSTORE ESEARCH
+			A2 OK Success
+
+		-->
+	
+	<int-mail:imap-idle-channel-adapter id="simpleGmailImapIdleAdapter" store-uri="imaps://dante.ricalde.delgado%40gmail.com:Pescadito1@imap.gmail.com/INBOX" 
+		should-delete-messages="false" should-mark-messages-as-read="false" channel="simpleGmailImapIdleAdapterMailDestinationChannel"
+		java-mail-properties="javaImapMailProperties" auto-startup="false">
+	</int-mail:imap-idle-channel-adapter>
+	
+	<int:channel id="simpleGmailImapIdleAdapterMailDestinationChannel" />
+	
+	<int:outbound-channel-adapter id="simpleGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter" channel="simpleGmailImapIdleAdapterMailDestinationChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+		
+	<util:properties id="javaImapMailProperties">
+		<prop key="mail.imap.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+		<prop key="mail.imap.socketFactory.fallback">false</prop>
+		<prop key="mail.imap.connectionpoolsize">100</prop>
+<!-- 		<prop key="mail.imap.socks.host">10.44.93.96</prop> -->
+<!-- 		<prop key="mail.imap.socks.port">1080</prop> -->
+		<prop key="mail.store.protocol">imaps</prop>
+		<prop key="mail.debug">false</prop>
+	</util:properties>
+	
+	<!--  In this case I am testing a mail-imap-idle-channel-adapter using transaction synchronization. Before committing the transaction I tried to move the processed 
+		message to the FOO folder of my account inbox. If an exception in that process happens the transaction rollbacks and the message is marked as read, if the process
+		is ok the messages is removed and moved to the FOO folder and the transaction commits. For the message to be still available for manipulation after the transaction, 
+		should-delete-messages must be set to 'false' (so that the message can be processed in the before-commit process). This mail-imap-idle-channel-adapter uses a
+		pseudo transaction because this component (adapter) is not transactional (if the transaction rollbacks the mail message has already been processed and can not be 
+		processed again by this adapter) but we need to use it because the pseudo transaction is simply a vehicle used to enable the 
+		synchronization features (In some environments, it is advantageous to synchronize operations with a transaction that encompasses the entire flow. The framework provides
+		a PseudoTransactionManager, enabling the above configuration even when there is no real transactional resource involved. If the flow completes normally, the 
+		beforeCommit and afterCommit synchronizations will be called, on failure the afterRollback will be called. Of course, because it is not a real transaction 
+		there will be no actual commit or rollback.). I think the mail server doesn't allow to mark a message as recent using java (once the message has been received by the 
+		imap-idle-adapter, I couldn't do it, I had to mark the message as read). Regarding threads each received message processed by this adapter is processed in a 
+		different thread. I had to increase the size of the connection pool so that the adapter can receive all the message while is executing.
+		
+			A snippet of the logs are:
+			
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 INFO  [org.springframework.integration.mail.ImapMailReceiver]  - attempting to receive mail from folder [INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - found 4 new messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - Received 4 messages
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - USER flags are supported by this mail server. Flagging message with 'spring-integration-mail-adapter' user flag
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - received 4 mail messages
+			 DEBUG [org.springframework.aop.framework.JdkDynamicAopProxy]  - Creating JDK dynamic proxy: target source is SingletonTargetSource for target object [org.springframework.integration.mail.ImapIdleChannelAdapter$1@58990034]
+			 DEBUG [org.springframework.aop.framework.JdkDynamicAopProxy]  - Creating JDK dynamic proxy: target source is SingletonTargetSource for target object [org.springframework.integration.mail.ImapIdleChannelAdapter$1@5c6408bb]
+			 DEBUG [org.springframework.aop.framework.JdkDynamicAopProxy]  - Creating JDK dynamic proxy: target source is SingletonTargetSource for target object [org.springframework.integration.mail.ImapIdleChannelAdapter$1@2b795c60]
+			 DEBUG [org.springframework.aop.framework.JdkDynamicAopProxy]  - Creating JDK dynamic proxy: target source is SingletonTargetSource for target object [org.springframework.integration.mail.ImapIdleChannelAdapter$1@2c9fb8ec]
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - Task completed successfully. Re-scheduling it again right away.
+			 DEBUG [org.springframework.integration.mail.ImapIdleChannelAdapter]  - waiting for mail
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Creating new transaction with name [org.springframework.integration.mail.ImapIdleChannelAdapter$1.run]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@296b27f6][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=7ae45834-0054-2da5-c229-92a4f23248d1, timestamp=1409025874898}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#31 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@296b27f6][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=7ae45834-0054-2da5-c229-92a4f23248d1, timestamp=1409025874898}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@296b27f6][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel,synchronizedGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=7a2b86f1-09b1-aef3-5f99-ab7a3a90b5e0, timestamp=1409025874898}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@296b27f6][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=7ae45834-0054-2da5-c229-92a4f23248d1, timestamp=1409025874898}]
+			 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Evaluating beforeCommit expression: '@synchronizedGmailImapIdleAdapterSyncProcessor.process(payload)' on [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@296b27f6][Headers={id=0e09dcc0-efd4-d97e-40bf-e1990e02c9ae, timestamp=1409025874894}]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - opening folder [imaps://dante.ricalde.delgado@gmail.com:*****@imap.gmail.com/INBOX]
+			 DEBUG [org.springframework.integration.mail.ImapMailReceiver]  - This email server does not support RECENT flag, but it does support USER flags which will be used to prevent duplicates during email fetch.
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Initiating transaction rollback after commit exception
+			 java.lang.RuntimeException: EXCEPTION THROWN TRYING TO MOVE THE MAIL MESSAGE ...
+				at spring.integration.test.mail.imap.Mover.process(Mover.java:30)
+				at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+				at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+				at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+				at java.lang.reflect.Method.invoke(Method.java:601)
+				at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+				at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:122)
+				at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+				at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+				at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+				at org.springframework.expression.spel.ast.SpelNodeImpl.getValue(SpelNodeImpl.java:103)
+				at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:100)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.doProcess(ExpressionEvaluatingTransactionSynchronizationProcessor.java:132)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.processBeforeCommit(ExpressionEvaluatingTransactionSynchronizationProcessor.java:111)
+				at org.springframework.integration.transaction.DefaultTransactionSynchronizationFactory$DefaultTransactionalResourceSynchronization.beforeCommit(DefaultTransactionSynchronizationFactory.java:62)
+				at org.springframework.transaction.support.TransactionSynchronizationUtils.triggerBeforeCommit(TransactionSynchronizationUtils.java:95)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.triggerBeforeCommit(AbstractPlatformTransactionManager.java:928)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:740)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:726)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:478)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:272)
+				at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:95)
+				at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+				at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:207)
+				at $Proxy37.run(Unknown Source)
+				at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1110)
+				at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:603)
+				at java.lang.Thread.run(Thread.java:722)
+			DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Sending received message to org.springframework.integration.channel.NullChannel@13cd4abe as part of 'afterRollback' transaction synchronization
+			 DEBUG [org.springframework.integration.channel.NullChannel]  - message sent to null channel: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@296b27f6][Headers={id=0e09dcc0-efd4-d97e-40bf-e1990e02c9ae, timestamp=1409025874894}]
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Creating new transaction with name [org.springframework.integration.mail.ImapIdleChannelAdapter$1.run]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@7f50efee][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=ca09cd5f-c024-e3d8-5fa8-26f98249684a, timestamp=1409025877010}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#31 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@7f50efee][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=ca09cd5f-c024-e3d8-5fa8-26f98249684a, timestamp=1409025877010}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@7f50efee][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel,synchronizedGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=18f3cd72-1577-2719-a690-5740479d0ad5, timestamp=1409025877010}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@7f50efee][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=ca09cd5f-c024-e3d8-5fa8-26f98249684a, timestamp=1409025877010}]
+			 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Evaluating beforeCommit expression: '@synchronizedGmailImapIdleAdapterSyncProcessor.process(payload)' on [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@7f50efee][Headers={id=10abb50d-42f5-b93e-4191-79e16fbc2e6b, timestamp=1409025877009}]
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Initiating transaction rollback after commit exception
+			 java.lang.RuntimeException: EXCEPTION THROWN TRYING TO MOVE THE MAIL MESSAGE ...
+				at spring.integration.test.mail.imap.Mover.process(Mover.java:30)
+				at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+				at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+				at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+				at java.lang.reflect.Method.invoke(Method.java:601)
+				at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+				at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+				at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+				at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+				at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+				at org.springframework.expression.spel.ast.SpelNodeImpl.getValue(SpelNodeImpl.java:103)
+				at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:100)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.doProcess(ExpressionEvaluatingTransactionSynchronizationProcessor.java:132)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.processBeforeCommit(ExpressionEvaluatingTransactionSynchronizationProcessor.java:111)
+				at org.springframework.integration.transaction.DefaultTransactionSynchronizationFactory$DefaultTransactionalResourceSynchronization.beforeCommit(DefaultTransactionSynchronizationFactory.java:62)
+				at org.springframework.transaction.support.TransactionSynchronizationUtils.triggerBeforeCommit(TransactionSynchronizationUtils.java:95)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.triggerBeforeCommit(AbstractPlatformTransactionManager.java:928)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:740)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:726)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:478)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:272)
+				at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:95)
+				at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+				at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:207)
+				at $Proxy37.run(Unknown Source)
+				at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1110)
+				at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:603)
+				at java.lang.Thread.run(Thread.java:722)
+			DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Sending received message to org.springframework.integration.channel.NullChannel@13cd4abe as part of 'afterRollback' transaction synchronization
+			 DEBUG [org.springframework.integration.channel.NullChannel]  - message sent to null channel: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@7f50efee][Headers={id=10abb50d-42f5-b93e-4191-79e16fbc2e6b, timestamp=1409025877009}]
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Creating new transaction with name [org.springframework.integration.mail.ImapIdleChannelAdapter$1.run]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@40d44732][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=f5516208-24d7-9822-047f-ce5a1ad7b565, timestamp=1409025879104}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#31 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@40d44732][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=f5516208-24d7-9822-047f-ce5a1ad7b565, timestamp=1409025879104}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@40d44732][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel,synchronizedGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=eaaf60e1-46de-3139-10a3-ed5877afe7d9, timestamp=1409025879104}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@40d44732][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=f5516208-24d7-9822-047f-ce5a1ad7b565, timestamp=1409025879104}]
+			 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Evaluating beforeCommit expression: '@synchronizedGmailImapIdleAdapterSyncProcessor.process(payload)' on [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@40d44732][Headers={id=3677b274-851a-c5b5-7297-d219ce5a24e6, timestamp=1409025879104}]
+			 Exception in thread "pool-1-thread-1" java.lang.RuntimeException: EXCEPTION THROWN TRYING TO MOVE THE MAIL MESSAGE ...
+				at spring.integration.test.mail.imap.Mover.process(Mover.java:30)
+				at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+				at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+				at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+				at java.lang.reflect.Method.invoke(Method.java:601)
+				at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+				at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:122)
+				at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+				at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+				at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+				at org.springframework.expression.spel.ast.SpelNodeImpl.getValue(SpelNodeImpl.java:103)
+				at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:100)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.doProcess(ExpressionEvaluatingTransactionSynchronizationProcessor.java:132)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.processBeforeCommit(ExpressionEvaluatingTransactionSynchronizationProcessor.java:111)
+				at org.springframework.integration.transaction.DefaultTransactionSynchronizationFactory$DefaultTransactionalResourceSynchronization.beforeCommit(DefaultTransactionSynchronizationFactory.java:62)
+				at org.springframework.transaction.support.TransactionSynchronizationUtils.triggerBeforeCommit(TransactionSynchronizationUtils.java:95)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.triggerBeforeCommit(AbstractPlatformTransactionManager.java:928)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:740)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:726)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:478)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:272)
+				at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:95)
+				at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+				at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:207)
+				at $Proxy37.run(Unknown Source)
+				at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1110)
+				at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:603)
+				at java.lang.Thread.run(Thread.java:722)
+			Exception in thread "pool-1-thread-2" java.lang.RuntimeException: EXCEPTION THROWN TRYING TO MOVE THE MAIL MESSAGE ...
+				at spring.integration.test.mail.imap.Mover.process(Mover.java:30)
+				at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+				at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+				at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+				at java.lang.reflect.Method.invoke(Method.java:601)
+				at org.springframework.expression.spel.support.ReflectiveMethodExecutor.execute(ReflectiveMethodExecutor.java:63)
+				at org.springframework.expression.spel.ast.MethodReference.getValueInternal(MethodReference.java:95)
+				at org.springframework.expression.spel.ast.MethodReference.access$000(MethodReference.java:44)
+				at org.springframework.expression.spel.ast.MethodReference$MethodValueRef.getValue(MethodReference.java:258)
+				at org.springframework.expression.spel.ast.CompoundExpression.getValueInternal(CompoundExpression.java:84)
+				at org.springframework.expression.spel.ast.SpelNodeImpl.getValue(SpelNodeImpl.java:103)
+				at org.springframework.expression.spel.standard.SpelExpression.getValue(SpelExpression.java:100)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.doProcess(ExpressionEvaluatingTransactionSynchronizationProcessor.java:132)
+				at org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor.processBeforeCommit(ExpressionEvaluatingTransactionSynchronizationProcessor.java:111)
+				at org.springframework.integration.transaction.DefaultTransactionSynchronizationFactory$DefaultTransactionalResourceSynchronization.beforeCommit(DefaultTransactionSynchronizationFactory.java:62)
+				at org.springframework.transaction.support.TransactionSynchronizationUtils.triggerBeforeCommit(TransactionSynchronizationUtils.java:95)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.triggerBeforeCommit(AbstractPlatformTransactionManager.java:928)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:740)
+				at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:726)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:478)
+				at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:272)
+				at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:95)
+				at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+				at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:207)
+				at $Proxy37.run(Unknown Source)
+				at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1110)
+				at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:603)
+				at java.lang.Thread.run(Thread.java:722)
+			DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Initiating transaction commit
+			 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Sending received message to org.springframework.integration.channel.NullChannel@1b9c11eb as part of 'afterCommit' transaction synchronization
+			 DEBUG [org.springframework.integration.channel.NullChannel]  - message sent to null channel: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@40d44732][Headers={id=3677b274-851a-c5b5-7297-d219ce5a24e6, timestamp=1409025879104}]
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Creating new transaction with name [org.springframework.integration.mail.ImapIdleChannelAdapter$1.run]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@80fd41d][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=58394f3b-c6ec-f861-d751-9e5c7bfd8fb6, timestamp=1409025882988}]
+			 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#31 received message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@80fd41d][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=58394f3b-c6ec-f861-d751-9e5c7bfd8fb6, timestamp=1409025882988}]
+			 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@80fd41d][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel,synchronizedGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter, id=1c27fff0-c448-84d9-1472-129b99a3508a, timestamp=1409025882989}]*********END OF THE MESSAGE *************************
+			 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'synchronizedGmailImapIdleAdapterMailDestinationChannel', message: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@80fd41d][Headers={history=synchronizedGmailImapIdleAdapter,synchronizedGmailImapIdleAdapterMailDestinationChannel, id=58394f3b-c6ec-f861-d751-9e5c7bfd8fb6, timestamp=1409025882988}]
+			 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Evaluating beforeCommit expression: '@synchronizedGmailImapIdleAdapterSyncProcessor.process(payload)' on [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@80fd41d][Headers={id=3d4fe724-3130-ebb2-55ca-2eeecf2ba4c0, timestamp=1409025882988}]
+			 DEBUG [org.springframework.integration.transaction.PseudoTransactionManager]  - Initiating transaction commit
+			 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Sending received message to org.springframework.integration.channel.NullChannel@1b9c11eb as part of 'afterCommit' transaction synchronization
+			 DEBUG [org.springframework.integration.channel.NullChannel]  - message sent to null channel: [Payload IntegrationMimeMessage content=org.springframework.integration.mail.AbstractMailReceiver$IntegrationMimeMessage@80fd41d][Headers={id=3d4fe724-3130-ebb2-55ca-2eeecf2ba4c0, timestamp=1409025882988}]
+			 
+		 -->	
+	<int-mail:imap-idle-channel-adapter id="synchronizedGmailImapIdleAdapter" store-uri="imaps://dante.ricalde.delgado%40gmail.com:Pescadito1@imap.gmail.com/INBOX" should-delete-messages="false"
+	    should-mark-messages-as-read="false" channel="synchronizedGmailImapIdleAdapterMailDestinationChannel" java-mail-properties="javaImapMailProperties" max-fetch-size="3" 
+	    error-channel="synchronizedGmailImapIdleAdapterErrorChannel" auto-startup="false">
+		<int-mail:transactional synchronization-factory="synchronizedGmailImapIdleAdapterSyncFactory" transaction-manager="pseudoTransactionManager" />
+	</int-mail:imap-idle-channel-adapter>
+		
+	<int:transaction-synchronization-factory id="synchronizedGmailImapIdleAdapterSyncFactory">
+		<int:before-commit expression="@synchronizedGmailImapIdleAdapterSyncProcessor.process(payload)" />
+	</int:transaction-synchronization-factory>
+	
+	<bean id="synchronizedGmailImapIdleAdapterSyncProcessor" class="spring.integration.test.mail.imap.Mover" />
+	
+	<bean id="pseudoTransactionManager" class="org.springframework.integration.transaction.PseudoTransactionManager" />
+		
+	<int:channel id="synchronizedGmailImapIdleAdapterMailDestinationChannel" />
+	
+	<int:outbound-channel-adapter id="synchronizedGmailImapIdleAdapterMailDestinationChannelOutboundChannelAdapter" channel="synchronizedGmailImapIdleAdapterMailDestinationChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+	
+	<int:channel id="synchronizedGmailImapIdleAdapterErrorChannel" />
+	
+	<int:service-activator id="synchronizedGmailImapIdleAdapterErrorChannelServiceActivator" ref="serviceActivatorWithoutAnOutputChannel" input-channel="synchronizedGmailImapIdleAdapterErrorChannel"
+		auto-startup="false" />
+	
+</beans>

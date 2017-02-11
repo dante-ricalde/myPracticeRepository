@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- ****************************************************** CHANEL ADAPTER ************************************************** -->
+	<!-- INBOUND CHANNEL ADAPTER -->
+	<!-- We create a inbound channel adapter, this channel adapter executes the method "createMessage" of the "channelAdapterSender" bean every second. The "createMessage" method creates 
+		a message and return it. The process is: every second the poller executes the "createMessage" method which creates a message and return it. When the "createMessage" method finishes 
+		the task scheduler of the poller opens a thread to send the message to the "inboundChannelAdapterDestination" channel (this happens before every time the "createMessage" method starts, 
+		namely, the task scheduler opens a new thread to send the message or reuses another thread of its pool), this channel is a direct channel and therefore the sending a message to that 
+		channel will trigger invocation of the service activator's "handlerMessage" method directly in the sender thread (namely in the tread opened by the task scheduler) before the sender's 
+		send() method invocation can return. With respect to task executor pool size, the default size for pool size of a task executor is 1, namely in this case the task scheduler of the poller 
+		opens a thread to send the message every second and like this channel is a direct channel the sender thread blocks until the service activator's "handlerMessage" finishes for continuing 
+		its execution (the invocation of the service activator's "handlerMessage" method happens directly in the sender thread (namely in the tread opened by the task scheduler) before the 
+		sender's send() method invocation can return). Meanwhile this happen only a thread of the task executor pool is executing because the pool size by default is 1, when this thread finishes 
+		executing, the pool opens a new thread o reuses the same, but almost always there is a single thread executing at any time (if the task executor is overloaded can open another threads 
+		because its default max size is Integer.MAX_VALUE). -->
+
+	<int:channel id="inboundChannelAdapterDestination" />
+
+	<int:service-activator input-channel="inboundChannelAdapterDestination" ref="myExecutorChannelHandler" />
+
+	<int:inbound-channel-adapter id="simpleInboundChannelAdapter" ref="channelAdapterSender" method="createMessage" channel="inboundChannelAdapterDestination"
+		auto-startup="false">
+		<!-- <int:poller task-executor="adapterTaskExecutor" fixed-rate="1000" /> -->
+		<int:poller fixed-rate="1000"  />
+	</int:inbound-channel-adapter>
+
+	<!-- In this case we use a inbound channel adapter using a cron expression to execute the "createMessage" method of the bean "senderToChannelAdapterWithCron". The functionality of 
+		this test is the same than previous test. In this case the method executes every second between 18 and 19 hours from Monday to Friday -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterWithCron" ref="senderToChannelAdapterWithCron" method="createMessage" channel="inboundChannelAdapterDestination"
+		auto-startup="false">
+		<int:poller cron="0/1 * 18-18 * * MON-FRI" />
+	</int:inbound-channel-adapter>
+
+	<bean id="senderToChannelAdapterWithCron" class="spring.integration.test.adapter.sender.ChannelAdapterSender" p:message="With Cron" />
+
+	<!-- In this case we use a inbound channel adapter using the max-messages-per-poll property (the polling task will be invoked 10 times per poll or until it returns null thus possibly 
+		producing 10 messages per poll while each poll happens at 1 second intervals). This means that every second the poller will execute the "createMessage" method ten times to return the 
+		message content, namely the task scheduler will open ten threads to send the message, this will happen every second, before to execute the "createMessage method". For the rest of this 
+		test the functionality is the same than previous test. With respect to task executor pool size, the default size for pool size of a task executor is 1, the task executor opens thread 
+		by thread 10 times per poll to send the messages, namely every second the polling task executes (the source method is invoked and when it finishes it sends a message) thread by thread, 
+		10 times per poll; as the destination channel is a direct channel, each thread blocks until the service activator's "handlerMessage" finishes for continuing its execution (the invocation 
+		of the service activator's "handlerMessage" method happens directly in the sender thread (namely in the tread opened by the task scheduler) before the sender's send() method invocation 
+		can return); the service activator is serving to 1 thread at the same time (this happens of this way because only a thread of the task executor pool is executing because the pool size 
+		by default is 1, but may serve to several threads if the task executor is overloaded and it opens another threads), the "handlerMessage" method code is executing once for serving to 
+		the thread (each execution of the "handlerMessage" method code is executing in the same thread of its sender), namely there are 1 execution of the "handlerMessage" method of the service 
+		activator at the same time serving to its sender thread. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterWithMaxMessagesPerPoll" ref="senderToChannelAdapterWithMaxMessagesPerPoll" method="createMessage"
+		channel="inboundChannelAdapterDestination" auto-startup="false">
+		<int:poller max-messages-per-poll="10" fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<bean id="senderToChannelAdapterWithMaxMessagesPerPoll" class="spring.integration.test.adapter.sender.ChannelAdapterSender" p:message="WithMessagesPerPoll" />
+
+	<!-- In this case we have configured a inbound channel adapter with max-messages-per-poll and fix-rate properties, set to 10 and 1000 respectively. In this case to 5th time of executing 
+		the createMessage method in the first poll, We return a null value. From this moment the inbound channel adapter stops the pool (won't execute the pool every second ignoring the fixed-rate 
+		property) and the polling task (invoked 10 times per poll) of to execute createMessage method won't execute anymore, so the channel inboundChannelAdapterDestination won't receive messages 
+		from this inbound channel adapter anymore.. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterWithMaxMessagesPerPollReturningANullValueTo5thTimeOfExectingCreateMessageMethod" ref="senderToChannelAdapterWithMaxMessagesPerPollReturningANullValueTo5thTimeOfExectingCreateMessageMethod"
+		method="createMessage" channel="inboundChannelAdapterDestination" auto-startup="false">
+		<int:poller max-messages-per-poll="10" fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<bean id="senderToChannelAdapterWithMaxMessagesPerPollReturningANullValueTo5thTimeOfExectingCreateMessageMethod" class="spring.integration.test.adapter.sender.ChannelAdapterSender"
+		p:count="1" p:message="Returning a null value to 5th of executing create message method" />
+
+	<!-- In this case We have configured a inbound channel adapter with max-messages-per-pool property set to a negative value. In this case the inbound channel adapter will poll for as 
+		many sources as available per each pool, namely the pooling task of to execute the createMessage method will execute many times as possible per each pool (every second). In this case 
+		We never return a null value in the createMessage method and therefore the inbound channel adapter never stops sending messages to the inboundChannelAdapterDestination channel. -->
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterWithMaxMessagesPerPollNegative" ref="senderToChannelAdapterWithMaxMessagesPerPollNegative"
+		method="createMessage" channel="inboundChannelAdapterDestination" auto-startup="false">
+		<int:poller max-messages-per-poll="-1" fixed-rate="1000"></int:poller>
+	</int:inbound-channel-adapter>
+
+	<bean id="senderToChannelAdapterWithMaxMessagesPerPollNegative" class="spring.integration.test.adapter.sender.ChannelAdapterSender" p:message="WithMessagesPerPollNegative" />
+
+	<!-- In this case we have configured a inbound channel adapter with max-messages-per-pool property set to a negative value. In this case the inbound channel adapter will poll for as 
+		many sources as available per each poll, namely the pooling task of to execute the createMessage method will execute many times as possible per each pool (every second), but in this 
+		case to 5th time of executing the createMessage method in the first poll, We return a null value. From this moment the inbound channel adapter stops the pool (won't execute the pool 
+		every second ignoring the fixed-rate property) and the polling task (invoked many times as possible per poll) of executing createMessage method won't execute anymore, so the channel 
+		inboundChannelAdapterDestination won't receive messages from this inbound channel adapter anymore.. -->
+	<int:inbound-channel-adapter id="inboundChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod" ref="senderToChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod"
+		method="createMessage" channel="inboundChannelAdapterDestination" auto-startup="false">
+		<!-- <int:poller max-messages-per-poll="-1" fixed-rate="1000" task-executor="adapterTaskExecutor" /> -->
+		<int:poller max-messages-per-poll="-1" fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<bean id="senderToChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod" class="spring.integration.test.adapter.sender.ChannelAdapterSender"
+		p:count="1" p:message="With Max Messages Per Poll Negative Returning a null value to 5th of executing create message method" />
+
+	<!-- OUTBOUND CHANNEL ADAPTER -->
+	<!-- To perform this test We are going to use the "inboundChannelAdapterDestination" direct channel, the inbound channel adapters: "simpleInboundChannelAdapter" and "inboundChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod". 
+		We need to uncomment in the TimerTest.java the lines to start the two inbound channel adapters. There is a service activator in the context to receive the messages sent to the channel 
+		"inboundChannelAdapterDestination". The process of this test is: the two inbound channel adapters send messages to the "inboundChannelAdapterDestination" direct channel, then the service 
+		activator and this outbound channel adapter will receive the messages sent to the direct channel, but it happens of the following way: when a message is sent to the direct channel the 
+		service activator or this oubound channel adapter receives the message sent, but only of them receives the messages (the service activator or this outbound channel adapter), not the 
+		two ones receive the same message, and this behaviour is correct because as the channel is a direct channel, a direct channel will only send each Message to a single subscribed MessageHandler 
+		dispatching Messages directly to a subscriber, the direct channel may have several subscribers but each message only will be received for one of them, each subscriber of the direct 
+		channel will receive a single message (a different message of the messages that are receiving the others subscribers at the same time, in this case there are two threads sending messages 
+		to the channel, the thread opened by simpleInboundChannelAdapter's task executor and the thread opened by inboundChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod's 
+		task executor, and this is so because, both task executors have a pool size of 1 by default, but both task executors may open another threads if they were overloaded, because its default 
+		max size is Integer.MAX_VALUE). -->
+	<int:outbound-channel-adapter id="simpleOutboundChannelAdapter" channel="inboundChannelAdapterDestination" ref="channelAdapterReceiver" method="receiveMessage" />
+
+
+	<!-- In this case we have two inbound channel adapters sending messages to the "inboundChannelAdapterDestination" direct channnel .Both inbound channel adapters are using a task executor 
+		with a pool size of 5. As this task executor has a pool size of 5, every second the task executor opens 5 threads to send messages. Each thread of these 5 threads can be used to send 
+		from the outboundInboundChannelAdapter inbound channel adapter or from the outboundInboundChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod 
+		inbound channel adapter, namely every second there are 5 threads executing at the same time; as the destination channel is a direct channel, each thread blocks until the service activator's 
+		"handlerMessage" (the invocation of the service activator's "handlerMessage" method happens directly in the sender thread (namely in the tread opened by the task scheduler) before the 
+		sender's send() method invocation can return, the same happens with the "receiveMessage" method of this outbound channel adapter) or until the "receiveMessage" method of the outbound 
+		channel adapter finish for continuing its execution (depending which method was invoked by the thread); the service activator and this outbound channel adapter are serving to the 5 
+		threads at the same time, the "handlerMessage" method code of the service activator is executing in parallel to serving to some of the 5 threads at the same time, the same happens with 
+		"receiveMessage" method code of the oubound channel adapter (each execution of the "handlerMessage" and "receiveMessage" method codes are executing in the same thread of their sender), 
+		namely there are 5 executions in total (some of the "handlerMessage" method and another of the "receiveMessage" method, of the service activator and this outbound channel adapter respectively) 
+		every second, each one serving to their sender thread. As this destination channel is a direct channel, only one of their subscribers will receive the message sent by each thread, namely 
+		on several occasions when a message is sent, a service activator will receive that message and not this outbound channel adapter, and at another occasions this outbound channel adapter 
+		will receive the message and not the service activator. With respect to the treads for example, the first thread can be sending from the "outboundInboundChannelAdapter" inbound channel 
+		adapter, the second thread too, the third thread can be sending from the "outboundChannelAdapterWithTwoInboundChannelAdapterSendingToTheDirectChannel", the fourth thread too, and the 
+		fifth thread can be sending from the "outboundInboundChannelAdapter" inbound channel adapter, this is only a assumption and the order is not guaranteed. -->
+
+	<int:inbound-channel-adapter id="outboundInboundChannelAdapter" ref="channelAdapterSender" method="createMessage" channel="inboundChannelAdapterDestination"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" task-executor="adapterTaskExecutor" />
+	</int:inbound-channel-adapter>
+
+	<int:inbound-channel-adapter id="outboundInboundChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod"
+		ref="senderToChannelAdapterWithMaxMessagesPerPollNegativeReturningANullValueTo5thTimeOfExectingCreateMessageMethod" method="createMessage" channel="inboundChannelAdapterDestination"
+		auto-startup="false">
+		<int:poller max-messages-per-poll="-1" fixed-rate="1000" task-executor="adapterTaskExecutor" />
+	</int:inbound-channel-adapter>
+
+	<task:executor id="adapterTaskExecutor" pool-size="5" />
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterWithTwoInboundChannelAdapterSendingToTheDirectChannel" channel="inboundChannelAdapterDestination"
+		ref="channelAdapterReceiver" method="receiveMessage" />
+
+	<!-- Before to do this test, We need to uncomment in the TimerTest.java the lines to start the inbound channel adapter: outboundSimpleInboundChannelAdapter and the outbound channel 
+		adapter: outboundChannelAdapterReceivingFromAPollableChannel. Let's start, in this test We have a queue channel (pollable channel), a inbound channel adapter that sends two messages 
+		per poll (every two seconds) to the pollable channel. For receiving the messages We have a outbound channel adapter with a poller (this poller is required because the channel is a pollable 
+		channel) where each pool executes every 10 seconds for polling as messages as available that are in the pollable channel (to do this outbound channel adapter's "receiveMessage" method 
+		(the polling task) executes as many times as necessary per pool for consuming the messages). This outbound channel adapter has its own POJO consumer implementation, namely, this implementation 
+		is only available for this channel and not for the rest. -->
+
+	<int:channel id="pollableChannel">
+		<int:queue capacity="100" />
+	</int:channel>
+
+	<int:inbound-channel-adapter id="outboundSimpleInboundChannelAdapter" ref="channelAdapterSender" method="createMessage" channel="pollableChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="2000" max-messages-per-poll="2" />
+	</int:inbound-channel-adapter>
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterReceivingFromAPollableChannel" channel="pollableChannel" method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="10000" />
+		<bean class="spring.integration.test.adapter.receiver.ChannelAdapterReceiver" />
+	</int:outbound-channel-adapter>
+
+	<!-- This test is similar to previous test. We need to uncomment in the TimerTest.java the lines to start the inbound channel adapter: outboundSimpleInboundChannelAdapter, the outbound 
+		channel adapter: outboundChannelAdapterReceivingFromAPollableChannel and the service activator: serviceActivatorToTestOutboundChannelAdapter. In this case the queue channel (pollable 
+		channel) has two consumers (the outbound channel adapter and the service activator), but only one of them receives any message sent to that channel, namely, if it sends the message 
+		number 5, that message only will be received by the outbound channel adapter or by the service activator, not by the two consumers. As in this test We are using a queue channel (pollable 
+		channel) the sender thread doesn't block waiting the consumer receives the message, just it sends it. At all times We have three threads, one sending the message (the inbound channel 
+		adapter has the max-messages-per-poll="2" property, this means the executor open two thread to send two messages per poll, but it does it tread by thread keeping only one thread running 
+		at any given moment), another for the receiveMessage method of the oubount channel adapter and another for the service activator, ant this is so because the default size for pool size 
+		of a task executor is 1, and the pollers in this test are using task executors by default (but it exists the possibility the task executors may open another threads if they were overloaded, 
+		because its default max size is Integer.MAX_VALUE)). With respect to service activator, it requires a poller because the channel is a pollable channel. -->
+	<int:service-activator id="serviceActivatorToTestOutboundChannelAdapter" input-channel="pollableChannel" ref="myExecutorChannelHandler" auto-startup="false">
+		<int:poller fixed-rate="10000" />
+	</int:service-activator>
+
+	<!-- In this case We have created a inbound channel adapter without a channel reference, if We don't specify the channel reference a direct channel will be created by default, the 
+		created channel's name will match the 'id' attribute of this inbound channel adapter, so that the 'id' is required if you don't specify the channel reference. Besides not to use a channel 
+		reference, We are using a 'expression' attribute instead of providing the 'ref' and 'method' attributes, the expression for an inbound channel adapter will generate a message anytime 
+		the evaulation result is a not-null value, in this case the result of evaluation returns the message 'this message is going out through wall', then the task executor by default of the 
+		poller of the inbound channel adapter will send the message (in this case We are using a global poller). The process is: the poller task executor will send the message every 2 seconds, 
+		then the 'outboundChannelAdapterWithoutChannelReference' outbound channel adapter will receive the message. As the created channel by default was a direct channel, then sender thread 
+		will block until the method 'receiveMessage' finishes of executing for continuing its execution. The task executor opens a thread every 2 seconds, but thread by thread, namely in any 
+		given time there will be only one thread executing, this is because the default size of a task executor is 1 (but it exists the possibility task executor may open another threads if 
+		they were overloaded, because its default max size is Integer.MAX_VALUE), namely when the task executor finishes of executing a thread, it opens a new thread o reuses one to start its 
+		execution. -->
+	<int:poller id="defaultPoller" fixed-rate="2000" default="true" />
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterWithoutChannelReference" expression="'this message is going out through wall'" auto-startup="false" />
+
+	<!-- <int:outbound-channel-adapter id="outboundChannelAdapterWithoutChannelReference" expression="#{channelAdapterReceiver.receiveMessage()}" channel="inboundChannelAdapterWithoutChannelReference" 
+		/> -->
+
+	<int:outbound-channel-adapter id="outboundChannelAdapterWithoutChannelReference" ref="channelAdapterReceiver" method="receiveMessage"
+		channel="inboundChannelAdapterWithoutChannelReference" auto-startup="false" />
+
+	<!-- In this case we are going to test an outbound channel adapter without a channel reference. For the test We have created a inbound channel adapter to send a message every 2 seconds, 
+		a direct channel and an outbound channel adapter with the same name that the direct channel. The outbound channel adapter should be the same name as the direct channel for using it, 
+		otherwise, it will occur an error of Dispatcher has no subscribers for channel channelAdapterToTestAnOutboundChannelAdapterWithoutChannelReference. If the outbound channel adapter has 
+		not specified a channel reference, a direct channel with the same id of the outbound channel adapter will be created, but if the direct channel has already been created, the outbound 
+		channel adapter will use it. As the channel is a direct channel, then sender thread will block until the method 'receiveMessage' finishes of executing for continuing its execution. 
+		The task executor opens a thread every 2 seconds, but thread by thread, namely in any given time there will be only one thread executing, this is because the default size of a task 
+		executor is 1 (but it exists the possibility task executor may open another threads if they were overloaded, because its default max size is Integer.MAX_VALUE), namely when the task 
+		executor finishes of executing a thread, it opens a new thread o reuses one to start its execution. -->
+
+	<int:inbound-channel-adapter id="inboundChannelAdapterToTestAnOutboundChannelAdapterWithoutChannelReference" expression="'this message is going out through wall'"
+		channel="channelAdapterToTestAnOutboundChannelAdapterWithoutChannelReference" auto-startup="false" />
+
+	<int:channel id="channelAdapterToTestAnOutboundChannelAdapterWithoutChannelReference" />
+
+	<int:outbound-channel-adapter id="channelAdapterToTestAnOutboundChannelAdapterWithoutChannelReference" ref="channelAdapterReceiver" method="receiveMessage"
+		auto-startup="false" />
+
+</beans>

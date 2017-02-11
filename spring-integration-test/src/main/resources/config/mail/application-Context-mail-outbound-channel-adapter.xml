@@ -1,0 +1,122 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:int-jpa="http://www.springframework.org/schema/integration/jpa" xmlns:int-jms="http://www.springframework.org/schema/integration/jms" xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:int-mail="http://www.springframework.org/schema/integration/mail"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.0.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.0.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration/jpa http://www.springframework.org/schema/integration/jpa/spring-integration-jpa-3.0.xsd
+		http://www.springframework.org/schema/integration/mail http://www.springframework.org/schema/integration/mail/spring-integration-mail-4.0.xsd">
+
+	<!-- In this case I am testing a simple mail outbound channel adapter. I am using hMailSever to simulate a SMTP Server in windows. I am also using a instance of Java Mail Sender which 
+		by default sends the message to the SMTP server listening on localhost(127.0.0.1) port 25, then the SMTP server sends the message to the email specified in the header 'TO'.
+		
+		A snippet of the logs:
+		
+		
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={className=item, id=94e418ed-2449-c1f3-f17e-679f858c3aa6, timestamp=1407816717856}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleMailOutboundChannelAdapterInboundChannelAdapter', message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter, className=item, id=977e22bc-807e-85ef-0df6-5aead75e1178, timestamp=1407816717857}]
+		 DEBUG [org.springframework.integration.transformer.MessageTransformingHandler]  - org.springframework.integration.transformer.MessageTransformingHandler#0 received message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter, className=item, id=977e22bc-807e-85ef-0df6-5aead75e1178, timestamp=1407816717857}]
+		 DEBUG [org.springframework.integration.transformer.MessageTransformingHandler]  - handler 'org.springframework.integration.transformer.MessageTransformingHandler#0' sending reply Message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher, mail_to=draphael.ricalde@empresas.justicia.es, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=e2d4b6fe-6563-c549-f8cc-2ab76c62791d, timestamp=1407816717859}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleMailHeaderEnricherOutputChannel', message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel, mail_to=draphael.ricalde@empresas.justicia.es, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=2cad4843-a554-ea1c-33d6-e03e08bb1f91, timestamp=1407816717860}]
+		 DEBUG [org.springframework.integration.transformer.MessageTransformingHandler]  - org.springframework.integration.transformer.MessageTransformingHandler#1 received message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel, mail_to=draphael.ricalde@empresas.justicia.es, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=2cad4843-a554-ea1c-33d6-e03e08bb1f91, timestamp=1407816717860}]
+		 DEBUG [org.springframework.integration.transformer.MessageTransformingHandler]  - handler 'org.springframework.integration.transformer.MessageTransformingHandler#1' sending reply Message: [Payload String content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={mail_to=draphael.ricalde@empresas.justicia.es, history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel,simpleObjectToStringTransformer, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=798c20b1-5d8a-233b-ed0c-7813aaf88acf, timestamp=1407816717861}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'simpleObjectToStringTransformerOutputChannel', message: [Payload String content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={mail_to=draphael.ricalde@empresas.justicia.es, history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel,simpleObjectToStringTransformer,simpleObjectToStringTransformerOutputChannel, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=144d732b-2792-bd16-7d47-5c6f221bfdb4, timestamp=1407816717862}]
+		 DEBUG [org.springframework.integration.mail.MailSendingMessageHandler]  - org.springframework.integration.mail.MailSendingMessageHandler#0 received message: [Payload String content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={mail_to=draphael.ricalde@empresas.justicia.es, history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel,simpleObjectToStringTransformer,simpleObjectToStringTransformerOutputChannel, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=144d732b-2792-bd16-7d47-5c6f221bfdb4, timestamp=1407816717862}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleObjectToStringTransformerOutputChannel', message: [Payload String content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={mail_to=draphael.ricalde@empresas.justicia.es, history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel,simpleObjectToStringTransformer,simpleObjectToStringTransformerOutputChannel, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=144d732b-2792-bd16-7d47-5c6f221bfdb4, timestamp=1407816717862}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMailHeaderEnricherOutputChannel', message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter,simpleMailHeaderEnricher,simpleMailHeaderEnricherOutputChannel, mail_to=draphael.ricalde@empresas.justicia.es, mail_from=dante.ricalde@ricalde.es, mail_subject=Mail Test, className=item, id=2cad4843-a554-ea1c-33d6-e03e08bb1f91, timestamp=1407816717860}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'simpleMailOutboundChannelAdapterInboundChannelAdapter', message: [Payload Item content=Item [id=90225237-3034-444a-9494-d1518a01ea80, code=Danielito Ricalde Rivera, description=Danielito Ricalde Rivera, status=2, created_date=null, message=null]][Headers={history=simpleMailOutboundChannelAdapterInboundChannelAdapter.adapter,simpleMailOutboundChannelAdapterInboundChannelAdapter, className=item, id=977e22bc-807e-85ef-0df6-5aead75e1178, timestamp=1407816717857}]
+		
+		A snippet of the logs from hMailSever:
+		
+		
+		"SMTPD"	2392	26	"2014-08-12 06:20:11.531"	"127.0.0.1"	"SENT: 220 127.0.0.1 ESMTP"
+		"SMTPD"	2392	26	"2014-08-12 06:20:11.552"	"127.0.0.1"	"RECEIVED: EHLO DanteRicalde-PC"
+		"SMTPD"	2392	26	"2014-08-12 06:20:11.558"	"127.0.0.1"	"SENT: 250-127.0.0.1[nl]250-SIZE 20480000[nl]250 AUTH LOGIN"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.583"	"127.0.0.1"	"RECEIVED: MAIL FROM:<dante.ricalde@ricalde.es>"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.590"	"127.0.0.1"	"SENT: 250 OK"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.593"	"127.0.0.1"	"RECEIVED: RCPT TO:<draphael.ricalde@empresas.justicia.es>"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.599"	"127.0.0.1"	"SENT: 250 OK"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.603"	"127.0.0.1"	"RECEIVED: DATA"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.606"	"127.0.0.1"	"SENT: 354 OK, send."
+		"SMTPD"	2244	26	"2014-08-12 06:20:11.625"	"127.0.0.1"	"SENT: 250 Queued (0.016 seconds)"
+		"SMTPD"	2336	0	"2014-08-12 06:20:11.627"	"TCP"	"DNS - MX Lookup: empresas.justicia.es"
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.629"	"127.0.0.1"	"RECEIVED: QUIT"
+		"SMTPD"	2336	0	"2014-08-12 06:20:11.634"	"TCP"	"DNS - MX Result: 3 IP addresses were found."
+		"SMTPD"	2404	26	"2014-08-12 06:20:11.635"	"127.0.0.1"	"SENT: 221 goodbye"
+		"SMTPC"	2392	27	"2014-08-12 06:20:11.657"	"195.53.212.44"	"RECEIVED: 220 **********************************************************"
+		"SMTPC"	2392	27	"2014-08-12 06:20:11.661"	"195.53.212.44"	"SENT: HELO 127.0.0.1"
+		"SMTPC"	2432	27	"2014-08-12 06:20:11.875"	"195.53.212.44"	"RECEIVED: 250 mju.es"
+		"SMTPC"	2432	27	"2014-08-12 06:20:11.878"	"195.53.212.44"	"SENT: MAIL FROM:<dante.ricalde@ricalde.es>"
+		"SMTPC"	2432	27	"2014-08-12 06:20:12.092"	"195.53.212.44"	"RECEIVED: 250 OK"
+		"SMTPC"	2432	27	"2014-08-12 06:20:12.095"	"195.53.212.44"	"SENT: RCPT TO:<draphael.ricalde@empresas.justicia.es>"
+		"SMTPC"	2420	27	"2014-08-12 06:20:12.309"	"195.53.212.44"	"RECEIVED: 250 OK"
+		"SMTPC"	2420	27	"2014-08-12 06:20:12.315"	"195.53.212.44"	"SENT: DATA"
+		"SMTPC"	2424	27	"2014-08-12 06:20:12.525"	"195.53.212.44"	"RECEIVED: 354 Start mail input; end with <CRLF>.<CRLF>"
+		"SMTPC"	2424	27	"2014-08-12 06:20:12.530"	"195.53.212.44"	"SENT: [nl]."
+		"SMTPC"	2400	27	"2014-08-12 06:20:12.657"	"195.53.212.44"	"RECEIVED: 250 OK <14081204-0013-0000-0000-000000526765>"
+		"SMTPC"	2400	27	"2014-08-12 06:20:12.660"	"195.53.212.44"	"SENT: QUIT"
+		"SMTPC"	2412	27	"2014-08-12 06:20:12.869"	"195.53.212.44"	"RECEIVED: 221 XMail ESMTP service closing transmission channel"
+		
+		 -->
+
+	<int:inbound-channel-adapter id="simpleMailOutboundChannelAdapterInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 
+ 		'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('className', 'item').build():
+		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera',
+		'Danielito Ricalde Rivera', 2)).setHeader('className', 'item').build()"
+		auto-startup="true">
+		<int:poller fixed-rate="60000" />
+	</int:inbound-channel-adapter>
+
+	<int-mail:header-enricher id="simpleMailHeaderEnricher" input-channel="simpleMailOutboundChannelAdapterInboundChannelAdapter" output-channel="simpleMailHeaderEnricherOutputChannel"
+		default-overwrite="false">
+		<int-mail:to value="draphael.ricalde@empresas.justicia.es" />
+		<int-mail:from value="dante.ricalde@ricalde.es" />
+		<int-mail:subject value="Mail Test" />
+	</int-mail:header-enricher>
+
+	<int:object-to-string-transformer id="simpleObjectToStringTransformer" input-channel="simpleMailHeaderEnricherOutputChannel" output-channel="simpleObjectToStringTransformerOutputChannel"
+		auto-startup="true" />
+
+	<int:channel id="simpleObjectToStringTransformerOutputChannel" />
+
+	<!-- <int-mail:outbound-channel-adapter id="simpleMailOutboundChannelAdapter" channel="simpleObjectToStringTransformerOutputChannel" host="DANTERICALDE-PC" port="25" auto-startup="true" 
+		/> -->
+
+	<int-mail:outbound-channel-adapter id="simpleMailOutboundChannelAdapter" channel="simpleObjectToStringTransformerOutputChannel" mail-sender="simpleMailSender" />
+
+	<bean id="simpleMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<!-- <property name=""></property> -->
+		<!-- <property name="username" value="dante.ricalde"></property> -->
+		<!-- <property name="password" value="pescadito"></property> -->
+	</bean>
+</beans>

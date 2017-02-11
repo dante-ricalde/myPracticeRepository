@@ -1,0 +1,6 @@
+	Error Handling
+1. to test a gateway where any error has ocurred downstream so that the error will be re-thrown as a Messaging Exception (RuntimeException) upon the Gateway's method invocation.
+2. to test a gateway with a transformer (to create the expected error response objects and then the object created will then be the payload that is sent back to the caller) and
+	an error-channel attribute.
+3. to test a gateway where you want to completely suppress Exceptions using the global channel "nullChannel"
+4. to test a gateway with a one-way flow where nothing would be sent back to the caller

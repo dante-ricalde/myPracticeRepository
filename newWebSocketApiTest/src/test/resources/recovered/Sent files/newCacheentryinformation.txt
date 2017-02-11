@@ -1,0 +1,115 @@
+$(function () {
+   $(docume
+nt).ajaxSend(fun
+ction(e, xhr, op
+tions) { 
+xhr.setRequest
+Header($("meta[n
+ame='_csrf_heade
+r']").attr("cont
+ent"), $("meta[n
+ame='_csrf']").a
+ttr("content"));
+  });
+var options
+= {   para
+ms: $('#chatCont
+ent').data('para
+ms'),   cha
+tView: {   
+.width: 450,  
+ height: 350 
+ }  }; 
+  $('#ch
+atContent').chat
+(options); 
+ // This didn't
+work to make an
+ajax call with
+basic authorizat
+ion. It always r
+esponse 405 NOT
+ALLOWED, and alw
+ays makes first
+a preflight call
+OPTIONS  // be
+fore send the PO
+ST request //
+$.post('http:/
+/localhost:15672
+/api/queues/vhos
+t/messages-dante
+-keluchis/get',
+{username: 'gues
+t',password:'gue
+st'}, function(
+data ) { // co
+nsole.log("data
+received for " +
+data); //  /
+/.});    //
+This didn't wor
+k to make an aja
+x call with basi
+c authorization.
+It always respo
+nse 405 NOT ALLO
+WED, and always
+makes first a pr
+eflight call OPT
+IONS   // befor
+e send the POST
+request  /*v
+ar req = $.ajax(
+{
+type: 'POST', 
+ url: "htt
+p://localhost:15
+672/api/queues/%
+2F/messages-dant
+e-keluchis/get",
+   headers
+: {    "
+Authorization":
+"Basic Z3Vlc3Q6Z
+3Vlc3Q="   
+},   dat
+a: {"count":5,"r
+equeue":true,"en
+coding":"auto","
+truncate":50000}
+,   conten
+tType: "applicat
+ion/json", 
+ userna
+me: 'guest', 
+password: '
+guest', 
+xhrFields: { 
+with
+Credentials: tru
+e  }, 
+beforeSen
+d: function (xhr
+) {   xhr
+.setRequestHeade
+r("Authorization
+", "Basic Z3Vlc3
+Q6Z3Vlc3Q="); 
+ }  }
+).done(
+function( msg )
+{  aler
+t( "Data Saved:
+" + msg ); 
+}).fail(funct
+ion () {   
+console.log('f
+ailed');   
+  }).al
+ways(function ()
+{    cons
+ole.log('always'
+);  });
+*/    });
+

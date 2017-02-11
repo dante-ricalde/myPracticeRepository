@@ -1,0 +1,223 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- In this case I am testing an int-amqp:outbound-channel-adapter and a int-amqp:inbound-channel-adapter, I have tested the property return-channel in the int-amqp:outbound-channel-adapter 
+		and so that to test this functionality I have had to set the properties publisher-returns="true" in the connection-factory and mandatory="true" in the amqpTemplate (setting the connection-factory 
+		in the amqpTemplate), but so that I can see messages arriving to the return-channel I have had to send messages to the marketDataAmqpOutboundChannelAdapter that can't be routed to a 
+		queue, namely the exchange marketDataTopicExchange can't routes those messages to a queue (because those messages have a routing pattern app.stock.quotes.unknown.* and that pattern 
+		is not mapped in the exchange to a queue), this way I have been able to test this functionality (the mandatory property says: This flag tells the server how to react if the message 
+		cannot be routed to a queue. If this flag is set, the server will return an unroutable message with a Return method. If this flag is zero, the server silently drops the message. The 
+		server SHOULD implement the mandatory flag.) using the property amqpTemplate's mandatory (When the property publisherReturns is set to true, a channel created by the factory is wrapped 
+		in an PublisherCallbackChannel which is used to facilitate the callback. When such a channel is obtained, the client can register a PublisherCallbackChannel.Listener with the Channel. 
+		The PublisherCallbackChannel implementation contains logic to route a confirm/return to the appropriate listener. The listener is the RabbitTemplate. Returns are sent to the client 
+		by it registering a RabbitTemplate.ReturnCallback by calling setReturnCallback(ReturnCallback callback). and the ReturnCallback is the AmqpOutboundEndpoint which is the int-amqp:outbound-channel-adapter, 
+		the AmqpOutboundEndpoint implements ReturnCallback implementing the method returnedMessage, all this is set by default by the int-amqp:outbound-channel-adapter setting the appropriate 
+		properties). I haven't used the property immediate in the amqpTemplate to test the "Returns" because this property is not supported in the rabbit server (the immediate property says: 
+		This flag tells the server how to react if the message cannot be routed to a queue consumer immediately. If this flag is set, the server will return an undeliverable message with a 
+		Return method. If this flag is zero, the server will queue the message, but with no guarantee that it will ever be consumed. The server SHOULD implement the immediate flag.). Testing 
+		the int-amqp:inbound-channel-adapter I have observed that when you set the channel-transacted property to true in the int-amqp:inbound-channel-adapter, it's created a channel in the 
+		RabbitMQ Server, I think that that channel is created to be used when it uses transactions, because in case of fails Spring AMQP manually reject the message. At end in the case I haven't 
+		used transactions, I have use Confirms and Returns instead .............................................................................................................................. 
+		Regarding "Confirms" I have set the property confirm-ack-channel in the int-amqp:outbound-channel-adapter and the property "confirm-correlation-expression" in this same endpoint, besides 
+		I have set the property "publisher-confirms" to true in the connectionFactory that is set in the amqpTemplate used by the int-amqp:outbound-channel-adapter (When the property publisherConfirms 
+		is set to true, a channel created by the factory is wrapped in an PublisherCallbackChannel which is used to facilitate the callback. When such a channel is obtained, the client can 
+		register a PublisherCallbackChannel.Listener with the Channel. The PublisherCallbackChannel implementation contains logic to route a confirm/return to the appropriate listener. The 
+		listener is the RabbitTemplate. Confirms are sent to the client by it registering a RabbitTemplate.ConfirmCallback by calling setConfirmCallback(ConfirmCallback callback). and the ConfirmCallback 
+		is the AmqpOutboundEndpoint which is the int-amqp:outbound-channel-adapter, the AmqpOutboundEndpoint implements ConfirmCallback implementing the method confirm(CorrelationData correlationData, 
+		boolean ack), all this is set by default by the int-amqp:outbound-channel-adapter setting the appropriate properties). I have set the property confirm-correlation-expression to 'headers.amqp_messageId' 
+		in the "int-amqp:outbound-channel-adapter" for the confirms but you can use the value 'headers.id' because this value is unique, but I preferred to use 'headers.amqp_messageId' because 
+		this way I am identifying the messages as unique for the Spring Retry Key Generator, because I prefer to use it as the confirm correlation for "Confirms". Another aspect about "Confirms" 
+		is that when you see the logs of the message acknowledged you can the text "PC:Ack:n" where n starts with 1, 2, 3 and so on. That text means the number of the message acknowledged according 
+		to documentation: "Published messages are assigned ascending sequence numbers, starting at 1 with the first Confirm.Select method. The server confirms messages by sending Basic.Ack 
+		methods referring to these sequence numbers." ............................................................................................................................................................................... 
+		In this case I have used Spring Retry to re-attempt consuming the messages in the int-amqp:inbound-channel-adapter, I have set the property "advice-chain" in this adapter to specify 
+		the StatefulRetryOperationsInterceptor to achieve this (Spring Retry provides a couple of AOP interceptors and a great deal of flexibility to specify the parameters of the retry (number 
+		of attempts, exception types, backoff algorithm etc.). Spring AMQP also provides some convenience factory beans for creating Spring Retry interceptors in a convenient form for AMQP 
+		use cases, with strongly typed callback interfaces for you to implement custom recovery logic. Stateless retry is appropriate if there is no transaction or if a transaction is started 
+		inside the retry callback. Note that stateless retry is simpler to configure and analyse than stateful retry, but it is not usually appropriate if there is an ongoing transaction which 
+		must be rolled back or definitely is going to roll back. A dropped connection in the middle of a transaction should have the same effect as a rollback, so for reconnection where the 
+		transaction is started higher up the stack, stateful retry is usually the best choice.), the key point in this StatefulRetryOperationsInterceptor is to set a keyGenerator to get a unique 
+		identifier for the item that can be used to cache it between calls if necessary, and then identify it later (namely to determine if a message is being retrying of is a new message), 
+		to achieve this I have set the header "amqp_messageId" in the GenericMessage of Spring Integration and then I have specified the property mapped-request-headers="amqp_messageId" (this 
+		way any user-defined headers within the AMQP MessageProperties will be copied to or from an AMQP Message (from and to the Spring Integration MessageHeaders)) because MyCustomRetryKeyGenerator 
+		that implements MethodArgumentsKeyGenerator uses this MessageProperty to determine if a message is being retrying of is a new message). Also in the org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor 
+		I have set the property "recoverer" to act when all the retries are exhausted, in this case I have specified a bean MyCustomMethodInvocationRecoverer that implements MethodInvocationRecoverer<Message>, 
+		in this bean I have thrown a exception ImmediateAcknowledgeAmqpException (This exception is actually a normal outcome. It means the recovery was successful, but we don't want to consume 
+		any more messages until the acks and commits are sent for this (problematic) message, namely the message is consumed and it's not consumed again (because when you are using transactions 
+		or "Confirms-container acks" by default a message that is rejected or rolled back because of a business exception can be redelivered ad infinitum. )..), namely the recovered message 
+		forces ack (if ack mode requires it then the message is ACK); I haven't verifies if the message can be sent to a Dead Letter Exchange, if any, bacause The default MessageRecoverer simply 
+		consumes the errant message and emits a WARN message, in which case, the message is ACK'd and won't be sent to the Dead Letter Exchange, if any.)............................................................................................................... 
+		I have tested the property "error-channel" and "error-handler" in the "int-amqp:inbound-channel-adapter", to the error-channel is sent a message when the SimpleMessageListenerContainer 
+		fails to consume the message, if you are using "spring retry" in this adapter (property advice-chain) this error-channel is not very useful, because the error-channel receives the message 
+		each time the SimpleMessageListenerContainer fails to process the message, for this reason I haven't used in this case this property (error-channel) because I am using spring-retry, 
+		but you can use it if you want to send the message each time it fails...................................................................................................................... 
+		In this case I haven't been able to use the property "confirm-nack-channel" in the "int-amqp:outbound-channel-adapter" adapter because in the class BlockingQueueConsumer of the jar 
+		spring-retry-1.2.0 says this: // With newer RabbitMQ brokers could use basicNack here... channel.basicReject(deliveryTag, shouldRequeue);, namely it means that this functionality (NACK) 
+		is not offered by spring-retry in this moment although the broker (rabbitmq_server-3.1.0) I am using support this functionality............................................................ 
+		Another aspect that I have observed is that when a message is returned (because can't be routed to a queue) is also acknowledged by the server (broker) and this behaviour is this way 
+		beacuse the doc (http://www.rabbitmq.com/amqp-0-9-1-reference.html in the section "Confirm") says: 1) Unroutable mandatory or immediate messages are acknowledged right after the Basic.Return 
+		method. 2) The server MUST acknowledge an unroutable mandatory or immediate message only after it sends the Basic.Return................................................................... 
+		I have tested and observed that if you use publisher-confirms, you can't use transactions (they are disjunctive), for that reason I have used only Confirms and Returns in this case 
+		and not transactions. The doc say that the publisher-confirms and publisher-returns are 100x faster that transactions. -->
+
+	<util:constant id="nasdaq" static-field="spring.integration.test.amqp.market.api.StockExchange.nasdaq" />
+	<util:constant id="nyse" static-field="spring.integration.test.amqp.market.api.StockExchange.nyse" />
+	<util:constant id="unknownQueue" static-field="spring.integration.test.amqp.market.api.StockExchange.unknown" />
+
+	<util:list id="mockStocks" value-type="spring.integration.test.amqp.market.api.MockStock" list-class="java.util.ArrayList">
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="AAPL" p:stockExchange-ref="nasdaq" p:basePrice="255" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="CSCO" p:stockExchange-ref="nasdaq" p:basePrice="22" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="DELL" p:stockExchange-ref="nasdaq" p:basePrice="15" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="GOOG" p:stockExchange-ref="nasdaq" p:basePrice="500" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="INTC" p:stockExchange-ref="nasdaq" p:basePrice="22" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="MSFT" p:stockExchange-ref="nasdaq" p:basePrice="29" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="ORCL" p:stockExchange-ref="nasdaq" p:basePrice="24" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="CAJ" p:stockExchange-ref="nyse" p:basePrice="43" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="F" p:stockExchange-ref="nyse" p:basePrice="12" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="GE" p:stockExchange-ref="nyse" p:basePrice="18" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="HMC" p:stockExchange-ref="nyse" p:basePrice="32" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="HPQ" p:stockExchange-ref="nyse" p:basePrice="48" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="IBM" p:stockExchange-ref="nyse" p:basePrice="130" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="TM" p:stockExchange-ref="unknownQueue" p:basePrice="76" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="TM" p:stockExchange-ref="unknownQueue" p:basePrice="76" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="TM" p:stockExchange-ref="unknownQueue" p:basePrice="76" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="TM" p:stockExchange-ref="unknownQueue" p:basePrice="76" />
+		<bean class="spring.integration.test.amqp.market.api.MockStock" p:ticker="TM" p:stockExchange-ref="unknownQueue" p:basePrice="76" />
+	</util:list>
+
+	<int:inbound-channel-adapter id="marketDataInboundChannelAdapter" channel="marketDataInputChannel" ref="rabbitMarketGenerator" method="generateMarketData"
+		auto-startup="false">
+		<int:poller fixed-rate="5000" task-executor="customTaskExecutor" />
+	</int:inbound-channel-adapter>
+
+	<task:executor id="customTaskExecutor" pool-size="30" queue-capacity="50" />
+
+	<int:channel id="marketDataInputChannel">
+		<int:queue capacity="5000" />
+	</int:channel>
+
+	<int-amqp:outbound-channel-adapter id="marketDataAmqpOutboundChannelAdapter" channel="marketDataInputChannel" amqp-template="amqpTemplate"
+		exchange-name="marketDataTopicExchange" routing-key-expression="'app.stock.quotes.' + payload.stockExchange + '.' + payload.ticker" return-channel="marketDataReturnChannel"
+		confirm-ack-channel="marketDataConfirmAckChannel" confirm-nack-channel="marketDataConfirmNackChannel" confirm-correlation-expression="headers.amqp_messageId"
+		mapped-request-headers="amqp_messageId">
+		<!-- <int-amqp:request-handler-advice-chain></int-amqp:request-handler-advice-chain> -->
+	</int-amqp:outbound-channel-adapter>
+
+	<int:channel id="marketDataReturnChannel" />
+
+	<int:channel id="marketDataConfirmAckChannel" />
+
+	<int:channel id="marketDataConfirmNackChannel" />
+
+	<int:outbound-channel-adapter id="marketDataReturnChannelOutboundChannelAdapter" channel="marketDataReturnChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int:service-activator id="confirmNackServiceActivator" input-channel="marketDataConfirmNackChannel" ref="myExecutorChannelHandler" requires-reply="false"
+		auto-startup="false">
+	</int:service-activator>
+
+	<int:service-activator id="confirmAckServiceActivator" input-channel="marketDataConfirmAckChannel" ref="myExecutorChannelHandler" requires-reply="false"
+		auto-startup="false">
+	</int:service-activator>
+
+	<int-amqp:inbound-channel-adapter id="marketDataAmqpInboundChannelAdapter" channel="marketDataAmqpInboundChannelAdapterOutputChannel" queue-names="anonymousNyseMarketDateQueue, anonymousNasdaqMarketDataQueue"
+		connection-factory="connectionFactory" message-converter="jsonMessageConverter" acknowledge-mode="AUTO" advice-chain="amqpInboundChannelAdapterAdviceChain"
+		mapped-request-headers="amqp_messageId" auto-startup="false" />
+
+	<int:channel id="simpleStatefulRetryWithRecoveryErrorQueueChannel" />
+
+	<bean id="amqpInboundChannelAdapterAdviceChain" class="org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor">
+		<property name="retryOperations">
+			<bean class="org.springframework.retry.support.RetryTemplate">
+				<property name="retryPolicy">
+					<bean class="org.springframework.retry.policy.SimpleRetryPolicy" p:maxAttempts="2" />
+				</property>
+				<!-- <property name="backOffPolicy"> -->
+				<!-- <bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy" p:initialInterval="1000" p:multiplier="2" /> -->
+				<!-- </property> -->
+			</bean>
+		</property>
+		<property name="recoverer" ref="myCustomMethodInvocationRecoverer" />
+		<property name="keyGenerator" ref="myCustomRetryKeyGenerator" />
+	</bean>
+
+	<int:outbound-channel-adapter id="simpleStatefulRetryWithRecoveryOutboundChannelAdapter" channel="simpleStatefulRetryWithRecoveryErrorQueueChannel"
+		ref="channelAdapterReceiver" method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="marketDataAmqpInboundChannelAdapterOutputChannel" />
+
+	<int:router id="marketDataAmqpInboundChannelAdapterRouter" input-channel="marketDataAmqpInboundChannelAdapterOutputChannel"
+		expression="T(java.lang.Math).random() > 0.80 ? 'marketDataOutputChannel' : 'throwingExceptionOutputChannel'" auto-startup="false">
+		<int:mapping value="marketDataOutputChannel" channel="marketDataOutputChannel" />
+		<int:mapping value="throwingExceptionOutputChannel" channel="throwingExceptionOutputChannel" />
+	</int:router>
+
+	<int:channel id="marketDataOutputChannel" />
+
+	<int:outbound-channel-adapter id="marketDataOutputChannelOutboundChannelAdapter" channel="marketDataOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<int:channel id="throwingExceptionOutputChannel" />
+
+	<int:service-activator id="marketDataThrowingExceptionServiceActivator" input-channel="throwingExceptionOutputChannel" ref="fallingServiceActivator"
+		auto-startup="false" />
+
+	<!-- It has the property "publisher-returns" set to true to support return messages.................................................................................................... 
+		It has the property "publisher-confirms" set to true to support publisher confirms. -->
+	<rabbit:connection-factory id="connectionFactory" publisher-returns="true" publisher-confirms="true" />
+
+	<!-- <rabbit:connection-factory id="defaultConnectionFactory" publisher-returns="true" /> -->
+
+	<!-- It has the property "immediate" set to true to support return messages. -->
+	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" mandatory="true" message-converter="jsonMessageConverter" />
+
+	<bean id="jsonMessageConverter" class="org.springframework.amqp.support.converter.JsonMessageConverter" />
+
+	<!-- Bind to anonymous queue for market data so all nodes configured this way get all quotes -->
+	<rabbit:queue id="anonymousNyseMarketDateQueue" name="anonymousNyseMarketDateQueue" />
+
+	<!-- Bind to anonymous queue for market data so all nodes configured this way get all quotes -->
+	<rabbit:queue id="anonymousNasdaqMarketDataQueue" name="anonymousNasdaqMarketDataQueue" />
+
+	<rabbit:topic-exchange name="marketDataTopicExchange">
+		<rabbit:bindings>
+			<rabbit:binding pattern="${stocks.quote.pattern.nyse}" queue="anonymousNyseMarketDateQueue" />
+			<rabbit:binding pattern="${stocks.quote.pattern.nasdaq}" queue="anonymousNasdaqMarketDataQueue" />
+		</rabbit:bindings>
+	</rabbit:topic-exchange>
+
+	<rabbit:admin connection-factory="connectionFactory" auto-startup="false" />
+
+	<!-- I need to generate the market data using the inbound channel adapter using only xml configuration (with expressions). Then i am going to test the inbound channel adapter with 
+		ack-channel, noack-channel with Publisher Confirms and Returns, using transactions (mocking exceptions) and using error management (with channel-error) and advices and retry. -->
+
+	<!-- The rabbit server does not support immediate, i was not be able to use this property to test the "Returns", instead i use the property 'mandatory' and for testing it, i sent some 
+		messages to an unknown queue named 'unknown' and that it worked. I need to test if for that unknown queue I have 3 channels opened (2 for sending (template), 1 for receiving). The jsonMessageConverter 
+		is not working to convert well the message when it reads the consumed message in the listener: WARN [org.springframework.amqp.support.converter.JsonMessageConverter] - Could not convert 
+		incoming message with content-type [application/octet-stream], the same converter is working when convert the message before to send it to the return channel marketDataReturnChannel -->
+
+
+	<!-- I have seen that the property confirm-ack-channel is working but the channel is not receiving messages. I have test that if you use publisher-confirms, you can't use transactions 
+		(they are disjunctive). The doc say that the publisher-confirms and publisher-returns are 100x faster that transactions. -->
+</beans>

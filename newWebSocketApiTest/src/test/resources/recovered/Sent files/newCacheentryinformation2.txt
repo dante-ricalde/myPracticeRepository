@@ -1,0 +1,231 @@
+/**  * jQuery c
+hat plugin  * R
+equire:   * .-
+jquery  */ $(f
+unction () {  
+ "use strict";.
+  .if (!$.chat
+) {  $.chat =
+{}; .}  .
+$(document).ajax
+Send(function(e,
+xhr, options) {
+  xhr.se
+tRequestHeader($
+("meta[name='_cs
+rf_header']").at
+tr("content"), $
+("meta[name='_cs
+rf']").attr("con
+tent"));  })
+;    
+var methods = {.
+.  _init: fu
+nction (options)
+{   .conso
+le.log("_init in
+voked with optio
+ns: " + options)
+;   .var se
+ttings = { 
+  language: "e
+n",    cha
+tView: {   
+ .width: 500, 
+  .height:
+400,    .
+position: {x: 'c
+enter', y: 'cent
+er'},    .
+title: "", 
+  .buttonText:
+""    } 
+.  .}; 
+ .$.extend(true
+, settings, opti
+ons || {}); .
+    .retur
+n this.each(func
+tion () {  .
+ .console.log("
+each invoked for
+this: " + this
++ " with id: " +
+this.id); 
+  var that = t
+his;    va
+r language = $.e
+xtend({}, $.chat
+.language["en"],
+$.chat.language
+[settings.langua
+ge]);    v
+ar messageResolv
+er = new general
+.util.MessageRes
+olver(language.m
+essages);  .
+ .var $ul = $('
+<ul>');   .
+.var defer = $.D
+eferred(); 
+  var socketDe
+stination = new
+SockJS("/anyUrlP
+attern/chatRelay
+");    tha
+t.stompClientDes
+tination = Stomp
+.over(socketDest
+ination);  .
+ .defer.promise
+(that.stompClien
+tDestination); 
+  that.sto
+mpClientDestinat
+ion.connect({},
+function (frame)
+{    .def
+er.resolve(); .
+  .that.stompC
+lientDestination
+.subscribe('/exc
+hange/chatDirect
+Exchange/message
+s-' + settings.p
+arams.userName +
+'-notification'
+, function (fram
+e) {    .var
+$body = JSON.pa
+rse(frame.body);
+    .// If t
+he receiver (cli
+ent - user desti
+nation) notifies
+me that He has
+received the mes
+sage that I sent
+    .if ($bo
+dy.receivedByCli
+ent) {     
+var $li = $("li:
+contains('" + $b
+ody.recipient +
+"')", $ul);  .
+  .var $userVi
+ew = $li.data('u
+serView');   
+  $userView.ad
+dMessage($body);
+    .} else
+if ($("li:contai
+ns('" + $body.se
+nder + "')", $ul
+).length < 1) {
+// Add the conta
+ct user to the l
+ist of contact u
+sers connected 
+    addLitoU
+l($ul, $body.sen
+der, settings, m
+essageResolver,
+that);    .}
+    });  .
+ });    $
+.post(settings.p
+arams.welcomeUrl
+, {}, function(
+data ) {   
+ .console.log("
+data received fo
+r " + settings.p
+arams.welcomeUrl
++ ": " + data)
+;    .$.ea
+ch(data, functio
+n (index, value)
+{     ad
+dLitoUl($ul, val
+ue, settings, me
+ssageResolver, t
+hat);     
+  .}); 
+  .// We con
+nect this user t
+o receive notifi
+cation //  
+ .var socketDes
+tination = new S
+ockJS("https://n
+ewwebsocketapite
+st.cfapps.io:444
+3/anyUrlPattern/
+chatRelay");  
+     .$(t
+hat).prepend($ul
+);    });
+     .
+});   } 
+};   
+/**  * The
+main method of t
+his plugin, it d
+oes this plugin
+to start  *
+@param {Object}
+method The obje
+ct containing al
+l the configurat
+ion of this plug
+in (the options)
+  */  $
+.fn.chat = funct
+ion (method) { 
+.if (methods
+[method]) { 
+ return method
+s[method].apply(
+this, Array.prot
+otype.slice.call
+(arguments, 1));
+  .} else if
+(typeof method
+=== 'object' ||
+!method) { 
+ return methods
+._init.apply(thi
+s, arguments); 
+.} else { 
+ return $.er
+ror("Method " +
+method + " not f
+ound in jquery.c
+hat");  .} 
+};   
+function addLi
+toUl(ul, value,
+settings, messag
+eResolver, conta
+iner) {  .va
+r $li = $('<li>'
+);  $li.html(v
+alue);  var us
+erViewOptions =
+$.extend(true, {
+}, settings.chat
+View, {  .mess
+ageResolver: mes
+sageResolver  
+});  ul.append
+($li);  var us
+erView = new cha
+t.view.UserView(
+userViewOptions,
+container, sett
+ings, $li, messa
+geResolver);  
+$li.data('userVi
+ew', userView);.
+}); 

@@ -1,0 +1,6 @@
+Protractor results for: 12/11/2016, 2:15:51 PM
+
+AppDir:./
+  Suite: QuickStart E2E Tests -- passed
+    passed - should display:Hello ANGULAR 2
+

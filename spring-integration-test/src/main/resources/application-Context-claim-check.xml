@@ -1,0 +1,119 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- In this case we are testing a simple incoming claim check transformer. This incoming claim check transformer transforms the incoming message by storing it in the message store 
+		identified by its message-store attribute, in this case this attribute is not specified, hence the incoming claim check references a bean named messageStore. By default the incoming 
+		claim check uses an in-memory message store (map-based implementation). The message persisted in the message store will be indexed with a generated ID. That ID is the Claim Check for 
+		that Message. The Claim Check (ID) will also become the payload of the new (transformed) Message that will be sent to the output channel. -->
+	<int:inbound-channel-adapter id="incomingClaimCheckTransformerInboundChannelAdapter" channel="incomingClaimCheckTransformerInputQueueChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="incomingClaimCheckTransformerInputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:claim-check-in id="incomingClaimCheckTransformer" input-channel="incomingClaimCheckTransformerInputQueueChannel" output-channel="incomingClaimCheckTransformerOutputQueueChannel"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:claim-check-in>
+
+	<int:channel id="incomingClaimCheckTransformerOutputQueueChannel">
+		<int:queue capacity="500" />
+	</int:channel>
+
+	<int:outbound-channel-adapter id="incomingClaimCheckTransformerOutboundChannelAdapter" channel="incomingClaimCheckTransformerOutputQueueChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:outbound-channel-adapter>
+
+	<!-- In this case we are testing an outgoing claim check transformer. This outgoing claim check uses a custom message store in mysql to retrieve the messages, obviously the messages 
+		were saved priorly by the incoming claim check in this message store. The outgoing claim check receives a message with a UUII and then goes to the message store to retrieve the original 
+		message. This outgoing claim check has the "remove-message" property set to true, indicating that the message will be removed from the message store when this has been retrieved at 
+		the first one (With this property the messages can be claimed only once). -->
+
+	<int:inbound-channel-adapter id="outgoingClaimCheckInboundChannelAdapter" channel="outgoingClaimCheckIncomingClaimCheckInputDirectChannel"
+		expression="T(java.lang.Math).random() > 0.5 ? new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('chato', 'chatiboro', 'chatiboris')), 'Dante'): 
+		new spring.integration.test.var.Parent(new spring.integration.test.var.Child('Dantito', T(java.util.Arrays).asList('pequeñito', 'josin josin')), 'Kelly')"
+		auto-startup="false">
+		<int:poller fixed-rate="1000" />
+	</int:inbound-channel-adapter>
+
+	<int:channel id="outgoingClaimCheckIncomingClaimCheckInputDirectChannel" />
+
+	<int:claim-check-in id="outgoingClaimCheckIncomingClaimCheck" input-channel="outgoingClaimCheckIncomingClaimCheckInputDirectChannel" output-channel="outgoingClaimCheckInputDirectChannel"
+		message-store="claimCheckMessageStore" auto-startup="false" />
+
+	<int-jdbc:message-store id="claimCheckMessageStore" data-source="claimCheckDataSource" />
+
+	<int:channel id="outgoingClaimCheckInputDirectChannel" />
+
+	<int:claim-check-out id="outgoingClaimCheck" input-channel="outgoingClaimCheckInputDirectChannel" output-channel="outgoingClaimCheckOutputDirectChannel"
+		message-store="claimCheckMessageStore" remove-message="true" auto-startup="false" />
+
+	<int:channel id="outgoingClaimCheckOutputDirectChannel" />
+
+	<int:outbound-channel-adapter id="outgoingClaimCheckOutboundChannelAdapter" channel="outgoingClaimCheckOutputDirectChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="false" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="claimCheckDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/claimcheckmessagegroupdb" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="claimCheckSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="claimCheckDataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="claimCkeckTransactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="claimCheckSessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="claimCkeckTransactionManager" order="100" />
+
+</beans>

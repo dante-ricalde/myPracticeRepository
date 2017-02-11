@@ -1,0 +1,2 @@
+We need two things to launch the application:
+

@@ -1,0 +1,220 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd">
+
+	<!-- In this case I am testing the JdbcChannelMessageStore, in that message store I am setting the following options: The MySqlChannelMessageStoreQueryProvider which provides the data base
+		specific SQL queries, I am also setting the property 'region' to 'TX_TIMEOUT' for partitioning data withing a single table (An important use case for this is when the MessageStore is 
+		managing persistent queues backing a Spring Integration Message Channel. The message data for a persistent channel is keyed in the store on the channel name, so if the channel names 
+		are not globally unique then there is the danger of channels picking up data that was not intended for them. To avoid this, the message store region can be used to keep data separate 
+		for different physical channels that happen to have the same logical name). I am setting the property 'usingIdCache' to true (Consider using this property when polling the database 
+		transactionally using multiple parallel threads, meaning when the configured poller is configured using a task executor. The issue is that the pollMessageFromGroup(Object) looks for 
+		the oldest entry for a giving channel (groupKey) and region (setRegion(String)). If you do that with multiple threads and you are using transactions, other threads may be waiting for 
+		that same locked row. If using the provided OracleChannelMessageStoreQueryProvider, don't set usingIdCache to true, as the Oracle query will ignore locked rows. Using the id cache, 
+		the JdbcChannelMessageStore will store each message id in an in-memory collection for the duration of processing. With that, any polling threads will explicitly exclude those messages 
+		from being polled. For this to work, you must setup the corresponding TransactionSynchronizationFactory. This TransactionSynchronizationFactory is then referenced in the transaction 
+		configuration of the poller. This implementation of org.springframework.integration.transaction.TransactionSynchronizationFactory allows you to configure SpEL expressions, with their 
+		execution being coordinated (synchronized) with a transaction, and in this case this int:transaction-synchronization-factory is necessary to delete the messages from the 'id cache'(the 
+		in-memory collection) after a commit or rollback). In this case I have only specified the <int:transaction-synchronization-factory in the transaction configuration of the poller of the 
+		<bridge (and not in the transaction configuration of the poller of the <inbound-channel-adapter) because the <bridge is polling messages from a queue (is making select and hence using the 
+		in-memory collection for the 'id cache') and the <inbound-channel-adapter is only making insert in the queue. Regarding threads, there are two main threads:
+		
+		1. <int:inbound-channel-adapter -> jdbcChannelMessageInputChannel
+		2. jdbcChannelMessageInputChannel -> <int:bridge -> jdbcChannelMessageOutputChannel -> <int:outbound-channel-adapter
+		
+		You need to take into account that for each thread the poller operation is wrapped in a transaction.
+		
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Creating new transaction with name [org.springframework.integration.endpoint.AbstractPollingEndpoint$1.call]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Opened new Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])] for Hibernate transaction
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Preparing JDBC Connection of Hibernate Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Exposing Hibernate transaction as JDBC transaction [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler@445f45cd[valid=true]]
+		 DEBUG [org.springframework.integration.endpoint.SourcePollingChannelAdapter]  - Poll resulted in Message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692648964, id=f1238331-02c2-4b57-b42b-3a373d1a5ef8, anotherPaymentType=DEBIT, status=1, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.channel.QueueChannel]  - preSend on channel 'jdbcChannelMessageInputChannel', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692648964, id=d916c285-e392-4a21-8277-e90b72fc005f, anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel, status=1, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL update
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL statement [INSERT into INT_CHANNEL_MESSAGE(MESSAGE_ID, GROUP_KEY, REGION, CREATED_DATE, MESSAGE_BYTES) values (?, ?, ?, ?, ?)]
+		 DEBUG [org.hibernate.SQL]  - INSERT into INT_CHANNEL_MESSAGE(MESSAGE_ID, GROUP_KEY, REGION, CREATED_DATE, MESSAGE_BYTES) values (?, ?, ?, ?, ?)
+		 DEBUG [org.springframework.integration.jdbc.store.JdbcChannelMessageStore]  - Inserting message with id key=d916c285-e392-4a21-8277-e90b72fc005f
+		 DEBUG [org.springframework.jdbc.support.lob.DefaultLobHandler]  - Set bytes for BLOB with length 1393
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - SQL update affected 1 rows
+		 DEBUG [org.springframework.integration.channel.QueueChannel]  - postSend (sent=true) on channel 'jdbcChannelMessageInputChannel', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692648964, id=d916c285-e392-4a21-8277-e90b72fc005f, anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel, status=1, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Committing Hibernate transaction on Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Closing Hibernate Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])] after transaction
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 
+		 
+		 
+		 
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Creating new transaction with name [org.springframework.integration.endpoint.AbstractPollingEndpoint$1.call]: PROPAGATION_REQUIRED,ISOLATION_READ_COMMITTED
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Opened new Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])] for Hibernate transaction
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Preparing JDBC Connection of Hibernate Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])]
+		 DEBUG [org.springframework.jdbc.datasource.DataSourceUtils]  - Changing isolation level of JDBC Connection [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler@23637c40[valid=true]] to 2
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtaining JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Obtained JDBC connection
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - begin
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - initial autocommit status: true
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - disabling autocommit
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Exposing Hibernate transaction as JDBC transaction [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler@23637c40[valid=true]]
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL query
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL statement [SELECT COUNT(MESSAGE_ID) from INT_CHANNEL_MESSAGE where GROUP_KEY=? and REGION=?]
+		 DEBUG [org.hibernate.SQL]  - SELECT COUNT(MESSAGE_ID) from INT_CHANNEL_MESSAGE where GROUP_KEY=? and REGION=?
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL query
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL statement [SELECT INT_CHANNEL_MESSAGE.MESSAGE_ID, INT_CHANNEL_MESSAGE.MESSAGE_BYTES from INT_CHANNEL_MESSAGE where INT_CHANNEL_MESSAGE.GROUP_KEY = ? and INT_CHANNEL_MESSAGE.REGION = ? order by CREATED_DATE ASC LIMIT 1]
+		 DEBUG [org.hibernate.SQL]  - SELECT INT_CHANNEL_MESSAGE.MESSAGE_ID, INT_CHANNEL_MESSAGE.MESSAGE_BYTES from INT_CHANNEL_MESSAGE where INT_CHANNEL_MESSAGE.GROUP_KEY = ? and INT_CHANNEL_MESSAGE.REGION = ? order by CREATED_DATE ASC LIMIT 1
+		 DEBUG [org.springframework.jdbc.support.lob.DefaultLobHandler]  - Returning BLOB as bytes
+		 DEBUG [org.springframework.integration.jdbc.store.JdbcChannelMessageStore]  - Polled message with id 'd916c285-e392-4a21-8277-e90b72fc005f' added: 'true'.
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL update
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - Executing prepared SQL statement [DELETE from INT_CHANNEL_MESSAGE where MESSAGE_ID=? and GROUP_KEY=? and REGION=?]
+		 DEBUG [org.hibernate.SQL]  - DELETE from INT_CHANNEL_MESSAGE where MESSAGE_ID=? and GROUP_KEY=? and REGION=?
+		 DEBUG [org.springframework.jdbc.core.JdbcTemplate]  - SQL update affected 1 rows
+		 DEBUG [org.springframework.integration.jdbc.store.JdbcChannelMessageStore]  - Message with id 'd916c285-e392-4a21-8277-e90b72fc005f' was deleted.
+		 DEBUG [org.springframework.integration.channel.QueueChannel]  - postReceive on channel 'jdbcChannelMessageInputChannel', message: [Payload=Dantito Ricalde Rivera][Headers={anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel, id=d916c285-e392-4a21-8277-e90b72fc005f, timestamp=1387692648965, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.endpoint.PollingConsumer]  - Poll resulted in Message: [Payload=Dantito Ricalde Rivera][Headers={anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel, id=d916c285-e392-4a21-8277-e90b72fc005f, timestamp=1387692648965, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.handler.BridgeHandler]  - org.springframework.integration.handler.BridgeHandler#4 received message: [Payload=Dantito Ricalde Rivera][Headers={anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel, id=d916c285-e392-4a21-8277-e90b72fc005f, timestamp=1387692648965, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.handler.BridgeHandler]  - handler 'org.springframework.integration.handler.BridgeHandler#4' sending reply Message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692654068, id=f9d963e9-5143-41c2-a207-973c5f1913a2, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel,jdbcChannelMessageStoreBridge, anotherPaymentType=DEBIT, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - preSend on channel 'jdbcChannelMessageOutputChannel', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692654068, id=f0e6e0ba-76bf-4eef-9bc3-b2a761fd777e, anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel,jdbcChannelMessageStoreBridge,jdbcChannelMessageOutputChannel, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.handler.MethodInvokingMessageHandler]  - org.springframework.integration.handler.MethodInvokingMessageHandler#28 received message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692654068, id=f0e6e0ba-76bf-4eef-9bc3-b2a761fd777e, anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel,jdbcChannelMessageStoreBridge,jdbcChannelMessageOutputChannel, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 INFO  [spring.integration.test.adapter.receiver.ChannelAdapterReceiver]  - Channel Adapter Receiver: Message Received: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692654069, id=cbfaad58-d733-435e-82c0-afa645256cb1, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel,jdbcChannelMessageStoreBridge,jdbcChannelMessageOutputChannel,jdbcChannelMessageStoreOutboundChannelAdapter, anotherPaymentType=DEBIT, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]*********END OF THE MESSAGE *************************
+		 DEBUG [org.springframework.integration.channel.DirectChannel]  - postSend (sent=true) on channel 'jdbcChannelMessageOutputChannel', message: [Payload=Dantito Ricalde Rivera][Headers={timestamp=1387692654068, id=f0e6e0ba-76bf-4eef-9bc3-b2a761fd777e, anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel,jdbcChannelMessageStoreBridge,jdbcChannelMessageOutputChannel, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Sending received message to null as part of 'beforeCommit' transaction synchronization
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Initiating transaction commit
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Committing Hibernate transaction on Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])]
+		 DEBUG [org.hibernate.engine.transaction.spi.AbstractTransactionImpl]  - committing
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - committed JDBC Connection
+		 DEBUG [org.hibernate.engine.transaction.internal.jdbc.JdbcTransaction]  - re-enabling autocommit
+		 DEBUG [org.springframework.integration.transaction.ExpressionEvaluatingTransactionSynchronizationProcessor]  - Evaluating afterCommit expression: '@jdbcChannelMessageStore.removeFromIdCache(headers.id.toString())' on [Payload=Dantito Ricalde Rivera][Headers={anotherPaymentType=DEBIT, history=jdbcOutboundGatewayInboundChannelAdapter,jdbcChannelMessageInputChannel, id=d916c285-e392-4a21-8277-e90b72fc005f, timestamp=1387692648965, status=1, JdbcChannelMessageStore.SAVED=true, JdbcChannelMessageStore.CREATED_DATE=1387692648965, myId=ea464db2-d25f-47df-bb5c-7b77f29896de}]
+		 DEBUG [org.springframework.integration.jdbc.store.JdbcChannelMessageStore]  - Removing Message Id:d916c285-e392-4a21-8277-e90b72fc005f
+		 DEBUG [org.springframework.jdbc.datasource.DataSourceUtils]  - Resetting isolation level of JDBC Connection [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler@23637c40[valid=true]] to 4
+		 DEBUG [org.springframework.orm.hibernate4.HibernateTransactionManager]  - Closing Hibernate Session [SessionImpl(PersistenceContext[entityKeys=[],collectionKeys=[]];ActionQueue[insertions=[] updates=[] deletions=[] collectionCreations=[] collectionRemovals=[] collectionUpdates=[] unresolvedInsertDependencies=UnresolvedEntityInsertActions[]])] after transaction
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Releasing JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.LogicalConnectionImpl]  - Released JDBC connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 DEBUG [org.hibernate.engine.jdbc.internal.proxy.ConnectionProxyHandler]  - HHH000163: Logical connection releasing its physical connection
+		 -->
+
+	<int:inbound-channel-adapter id="jdbcOutboundGatewayInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload('Dantito Ricalde Rivera').setHeader('myId', T(java.util.UUID).randomUUID().toString()).setHeader('anotherPaymentType', 'DEBIT').setHeader('status', 1).build(): 
+    		T(org.springframework.integration.support.MessageBuilder).withPayload('Danielito Ricalde Rivera').setHeader('myId', T(java.util.UUID).randomUUID().toString()).setHeader('anotherPaymentType', 'PERSONAL CHECK').setHeader('status', 2).build()"
+		channel="jdbcChannelMessageInputChannel" auto-startup="true">
+		<int:poller fixed-rate="10000">
+			<int:transactional transaction-manager="jdbcChannelMessageStoreTransactionManager" />
+		</int:poller>
+	</int:inbound-channel-adapter>
+
+	<bean id="jdbcChannelMessageStoreQueryProvider" class="org.springframework.integration.jdbc.store.channel.MySqlChannelMessageStoreQueryProvider" />
+
+	<int:transaction-synchronization-factory id="jdbcChannelMessageStoreFactory">
+		<int:after-commit expression="@jdbcChannelMessageStore.removeFromIdCache(headers.id.toString())" />
+		<int:after-rollback expression="@jdbcChannelMessageStore.removeFromIdCache(headers.id.toString())" />
+	</int:transaction-synchronization-factory>
+
+	<task:executor id="jdbcChannelMessageStorePool" pool-size="10" queue-capacity="10" rejection-policy="CALLER_RUNS" />
+
+	<bean id="jdbcChannelMessageStore" class="org.springframework.integration.jdbc.store.JdbcChannelMessageStore">
+		<property name="dataSource" ref="jdbcChannelMessageStoreDataSource" />
+		<property name="channelMessageStoreQueryProvider" ref="jdbcChannelMessageStoreQueryProvider" />
+		<property name="region" value="TX_TIMEOUT" />
+		<property name="usingIdCache" value="true" />
+	</bean>
+
+	<int:channel id="jdbcChannelMessageInputChannel">
+		<int:queue message-store="jdbcChannelMessageStore" />
+	</int:channel>
+
+	<int:bridge id="jdbcChannelMessageStoreBridge" input-channel="jdbcChannelMessageInputChannel" output-channel="jdbcChannelMessageOutputChannel">
+		<int:poller fixed-delay="15000" receive-timeout="500" max-messages-per-poll="1" task-executor="jdbcChannelMessageStorePool">
+			<int:transactional propagation="REQUIRED" synchronization-factory="jdbcChannelMessageStoreFactory" isolation="READ_COMMITTED" transaction-manager="jdbcChannelMessageStoreTransactionManager" />
+		</int:poller>
+	</int:bridge>
+
+	<int:channel id="jdbcChannelMessageOutputChannel" />
+
+	<int:outbound-channel-adapter id="jdbcChannelMessageStoreOutboundChannelAdapter" channel="jdbcChannelMessageOutputChannel" ref="channelAdapterReceiver"
+		method="receiveMessage" auto-startup="true" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="jdbcChannelMessageStoreDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/jdbcinboundchanneladapter" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="jdbcChannelMessageStoreSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="jdbcChannelMessageStoreDataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">on_close</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="jdbcChannelMessageStoreTransactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="jdbcChannelMessageStoreSessionFactory" />
+		<property name="prepareConnection" value="true"></property>
+	</bean>
+
+	<tx:annotation-driven transaction-manager="jdbcChannelMessageStoreTransactionManager" order="100" />
+
+</beans>

@@ -1,0 +1,2 @@
+Pending
+1. to test a header enricher with a <int-groovy:script element with the version 2.2 of spring integration 

@@ -1,0 +1,147 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx" xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:int-script="http://www.springframework.org/schema/integration/scripting" xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy" xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-ftp="http://www.springframework.org/schema/integration/ftp" xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event" xmlns:int-feed="http://www.springframework.org/schema/integration/feed" xmlns:gfe="http://www.springframework.org/schema/gemfire"
+	xmlns:int-gfe="http://www.springframework.org/schema/integration/gemfire" xmlns:gfe-data="http://www.springframework.org/schema/data/gemfire" xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.2.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc-2.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/scripting http://www.springframework.org/schema/integration/scripting/spring-integration-scripting-2.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-2.2.xsd
+		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.2.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
+		http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp-2.2.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-2.2.xsd
+		http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+		http://www.springframework.org/schema/integration/gemfire http://www.springframework.org/schema/integration/gemfire/spring-integration-gemfire-2.2.xsd
+		http://www.springframework.org/schema/data/gemfire http://www.springframework.org/schema/data/gemfire/spring-data-gemfire.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd">
+
+	<!-- In this case I am testing a <int-jdbc:stored-proc-outbound-gateway who is calling to the stored procedure named 'PUTANDGETITEM'. This gateway is using a ExpressionEvaluatingSqlParameterSourceFactory 
+		to map the input parameters to the stored procedure and an ItemRowMapper to map the resultset who is the response of the stored procedure to an instance of Item. The In parameter 'message' 
+		of the stored procedure is receiving the completed message serialized as a byte array, then this byte array is deserialized in an object of type Message when the response of the stored 
+		procedure is returned and that object is added to the instance Item generated by the ItemRowMapper. Regarding threads there is a single thread.
+		
+		 <int:inbound-channel-adapter -> simpleStoredProcOutboundGatewayRequestChannel -> <int-jdbc:stored-proc-outbound-gateway -> simpleStoredProcOutboundGatewayReplyChannel 
+		 
+	-->
+
+	<int:inbound-channel-adapter id="simpleStoredProcOutboundGatewayInboundChannelAdapter"
+		expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('anotherPaymentType', 'DEBIT').build(): 
+    		T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera', 'Danielito Ricalde Rivera', 2)).setHeader('anotherPaymentType', 'CREDIT').build()"
+		channel="simpleStoredProcOutboundGatewayRequestChannel" auto-startup="true">
+		<int:poller fixed-rate="10000">
+			<int:transactional transaction-manager="simpleStoredProcOutboundGatewayTransactionManager" />
+		</int:poller>
+	</int:inbound-channel-adapter>
+
+	<int:channel id="simpleStoredProcOutboundGatewayRequestChannel" />
+
+	<int:channel id="simpleStoredProcOutboundGatewayReplyChannel">
+		<int:queue message-store="simpleStoredProcOutboundGatewayReplyChannelMessageStore" />
+		<int:interceptors>
+			<ref bean="myChannelInterceptor" />
+		</int:interceptors>
+	</int:channel>
+
+	<bean id="simpleStoredProcOutboundGatewayReplyChannelMessageStore" class="org.springframework.integration.jdbc.store.JdbcChannelMessageStore">
+		<property name="dataSource" ref="simpleStoredProcOutboundGatewayDataSource" />
+		<property name="channelMessageStoreQueryProvider" ref="simpleStoredProcOutboundGatewayReplyChannelMessageStoreQueryProvider" />
+		<property name="region" value="TX_PROC_OUT_GATEWAY" />
+		<property name="usingIdCache" value="false" />
+	</bean>
+
+	<bean id="simpleStoredProcOutboundGatewayReplyChannelMessageStoreQueryProvider" class="org.springframework.integration.jdbc.store.channel.MySqlChannelMessageStoreQueryProvider" />
+
+	<int-jdbc:stored-proc-outbound-gateway id="simpleStoredProcOutboundGateway" request-channel="simpleStoredProcOutboundGatewayRequestChannel"
+		reply-channel="simpleStoredProcOutboundGatewayReplyChannel" stored-procedure-name="PUTANDGETITEM" skip-undeclared-results="true" is-function="false"
+		data-source="simpleStoredProcOutboundGatewayDataSource" sql-parameter-source-factory="simpleStoredProcOutboundGatewaySpelSource" expect-single-result="true"
+		use-payload-as-parameter-source="false">
+		<int-jdbc:returning-resultset name="result" row-mapper="spring.integration.test.mapper.jdbc.ItemRowMapper" />
+	</int-jdbc:stored-proc-outbound-gateway>
+
+	<bean id="simpleStoredProcOutboundGatewaySpelSource" class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
+		<property name="parameterExpressions">
+			<map>
+				<entry key="id" value="payload.id" />
+				<entry key="code" value="payload.code" />
+				<entry key="status" value="payload.status" />
+				<entry key="description" value="payload.code" />
+				<entry key="created_date" value="new java.util.Date()" />
+				<entry key="message" value="@serializingConverter.convert(#this)" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="messageRowMapper" class="org.springframework.integration.jdbc.store.channel.MessageRowMapper">
+		<constructor-arg name="deserializer" ref="deserializingConverter" />
+		<constructor-arg name="lobHandler" ref="lobHandler" />
+	</bean>
+
+	<bean id="deserializingConverter" class="org.springframework.core.serializer.support.DeserializingConverter" />
+
+	<bean id="serializingConverter" class="org.springframework.core.serializer.support.SerializingConverter" />
+
+	<bean id="lobHandler" class="org.springframework.jdbc.support.lob.DefaultLobHandler" />
+
+	<bean id="customObjectMapper" class="spring.integration.test.mapper.factory.ObjectMapperFactory" factory-method="getMapper" />
+
+	<!-- *************************** HIBERNATE AND TRANSACTION MANAGEMENT ********************************* -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" id="simpleStoredProcOutboundGatewayDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/jdbcinboundchanneladapter" />
+		<property name="username" value="root" />
+		<property name="password" value="sa" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="1800000" />
+		<property name="numTestsPerEvictionRun" value="3" />
+		<property name="minEvictableIdleTimeMillis" value="1800000" />
+		<property name="validationQuery" value="SELECT 1" />
+	</bean>
+
+	<bean id="simpleStoredProcOutboundGatewaySessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="simpleStoredProcOutboundGatewayDataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="current_session_context_class">jta</prop>
+				<prop key="connection.isolation">2</prop>
+				<prop key="hibernate.connection.release_mode">on_close</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.jdbc.batch_size">10</prop>
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="spring.integration.test" />
+	</bean>
+
+	<bean id="simpleStoredProcOutboundGatewayTransactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="simpleStoredProcOutboundGatewaySessionFactory" />
+		<property name="prepareConnection" value="true"></property>
+	</bean>
+
+	<tx:annotation-driven transaction-manager="simpleStoredProcOutboundGatewayTransactionManager" order="100" />
+
+</beans>

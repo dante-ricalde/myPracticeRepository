@@ -1,0 +1,12 @@
+Step 2: Create your application
+
+I had to replace this: 
+	start": "tsc && concurrently \"tsc -w\" \"lite-server\" ",
+by
+	"tsc && npm run tsc:w | npm run lite",
+in package.json to solve the problems with concurrently package
+
+11/12/2016
+	I have finished to review all this tutorial: https://github.com/angular/quickstart. I finished to review the unit tests and End-to-end (E2E) tests.
+	I need to review the next example in angular2:
+	https://angular.io/docs/ts/latest/guide/learning-angular.html, taking the tour of heroes tutorial
