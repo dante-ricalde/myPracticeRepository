@@ -1,0 +1,47 @@
+
+steps required:
+ 
+ 1. cd /cygdrive/f/misPracticas/myPracticeRepository/angular2/angular-tour-of-heroes/node_modules/protractor/node_modules/webdriver-manager/selenium/
+ 	cp chromedriver_win32.zip /cygdrive/f/misPracticas/myPracticeRepository/angular2/angular-tour-of-heroes/node_modules/protractor/node_modules/webdriver-manager/selenium/
+ 2. execute npm install -g webdriver-manager
+ 2. execute npm run pree2e
+ 3. execute npm install --save @types/selenium-webdriver
+ 4. execute npm install lite-server
+
+
+I have left at:
+
+	https://angular.io/docs/ts/latest/tutorial/toh-pt1.html
+	Show our Hero
+		We want to display Hero data in our app (100%)
+
+	https://angular.io/docs/ts/latest/tutorial/toh-pt2.html
+		We build a master/detail page with a list of heroes
+		Notice that we again use the back-tick notation for multi-line strings. (100%)
+12/01/2016
+	https://angular.io/docs/ts/latest/tutorial/toh-pt3.html
+		We refactor the master/detail view into separate components (95%)
+13/01/2016
+	https://angular.io/docs/ts/latest/tutorial/toh-pt3.html
+	The Road Ahead (95%). 
+		Review this chapter entirely if necessary to remember the theory. I reviewed it quickly.
+
+20/01/2016
+	Use the Hero Service
+	https://angular.io/docs/ts/latest/tutorial/toh-pt4.html
+
+	I advanced until Async Services and Promises, but I did it quickly. I need to read slowly and again from 'Use the Hero Service'
+21/01/2016
+	I am going to start this chapter
+	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
+
+29/01/2016
+	Add a Dashboard
+	Routing only makes sense when we have multiple vie
+
+05/02/2016
+	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
+	Find our way back
+	We can navigate to the HeroDetailComponent
+
+11/02/2016
