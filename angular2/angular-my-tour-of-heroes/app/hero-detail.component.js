@@ -27,14 +27,19 @@ var HeroDetailComponent = (function () {
             .switchMap(function (params) { return _this.heroService.getHero(+params['id']); })
             .subscribe(function (hero) { return _this.hero = hero; });
     };
+    ;
+    HeroDetailComponent.prototype.goBack = function () {
+        this.location.back();
+    };
     __decorate([
         core_1.Input(), 
         __metadata('design:type', hero_1.Hero)
     ], HeroDetailComponent.prototype, "hero", void 0);
     HeroDetailComponent = __decorate([
         core_1.Component({
+            moduleId: module.id,
             selector: 'my-hero-detail',
-            template: "\n\t<div *ngIf=\"hero\">\n    \t<h2>{{hero.name}} details!</h2>\n    \t<div><label>id: </label>{{hero.id}}</div>\n    \t<div>\n    \t\t<label>name: </label>\n    \t\t<input [(ngModel)]=\"hero.name\" placeholder=\"name\">\n    \t</div>\n    </div>\n    "
+            templateUrl: './hero-detail.component.html',
         }), 
         __metadata('design:paramtypes', [hero_service_1.HeroService, router_1.ActivatedRoute, common_1.Location])
     ], HeroDetailComponent);
