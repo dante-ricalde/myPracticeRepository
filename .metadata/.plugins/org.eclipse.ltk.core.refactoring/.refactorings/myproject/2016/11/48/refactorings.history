@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Extract local variable &apos;project&apos; from expression &apos;projects.stream().filter(p -&gt; p.getId().equals(id)).findFirst()&apos;&#x0D;&#x0A;- Original project: &apos;myproject&apos;&#x0D;&#x0A;- Variable name: &apos;project&apos;&#x0D;&#x0A;- Destination method: &apos;myproject.Example.get()&apos;&#x0D;&#x0A;- Variable expression: &apos;projects.stream().filter(p -&gt; p.getId().equals(id)).findFirst()&apos;&#x0D;&#x0A;- Replace occurrences of expression with variable" description="Extract local variable &apos;project&apos;" final="false" id="org.eclipse.jdt.ui.extract.temp" input="/src\/main\/java&lt;myproject{Example.java" name="project" replace="true" selection="2752 64" stamp="1479883301594" version="1.0"/>
-</session>

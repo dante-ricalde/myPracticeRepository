@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Extract local variable &apos;messages&apos; from expression &apos;queueMessagesGateway.getMessages(&quot;messages-&quot; + queueName)&apos;&#x0D;&#x0A;- Original project: &apos;newWebSocketApiTest&apos;&#x0D;&#x0A;- Variable name: &apos;messages&apos;&#x0D;&#x0A;- Destination method: &apos;test.org.spring.websocket.api.handler.serviceActivator.chat.ChatMessagesProcessor.process()&apos;&#x0D;&#x0A;- Variable expression: &apos;queueMessagesGateway.getMessages(&quot;messages-&quot; + queueName)&apos;&#x0D;&#x0A;- Replace occurrences of expression with variable" description="Extract local variable &apos;messages&apos;" final="false" id="org.eclipse.jdt.ui.extract.temp" input="/src\/main\/java&lt;test.org.spring.websocket.api.handler.serviceActivator.chat{ChatMessagesProcessor.java" name="messages" replace="true" selection="1065 58" stamp="1482476868892" version="1.0"/>
-</session>
