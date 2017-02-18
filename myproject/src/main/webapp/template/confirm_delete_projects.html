@@ -1,0 +1,22 @@
+<div class="ngdialog-messagess">
+	<h3 class="modal-header">{{message.title}}</h3>
+	<p>{{message.message}}</p>
+	<table class="table table-hover">
+		<thead>
+			<tr>
+				<th>Project</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="project in projectList.projectsToDelete | filter:projectList.filter.search | orderBy:'name'">
+				<td><a ng-href="{{project.site}}" target="blank">{{project.name}}</a></td>
+				<td><a>{{project.description}}</a></td>
+			</tr>
+		</tbody>
+	</table>
+	<div class="ngdialog-buttons text-center">
+		<button type="button" class="btn btn-default non-deselect-projects" ng-click="cancel()">Cancel</button>
+    	<button type="button" class="btn btn-primary" ng-click="delete()">Delete</button>
+	</div>
+</div>
