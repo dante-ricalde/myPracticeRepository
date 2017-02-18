@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.http.MediaType;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +44,11 @@ public class Example {
 	@RequestMapping("/angular")
 	ModelAndView angular() {
 		return new ModelAndView("index.html");
+	}
+	
+	@RequestMapping(value = "/component", produces = MediaType.TEXT_HTML_VALUE)
+	ModelAndView component() {
+		return new ModelAndView("components.html");
 	}
 	
 	@RequestMapping("/angular/projects")
