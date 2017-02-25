@@ -34,3 +34,6 @@
 	I need to specify that spring boot uses the external file log4j-spring.properties specified in the file application.properties (100%)
 	I have renamed the file log4j.properties to file log4j-spring.properties only to test if the file is gotten by spring boot,
 	 change the name to the original name log4j.properties if necessary (100% It's loading the file log4j2-spring.xml specified at application.properties)
+
+25/02/2017
+	I would like to configure the global locale in angular to format very well the Date, Curremcy and Number
