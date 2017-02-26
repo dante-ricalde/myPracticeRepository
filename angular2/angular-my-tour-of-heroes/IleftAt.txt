@@ -51,3 +51,8 @@ I have left at:
 19/02/2016
 	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
 	Style the Navigation Links
+
+26/02/2016
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	HTTP
+	GETTING AND SAVING DATA
