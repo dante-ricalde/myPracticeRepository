@@ -65,8 +65,12 @@ public class ChatMessageProcessor {
 //
 //		AmqpAdmin admin = new RabbitAdmin(connectionFactory);
 //		admin.declareQueue(new Queue("anonymousNyseMarketDateQueue"));
-		amqpAdmin.declareQueue(messagesKeluchisNotificationQueue);
-		amqpAdmin.declareQueue(messagesKeluchisDanteQueue);
+		try {
+			amqpAdmin.declareQueue(messagesKeluchisNotificationQueue);
+			amqpAdmin.declareQueue(messagesKeluchisDanteQueue);			
+		} catch (Exception e) {
+			LOGGER.error("Error declaring queues:", e);
+		}
 	}
 
 }
