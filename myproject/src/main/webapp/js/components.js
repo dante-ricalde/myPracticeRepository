@@ -1,4 +1,7 @@
-angular.module('components', [])
+angular.module('components', [ 'tmh.dynamicLocale' ])
+	.config(function(tmhDynamicLocaleProvider) {
+	    tmhDynamicLocaleProvider.localeLocationPattern('//code.angularjs.org/1.6.2/i18n/angular-locale_{{locale}}.js');
+	})
 	.directive('tabs', function () {
 		return {
 			restrict: 'E',
@@ -34,7 +37,7 @@ angular.module('components', [])
 			replace: true
 		};
 	}).
-	directive('pane', function($locale){
+	directive('pane', function($locale, tmhDynamicLocale){
 		return {
 			require: '^tabs',
 			restrict: 'E',
@@ -42,6 +45,7 @@ angular.module('components', [])
 			scope: { title: '@', locale: '@' },
 			link: function(scope, element, attrs, tabsController) {
 				$locale.id=scope.locale;
+				tmhDynamicLocale.set(scope.locale);
 				console.log('locale param set in pane element: ' + scope.locale);
 				tabsController.addPane(scope);
 			},
