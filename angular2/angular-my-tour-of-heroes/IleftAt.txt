@@ -56,3 +56,6 @@ I have left at:
 	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
 	HTTP
 	GETTING AND SAVING DATA
+
+05/03/2016
+	.catch(this.handleError); in getHeroes() method at Heroes and HTTP.
