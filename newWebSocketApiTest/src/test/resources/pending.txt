@@ -222,6 +222,8 @@ https://localhost:4443/anyUrlPattern/@websocketSpringIntegration
 CHAT URL in local: https://localhost:8443/anyUrlPattern/chat/myChat
 CHAT URL in local: http://localhost:8080/anyUrlPattern/chat/myChat
 CHAR URL in AWS: http://52.41.40.149:8080/webSocketApiTest/anyUrlPattern/chat/myChat
+	http://35.161.15.85:8080/newWebSocketApiTest/anyUrlPattern/chat/login
+	http://35.161.15.85:8080/anyUrlPattern/chat/myChat
 
 6/12/2016
 I need to set https in this chat app (100%)
@@ -237,3 +239,7 @@ I need to set https in this chat app (100%)
 	the number of messages. (100%)
 	Review when I get the messages (/appChatRelay/chat/getMessages/) because the READ messages don't appear like Read, they appear like sent to server (✓) or received by the client (✓✓) but not
 	like read. (100%) I had to create the enum ChatMessageState
+
+8/03/2017
+	In my local server I get the error:
+		org.apache.jasper.JasperException: /WEB-INF/jsp/chat/myChat.jsp (line: 5, column: 41) Page-encoding specified in XML prolog (ISO-8859-1) is different from that specified in page directive (UTF-8)
