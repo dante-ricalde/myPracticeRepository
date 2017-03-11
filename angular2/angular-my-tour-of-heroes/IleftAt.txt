@@ -59,3 +59,7 @@ I have left at:
 
 05/03/2016
 	.catch(this.handleError); in getHeroes() method at Heroes and HTTP.
+
+11/03/2016
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	To add a new hero we need to know the hero's name. Let's u
