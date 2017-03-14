@@ -242,4 +242,4 @@ I need to set https in this chat app (100%)
 
 8/03/2017
 	In my local server I get the error:
-		org.apache.jasper.JasperException: /WEB-INF/jsp/chat/myChat.jsp (line: 5, column: 41) Page-encoding specified in XML prolog (ISO-8859-1) is different from that specified in page directive (UTF-8)
+		org.apache.jasper.JasperException: /WEB-INF/jsp/chat/myChat.jsp (line: 5, column: 41) Page-encoding specified in XML prolog (ISO-8859-1) is different from that specified in page directive (UTF-8) (100%)
