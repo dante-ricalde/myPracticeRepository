@@ -63,3 +63,7 @@ I have left at:
 11/03/2016
 	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
 	To add a new hero we need to know the hero's name. Let's u
+
+16/03/2016
+	Observables
+	Each Http service method returns an Observable of HTTP R
