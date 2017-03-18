@@ -30,9 +30,9 @@
 			</websocket:handshake-interceptors>
 			<websocket:sockjs heartbeat-time="20000" client-library-url="../../../js/sockjs-1.0.3.js" />
 		</websocket:stomp-endpoint>
-<!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-host="squirrel.rmq.cloudamqp.com" relay-port="5672" system-login="jdukblll" system-passcode="0AVItKp3pcPgYzqpB3Po8IOwjhHRIzN5" client-login="jdukblll" client-passcode="0AVItKp3pcPgYzqpB3Po8IOwjhHRIzN5" /> -->
+		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-host="clam.rmq.cloudamqp.com" relay-port="5672" system-login="ylftqcju" system-passcode="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" client-login="ylftqcju" client-passcode="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" virtual-host="ylftqcju" />
 <!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" /> -->
-			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" />
+<!-- 			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" /> -->
 	</websocket:message-broker>
 	
 	<int:channel id="welcomeChannel" />
@@ -50,7 +50,8 @@
 	
 	<!--****************************************************** RabbitMQ Configuration ************************************************************ -->
 	
-	<rabbit:connection-factory id="connectionFactory" host="localhost" />
+<!-- 	<rabbit:connection-factory id="connectionFactory" host="localhost" /> -->
+	<rabbit:connection-factory id="connectionFactory" host="clam.rmq.cloudamqp.com" username="ylftqcju" password="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" virtual-host="ylftqcju" />
 	
 <!-- 	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" p:host="localhost"></bean> -->
 	

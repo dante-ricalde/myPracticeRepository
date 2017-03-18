@@ -243,3 +243,22 @@ I need to set https in this chat app (100%)
 8/03/2017
 	In my local server I get the error:
 		org.apache.jasper.JasperException: /WEB-INF/jsp/chat/myChat.jsp (line: 5, column: 41) Page-encoding specified in XML prolog (ISO-8859-1) is different from that specified in page directive (UTF-8) (100%)
+18/03/2017
+	I have connected to cloud AMQP but the free version (Little Lemur) doesn't have the STOMP protocol enabled (I can't use a rabbit message broker in AWS for this reason)
+
+18/03/2017
+	Improve the main web page indicating my name as the user connected.
+	Improve the modal window of conversation indicating the user who I am talking to
+	When the another user is writing I would like to see in my modal window that (in small letters) that user (my contact who I am talking to) is writing.
+
+	I would like to implement the state of message (sand watch icon) using "local store" so that when there's no internet connection or server running the message appears like tried to send but not have arrived to the server.
+
+	Send the message when I press Enter.
+
+	Add a button <-| to insert a new line in the text that I am writing in the field text.
+
+	Try to increase the session of the application (I think that by default is set to 30 seconds)
+
+	If I can't to increase the session, I would try to reconnect automatically reading the password from the cookies...indicating in a message that I have reconnected again.
+
+	review this: http://www.baeldung.com/spring-security-session
