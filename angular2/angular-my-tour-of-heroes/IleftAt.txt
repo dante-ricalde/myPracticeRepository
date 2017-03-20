@@ -18,52 +18,57 @@ I have left at:
 	https://angular.io/docs/ts/latest/tutorial/toh-pt2.html
 		We build a master/detail page with a list of heroes
 		Notice that we again use the back-tick notation for multi-line strings. (100%)
-12/01/2016
+12/01/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt3.html
 		We refactor the master/detail view into separate components (95%)
-13/01/2016
+13/01/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt3.html
 	The Road Ahead (95%). 
 		Review this chapter entirely if necessary to remember the theory. I reviewed it quickly.
 
-20/01/2016
+20/01/2017
 	Use the Hero Service
 	https://angular.io/docs/ts/latest/tutorial/toh-pt4.html
 
 	I advanced until Async Services and Promises, but I did it quickly. I need to read slowly and again from 'Use the Hero Service'
-21/01/2016
+21/01/2017
 	I am going to start this chapter
 	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
 
-29/01/2016
+29/01/2017
 	Add a Dashboard
 	Routing only makes sense when we have multiple vie
 
-05/02/2016
+05/02/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
 	Find our way back
 	We can navigate to the HeroDetailComponent
 
-11/02/2016
+11/02/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
 	Styling the App
 
-19/02/2016
+19/02/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
 	Style the Navigation Links
 
-26/02/2016
+26/02/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
 	HTTP
 	GETTING AND SAVING DATA
 
-05/03/2016
+05/03/2017
 	.catch(this.handleError); in getHeroes() method at Heroes and HTTP.
 
-11/03/2016
+11/03/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
 	To add a new hero we need to know the hero's name. Let's u
 
-16/03/2016
+16/03/2017
 	Observables
 	Each Http service method returns an Observable of HTTP R
+
+20/03/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	coding this: 
+	gotoDetail(hero: Hero): void {
