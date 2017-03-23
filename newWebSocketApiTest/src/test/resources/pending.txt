@@ -247,7 +247,7 @@ I need to set https in this chat app (100%)
 	I have connected to cloud AMQP but the free version (Little Lemur) doesn't have the STOMP protocol enabled (I can't use a rabbit message broker in AWS for this reason)
 
 18/03/2017
-	Improve the main web page indicating my name as the user connected.
+	Improve the main web page indicating my name as the user connected. (100%)
 	Improve the modal window of conversation indicating the user who I am talking to
 	When the another user is writing I would like to see in my modal window that (in small letters) that user (my contact who I am talking to) is writing.
 

@@ -33,9 +33,9 @@
 <SCRIPT src="../../js/myChat.js" type="text/javascript"><!-- necessary to work --></SCRIPT>
 </head>
 <body>
-	<h1>Welcome to this chat!!!</h1>
-	<h2>Users connected:</h2>
 	<sec:authentication property="principal.username" var="principalUserName" />
+	<span class="userName">Hi ${principalUserName}</span>
+	<h2>Users connected:</h2>
 	<DIV id="chatContent" data-params='{"welcomeUrl": "${welcomeUrl}", "userName": "${principalUserName}"}'>
 	
 	</DIV>

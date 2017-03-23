@@ -34,7 +34,7 @@ $(function () {
 					var that = this;
 					var language = $.extend({}, $.chat.language["en"], $.chat.language[settings.language]);
 					var messageResolver = new general.util.MessageResolver(language.messages);
-					var $ul = $('<ul>');
+					var $ul = $('<ul class="users">');
 					var defer = $.Deferred();
 					var socketDestination = new SockJS("/anyUrlPattern/chatRelay");
 					that.stompClientDestination = Stomp.over(socketDestination);
