@@ -72,3 +72,7 @@ I have left at:
 	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
 	coding this: 
 	gotoDetail(hero: Hero): void {
+
+25/03/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	Return to the learning path, where you can read more about the concepts and practices found in this tutorial.

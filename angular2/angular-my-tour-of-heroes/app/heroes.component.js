@@ -59,7 +59,6 @@ var HeroesComponent = (function () {
                 _this.selectedHero = null;
             }
         }, function (error) { return console.log('An unexpected error has happened...' + error); });
-        ;
     };
     HeroesComponent = __decorate([
         core_1.Component({

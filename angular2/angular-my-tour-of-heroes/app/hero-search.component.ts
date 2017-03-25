@@ -16,6 +16,7 @@ import { HeroSearchService } from './hero-search.service';
 import { Hero } from './hero';
 
 @Component({
+	moduleId: module.id,
 	selector: 'hero-search',
 	templateUrl: './hero-search.component.html',
 	styleUrls: [ './hero-search.component.css' ],
@@ -50,5 +51,9 @@ export class HeroSearchComponent implements OnInit {
 			});
 	}
 
+	gotoDetail(hero: Hero): void {
+		let link = ['/detail', hero.id];
+		this.router.navigate(link);
+	}
 	
 }

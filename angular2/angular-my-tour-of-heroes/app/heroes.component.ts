@@ -53,6 +53,6 @@ export class HeroesComponent implements OnInit {
       .then(() => {
         this.heroes = this.heroes.filter(h => h !== hero);
         if (this.selectedHero === hero) { this.selectedHero = null; }
-      }, error => console.log('An unexpected error has happened...' + error););
+      }, error => console.log('An unexpected error has happened...' + error));
   }
 }
