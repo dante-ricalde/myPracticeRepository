@@ -1,4 +1,8 @@
 @CHARSET "UTF-8";
+.chat-window-dialog .ui-dialog-title {
+	color: #607D8B;
+}
+
 .chat-window {
 	text-align: center;
 }

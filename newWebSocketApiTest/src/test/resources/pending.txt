@@ -248,7 +248,7 @@ I need to set https in this chat app (100%)
 
 18/03/2017
 	Improve the main web page indicating my name as the user connected. (100%)
-	Improve the modal window of conversation indicating the user who I am talking to
+	Improve the modal window of conversation indicating the user who I am talking to (100%)
 	When the another user is writing I would like to see in my modal window that (in small letters) that user (my contact who I am talking to) is writing.
 
 	I would like to implement the state of message (sand watch icon) using "local store" so that when there's no internet connection or server running the message appears like tried to send but not have arrived to the server.

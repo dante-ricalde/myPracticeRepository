@@ -24,7 +24,7 @@ $(function () {
 						width: 500,
 						height: 400,
 						position: {x: 'center', y: 'center'},
-						title: "",
+						title: undefined,
 						buttonText: ""    
 					} 
 				};

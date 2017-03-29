@@ -40,7 +40,7 @@ var _canLog = true;
 				width: 500,
 				height: 400,
 				position: {x: 'center', y: 'center'},
-				title: "",
+				title: this.$userLi.html(),
 				buttonText : ""
 			}, options || {});
 			this.$messages = $("<div class='chat-text-messages'>");
@@ -130,6 +130,8 @@ var _canLog = true;
 					var that = this;
 					if (!that.options.hasLoaded) {
 						that.$userWindow.dialog({
+							dialogClass: 'chat-window-dialog',
+							title: that.options.title,
 							autoOpen: false,
 							width: that.options.width,
 							height: that.options.height,
