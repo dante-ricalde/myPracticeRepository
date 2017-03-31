@@ -76,3 +76,24 @@ I have left at:
 25/03/2017
 	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
 	Return to the learning path, where you can read more about the concepts and practices found in this tutorial.
+
+31/03/2017
+	https://angular.io/docs/ts/latest/guide/learning-angular.html#!#architecture
+		I left at: 
+			Angular is a framework for building client applications in HTML 
+
+	links:
+		https://angular.io/docs/ts/latest/guide/learning-angular.html#!#architecture ==> (main link)
+		https://embed.plnkr.co/?show=preview (examples)
+
+	freeCourses:
+		https://coursetro.com/courses/8/Learn-Angular-2-Development-with-our-Free-Course
+		https://coursetro.com/posts/code/25/Understanding-Angular-2-Animations-Tutorial
+		https://egghead.io/lessons/angular-2-controlling-how-styles-are-shared-with-view-encapsulation
+		http://courses.angularclass.com/p/angular-2-fundamentals
+		http://learnangular2.com/viewChild/
+		http://www.angular2.com/
+		https://www.lynda.com/AngularJS-tutorials/Welcome/428058/482929-4.html
+		https://www.ng-book.com/2/
+		http://angularjs.blogspot.com.es/2017/03/angular-400-now-available.html
+		https://github.com/robwormald/ng-universal-demo/tree/master/src ==> (angular4)
