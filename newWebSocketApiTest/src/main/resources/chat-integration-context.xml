@@ -31,8 +31,8 @@
 			<websocket:sockjs heartbeat-time="20000" client-library-url="../../../js/sockjs-1.0.3.js" />
 		</websocket:stomp-endpoint>
 <!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-host="clam.rmq.cloudamqp.com" relay-port="5672" system-login="ylftqcju" system-passcode="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" client-login="ylftqcju" client-passcode="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" virtual-host="ylftqcju" /> -->
-<!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" /> -->
-			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" />
+		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" />
+<!-- 			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" /> -->
 	</websocket:message-broker>
 	
 	<int:channel id="welcomeChannel" />
@@ -64,6 +64,8 @@
 	<!-- Queues for keluchis -->
 	<rabbit:queue id="messagesKeluchisNotificationQueue" name="messages-keluchis-notification-queue" />
 	
+	<rabbit:queue id="messagesKeluchisTempQueue" />
+	
 	<rabbit:queue id="messagesKeluchisDanteQueue" name="messages-keluchis-dante-queue" />
 	
 	<rabbit:queue id="messagesKeluchisDantitoQueue" name="messages-keluchis-dantito-queue" />
@@ -72,6 +74,8 @@
 	
 	<!-- Queues for dante -->
 	<rabbit:queue id="messagesDanteNotificationQueue" name="messages-dante-notification-queue" />
+	
+	<rabbit:queue id="messagesDanteTempQueue" />
 	
 	<rabbit:queue id="messagesDanteKeluchisQueue" name="messages-dante-keluchis-queue" />
 	
@@ -83,11 +87,13 @@
 		<rabbit:bindings>
 			<!-- Queue bindings for keluchis -->
 			<rabbit:binding key="messages-keluchis-notification" queue="messages-keluchis-notification-queue" />
+			<rabbit:binding key="messages-keluchis-temp" queue="messagesKeluchisTempQueue" />
 			<rabbit:binding key="messages-keluchis-dante" queue="messages-keluchis-dante-queue" />
 			<rabbit:binding key="messages-keluchis-dantito" queue="messages-keluchis-dantito-queue" />
 			<rabbit:binding key="messages-keluchis-danielito" queue="messages-keluchis-danielito-queue" />
 			<!-- Queue bindings for dante -->
 			<rabbit:binding key="messages-dante-notification" queue="messages-dante-notification-queue" />
+			<rabbit:binding key="messages-dante-temp" queue="messagesDanteTempQueue" />
 			<rabbit:binding key="messages-dante-keluchis" queue="messages-dante-keluchis-queue" />
 			<rabbit:binding key="messages-dante-dantito" queue="messages-dante-dantito-queue" />
 			<rabbit:binding key="messages-dante-danielito" queue="messages-dante-danielito-queue" />

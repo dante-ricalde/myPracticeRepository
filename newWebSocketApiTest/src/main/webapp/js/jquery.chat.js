@@ -41,6 +41,7 @@ $(function () {
 					defer.promise(that.stompClientDestination);
 					that.stompClientDestination.connect({}, function (frame) {
 						defer.resolve();
+						// We subscribe to our notification queue to receive notifications from our contacts
 						that.stompClientDestination.subscribe('/exchange/chatDirectExchange/messages-' + settings.params.userName + '-notification', function (frame) {
 							var $body = JSON.parse(frame.body);
 							// If the receiver (client - user destination) notifies me that He has received the message that I sent
@@ -53,7 +54,21 @@ $(function () {
 								addLitoUl($ul, $body.sender, settings, messageResolver, that);
 							}
 						});
+						// We subscribe to out temp queue to receive temp messages from the our contacts
+						that.stompClientDestination.subscribe('/exchange/chatDirectExchange/messages-' + settings.params.userName + '-temp', function (frame) {
+							console.log('receiving message' + frame.body);
+							var $body = JSON.parse(frame.body);
+							// If a contact is telling me that He is writing
+							if ($body.message === 'w') {
+								var $li = $("li:contains('" + $body.sender + "')", $ul);
+								var $userView = $li.data('userView');
+								//$userView.addMessage($body);
+								console.log($body.sender + ' is writing');
+							}
+
+						});
 					});
+					// We recover our connected contacts
 					$.post(settings.params.welcomeUrl, {}, function( data ) {
 						console.log("data received for " + settings.params.welcomeUrl  + ": " + data);
 						$.each(data, function (index, value) {

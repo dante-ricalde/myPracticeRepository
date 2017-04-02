@@ -72,6 +72,7 @@ var _canLog = true;
 						}    
 						//frame.ack({'id':message.id});
 					}, /*{ack: 'client-individual'}*/ {});
+					that._configure();
 					that._connect();
 					console.log('loading the messages .');
 					that._loadMessages();  
@@ -85,6 +86,20 @@ var _canLog = true;
 		};
 
 		chat.view.UserView.prototype = {
+
+				_configure: function () {
+					var that = this;
+					that.$messageInput.keyup(function (event) {
+						console.log('user is written ...');
+						var message = {
+							"message": 'w',
+							"sender": that.$containerSettings.params.userName,
+							"recipient": that.$userLi.text()
+						};
+						// We send a message to our contact saying we are writting
+						that.stompClientDestination.send('/exchange/chatDirectExchange/messages-' + message.recipient + '-temp', {}, JSON.stringify(message));
+					});
+				},
 				
 				_loadMessages: function () {
 					var that = this;
