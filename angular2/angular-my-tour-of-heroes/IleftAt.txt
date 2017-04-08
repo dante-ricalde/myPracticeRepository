@@ -85,6 +85,7 @@ I have left at:
 	links:
 		https://angular.io/docs/ts/latest/guide/learning-angular.html#!#architecture ==> (main link)
 		https://embed.plnkr.co/?show=preview (examples)
+		http://exploringjs.com/es6/ch_modules.html ==> The JavaScript module system on the web.
 
 	freeCourses:
 		https://coursetro.com/courses/8/Learn-Angular-2-Development-with-our-Free-Course
@@ -97,3 +98,8 @@ I have left at:
 		https://www.ng-book.com/2/
 		http://angularjs.blogspot.com.es/2017/03/angular-400-now-available.html
 		https://github.com/robwormald/ng-universal-demo/tree/master/src ==> (angular4)
+
+06/04/2016
+	https://angular.io/docs/ts/latest/guide/architecture.html
+	Angular libraries
+		Angular ships as a collection of JavaScript

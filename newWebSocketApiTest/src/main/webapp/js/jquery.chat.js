@@ -54,18 +54,13 @@ $(function () {
 								addLitoUl($ul, $body.sender, settings, messageResolver, that);
 							}
 						});
-						// We subscribe to out temp queue to receive temp messages from the our contacts
+						// We subscribe to our temp queue to receive temp messages from our contacts
 						that.stompClientDestination.subscribe('/exchange/chatDirectExchange/messages-' + settings.params.userName + '-temp', function (frame) {
-							console.log('receiving message' + frame.body);
 							var $body = JSON.parse(frame.body);
 							// If a contact is telling me that He is writing
-							if ($body.message === 'w') {
-								var $li = $("li:contains('" + $body.sender + "')", $ul);
-								var $userView = $li.data('userView');
-								//$userView.addMessage($body);
-								console.log($body.sender + ' is writing');
-							}
-
+							var $li = $("li:contains('" + $body.sender + "')", $ul);
+							var $userView = $li.data('userView');
+							$userView.addNotificationMessage($body);
 						});
 					});
 					// We recover our connected contacts

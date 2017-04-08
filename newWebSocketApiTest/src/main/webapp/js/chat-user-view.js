@@ -165,6 +165,9 @@ var _canLog = true;
 					}
 					if (!that.isUserWindowOpen()) {
 						that.$userWindow.dialog('open');
+						that.$dialogTitle = $('.ui-dialog-title', that.$userWindow.siblings('.ui-dialog-titlebar'));
+						that.$dialogTitle.after('<span class="contact-typing-notif"></span>');
+						that.$dialogContactNotif = $('.contact-typing-notif', that.$userWindow.siblings('.ui-dialog-titlebar'));
 					}
 					that.$messages.prop('scrollTop', this.$messages.prop('scrollHeight'));
 				}, 
@@ -271,6 +274,20 @@ var _canLog = true;
 				},
 				isUserWindowOpen: function () {
 					return this.options.hasLoaded && this.$userWindow.dialog('isOpen');
+				},
+				addNotificationMessage: function (message) {
+					var that = this;
+					if (message.message === 'w') {
+						console.log(message.sender + ' is writing');
+						if (this.$dialogContactNotif) {
+							if (this.$dialogContactNotif.html() !== message.sender + ' is writing ...') {
+								this.$dialogContactNotif.html(message.sender + ' is writing ...</span>');	
+							}						
+							setTimeout(function() {
+								that.$dialogContactNotif.empty();
+							}, 3000);
+						}
+					}
 				}
 			}
 		}

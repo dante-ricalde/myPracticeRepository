@@ -1,5 +1,14 @@
 @CHARSET "UTF-8";
+.chat-window-dialog .ui-dialog-titlebar {
+	height: 30px;
+}
 .chat-window-dialog .ui-dialog-title {
+	color: #607D8B;
+}
+
+.chat-window-dialog .contact-typing-notif {
+	font-size: 0.5em;
+	display: inline-block;
 	color: #607D8B;
 }
 
