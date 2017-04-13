@@ -26,15 +26,22 @@
 	overflow: scroll;
 }
 
-.chat-window input {
+.chat-window .chat-message-input {
+	height: 50px;
 	width: 99%;
-	margin: 20px;
+	margin-top: 20px;
+	margin-bottom: 20px;
 	margin-left: 0px;
-	display: block;
+	margin-right: -28px;
+	display: inline-block;
 }
 
-.chat-window button {
-
+.chat-window .chat-intro-key {
+	left: -5px;
+	position: relative;
+	z-index: 10;
+	background-color: #EEE;
+	border-radius: 4.5px;
 }
 
 .message {

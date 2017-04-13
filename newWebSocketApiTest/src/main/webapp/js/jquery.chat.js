@@ -22,7 +22,7 @@ $(function () {
 					language: "en",
 					chatView: {
 						width: 500,
-						height: 400,
+						height: 450,
 						position: {x: 'center', y: 'center'},
 						title: undefined,
 						buttonText: ""    

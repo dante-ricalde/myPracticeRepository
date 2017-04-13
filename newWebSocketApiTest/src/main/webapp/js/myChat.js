@@ -8,7 +8,7 @@ $(function () {
 			params: $('#chatContent').data('params'),   
 			chatView: {   
 				width: 450,  
-				height: 350 
+				height: 400 
 			}
 	};
 	

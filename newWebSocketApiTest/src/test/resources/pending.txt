@@ -249,13 +249,13 @@ I need to set https in this chat app (100%)
 18/03/2017
 	Improve the main web page indicating my name as the user connected. (100%)
 	Improve the modal window of conversation indicating the user who I am talking to (100%)
-	When the another user is writing I would like to see in my modal window that (in small letters) that user (my contact who I am talking to) is writing.
+	When the another user is writing I would like to see in my modal window that (in small letters) that user (my contact who I am talking to) is writing. (100%)
 
 	I would like to implement the state of message (sand watch icon) using "local store" so that when there's no internet connection or server running the message appears like tried to send but not have arrived to the server.
 
-	Send the message when I press Enter.
+	Send the message when I press Enter. 
 
-	Add a button <-| to insert a new line in the text that I am writing in the field text.
+	Add a button <-| to insert a new line in the text that I am writing in the field text. (30%)
 
 	Try to increase the session of the application (I think that by default is set to 30 seconds)
 
@@ -265,4 +265,4 @@ I need to set https in this chat app (100%)
 
 02/04/2017
 	I need to implement a method that prints ...'{contactName} is writing' in the title of the window in small letters (below the name of the user)
-	console.log($body.sender + ' is writing');
+	console.log($body.sender + ' is writing'); (100%)
