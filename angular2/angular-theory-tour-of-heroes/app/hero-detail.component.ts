@@ -1,6 +1,6 @@
 // Keep the Input import for now, we'll remove it later.
-//import { Component, Input, OnInit } from '@angular/core';
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
+//import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Location } from '@angular/common';
 
@@ -20,7 +20,10 @@ export class HeroDetailComponent implements OnInit {
 
     constructor(private heroService: HeroService, private route: ActivatedRoute, private location: Location) { }
 
-	//@Input()
+	// We enable this @Input because hero-list.component.html has a [hero] property binding that passes 
+    // the value of selectedHero from the parent HeroListComponent to the hero property of the child 
+    // HeroDetailComponent, otherwise it would'nt be necessary 
+    @Input()
 	hero: Hero;
 
     ngOnInit(): void {

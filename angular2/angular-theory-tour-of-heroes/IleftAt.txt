@@ -109,4 +109,9 @@ I have left at:
 	https://angular.io/docs/ts/latest/guide/architecture.html
 	You define a component's view with its companion template
 
-	I have created the files: hero-list.component.ts, hero.theory.service.ts. Tha application has started but I need to incorporate this new component in the app-routing.module.ts and app.component.ts in a new menu link.
+	I have created the files: hero-list.component.ts, hero.theory.service.ts. Tha application has started but I need to incorporate this new component in the app-routing.module.ts and app.component.ts in a new menu link. (100%)
+
+16/04/2016
+	Directives
+	https://angular.io/docs/ts/latest/guide/architecture.html
+	Angular templates are dynamic. When Angul

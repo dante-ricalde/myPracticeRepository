@@ -1,9 +1,10 @@
 "use strict";
 require('rxjs/add/operator/toPromise');
-//import { HEROES } from './mock-heroes';
+var mock_heroes_1 = require('./mock-heroes');
 var HeroService = (function () {
     function HeroService() {
-        this.heroes = [];
+        //private heroes: Hero[] = [];
+        this.heroes = mock_heroes_1.HEROES;
     }
     HeroService.prototype.getHeroes = function () {
         return this.heroes;

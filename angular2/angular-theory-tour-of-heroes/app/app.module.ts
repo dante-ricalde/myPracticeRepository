@@ -14,6 +14,7 @@ import { HeroesComponent } from './heroes.component';
 import { HeroService } from './hero.service';
 import { DashboardComponent } from './dashboard.component'
 import { HeroSearchComponent } from './hero-search.component'
+import { HeroListComponent } from './hero-list.component'
 
 import { AppRoutingModule } from './app-routing.module';
 
@@ -31,7 +32,8 @@ import { AppRoutingModule } from './app-routing.module';
     DashboardComponent,
   	HeroesComponent,
   	HeroDetailComponent,
-    HeroSearchComponent
+    HeroSearchComponent,
+    HeroListComponent
   ],
   providers: [ HeroService ],
   bootstrap:    [ AppComponent ]

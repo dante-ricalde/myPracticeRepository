@@ -9,11 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 // Keep the Input import for now, we'll remove it later.
-//import { Component, Input, OnInit } from '@angular/core';
 var core_1 = require('@angular/core');
+//import { Component, OnInit } from '@angular/core';
 var router_1 = require('@angular/router');
 var common_1 = require('@angular/common');
 require('rxjs/add/operator/switchMap');
+var hero_1 = require('./hero');
 var hero_service_1 = require('./hero.service');
 var HeroDetailComponent = (function () {
     function HeroDetailComponent(heroService, route, location) {
@@ -36,6 +37,10 @@ var HeroDetailComponent = (function () {
         this.heroService.update(this.hero)
             .then(function () { return _this.goBack(); });
     };
+    __decorate([
+        core_1.Input(), 
+        __metadata('design:type', hero_1.Hero)
+    ], HeroDetailComponent.prototype, "hero", void 0);
     HeroDetailComponent = __decorate([
         core_1.Component({
             moduleId: module.id,
