@@ -46,7 +46,7 @@ var _canLog = true;
 			this.$messages = $("<div class='chat-text-messages'>");
 			this.queueMessages = [];
 			this.$userWindow.append(this.$messages);
-			this.$messageInput = $("<input class='chat-message-input'>");
+			this.$messageInput = $("<textarea class='chat-message-input'>");
 			this.$userWindow.append(this.$messageInput);
 			this.$enterKey = $("<span class='chat-intro-key'><=|</span>");
 			this.$userWindow.append(this.$enterKey);
@@ -100,6 +100,15 @@ var _canLog = true;
 						};
 						// We send a message to our contact saying we are writting
 						that.stompClientDestination.send('/exchange/chatDirectExchange/messages-' + message.recipient + '-temp', {}, JSON.stringify(message));
+					});
+
+					that.$messageInput.keypress(function (event) {
+						console.log('pressing a key ...');
+						if (that.$messageInput.val() && that.$messageInput.val().length % 38 === 0) {
+							// we insert a new line
+							console.log('hahaha');
+							that.$messageInput.val(that.$messageInput.val() + String.fromCharCode(13, 10));
+						}
 					});
 				},
 				
