@@ -15,6 +15,7 @@ var http_1 = require('@angular/http');
 // Imports for loading & configuring the in-memory web api
 var angular_in_memory_web_api_1 = require('angular-in-memory-web-api');
 var in_memory_data_service_1 = require('./in-memory-data.service');
+var logger_service_1 = require('./logger.service');
 var app_component_1 = require('./app.component');
 var hero_detail_component_1 = require('./hero-detail.component');
 var heroes_component_1 = require('./heroes.component');
@@ -43,7 +44,7 @@ var AppModule = (function () {
                 hero_search_component_1.HeroSearchComponent,
                 hero_list_component_1.HeroListComponent
             ],
-            providers: [hero_service_1.HeroService],
+            providers: [hero_service_1.HeroService, logger_service_1.Logger],
             bootstrap: [app_component_1.AppComponent]
         }), 
         __metadata('design:paramtypes', [])

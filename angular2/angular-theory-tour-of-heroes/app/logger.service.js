@@ -9,24 +9,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require('@angular/core');
-require('rxjs/add/operator/toPromise');
-var mock_heroes_1 = require('./mock-heroes');
-var logger_service_1 = require('./logger.service');
-var HeroService = (function () {
-    function HeroService(logger) {
-        this.logger = logger;
-        //private heroes: Hero[] = [];
-        this.heroes = mock_heroes_1.HEROES;
+var Logger = (function () {
+    function Logger() {
     }
-    HeroService.prototype.getHeroes = function () {
-        this.logger.log("Fetched " + this.heroes.length + " heroes.");
-        return this.heroes;
-    };
-    HeroService = __decorate([
+    Logger.prototype.log = function (msg) { console.log(msg); };
+    Logger.prototype.error = function (msg) { console.error(msg); };
+    Logger.prototype.warn = function (msg) { console.warn(msg); };
+    Logger = __decorate([
         core_1.Injectable(), 
-        __metadata('design:paramtypes', [logger_service_1.Logger])
-    ], HeroService);
-    return HeroService;
+        __metadata('design:paramtypes', [])
+    ], Logger);
+    return Logger;
 }());
-exports.HeroService = HeroService;
-//# sourceMappingURL=hero.theory.service.js.map
+exports.Logger = Logger;
+//# sourceMappingURL=logger.service.js.map

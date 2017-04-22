@@ -8,6 +8,8 @@ import { HttpModule } from '@angular/http';
 import { InMemoryWebApiModule } from 'angular-in-memory-web-api';
 import { InMemoryDataService } from './in-memory-data.service';
 
+import { Logger } from './logger.service';
+
 import { AppComponent }  from './app.component';
 import { HeroDetailComponent } from './hero-detail.component';
 import { HeroesComponent } from './heroes.component';
@@ -35,7 +37,7 @@ import { AppRoutingModule } from './app-routing.module';
     HeroSearchComponent,
     HeroListComponent
   ],
-  providers: [ HeroService ],
+  providers: [ HeroService, Logger ],
   bootstrap:    [ AppComponent ]
 })
 export class AppModule { }
