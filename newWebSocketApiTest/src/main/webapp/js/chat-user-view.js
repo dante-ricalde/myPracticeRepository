@@ -104,11 +104,26 @@ var _canLog = true;
 
 					that.$messageInput.keypress(function (event) {
 						console.log('pressing a key ...');
-						if (that.$messageInput.val() && that.$messageInput.val().length % 38 === 0) {
+						var lines = that.$messageInput.val().split('\n');
+						var length;
+						for (var i = lines.length; i>0; i--) {
+							length=lines[i].length;
+							if (length > 0) {
+								i=0;
+							}
+						}
+						if (that.$messageInput.val() && length % 38 === 0) {
+						//if (that.$messageInput.val() && that.$messageInput.val().length % 38 === 0) {
 							// we insert a new line
 							console.log('hahaha');
 							that.$messageInput.val(that.$messageInput.val() + String.fromCharCode(13, 10));
 						}
+					});
+
+					that.$enterKey.click(function(){
+						console.log('clicking on enter key');
+						that.$messageInput.val(that.$messageInput.val() + String.fromCharCode(13, 10));
+						that.$messageInput.focus();
 					});
 				},
 				
