@@ -19,6 +19,7 @@ var logger_service_1 = require('./logger.service');
 var app_component_1 = require('./app.component');
 var hero_detail_component_1 = require('./hero-detail.component');
 var heroes_component_1 = require('./heroes.component');
+var backend_service_1 = require('./backend.service');
 var hero_service_1 = require('./hero.service');
 var dashboard_component_1 = require('./dashboard.component');
 var hero_search_component_1 = require('./hero-search.component');
@@ -44,7 +45,7 @@ var AppModule = (function () {
                 hero_search_component_1.HeroSearchComponent,
                 hero_list_component_1.HeroListComponent
             ],
-            providers: [hero_service_1.HeroService, logger_service_1.Logger],
+            providers: [backend_service_1.BackendService, hero_service_1.HeroService, logger_service_1.Logger],
             bootstrap: [app_component_1.AppComponent]
         }), 
         __metadata('design:paramtypes', [])

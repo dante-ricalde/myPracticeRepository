@@ -10,21 +10,30 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 require('rxjs/add/operator/toPromise');
-var mock_heroes_1 = require('./mock-heroes');
+var hero_1 = require('./hero');
 var logger_service_1 = require('./logger.service');
+var backend_service_1 = require('./backend.service');
 var HeroService = (function () {
-    function HeroService(logger) {
+    //private heroes: Hero[] = HEROES;
+    function HeroService(backend, logger) {
+        this.backend = backend;
         this.logger = logger;
-        //private heroes: Hero[] = [];
-        this.heroes = mock_heroes_1.HEROES;
+        this.heroes = [];
     }
     HeroService.prototype.getHeroes = function () {
-        this.logger.log("Fetched " + this.heroes.length + " heroes.");
+        //this.logger.log(`Fetched ${this.heroes.length} heroes.`);
+        var _this = this;
+        this.backend.getAll(hero_1.Hero).then(function (heroes) {
+            _this.logger.log("Fetched " + heroes.length + " heroes.");
+            (_a = _this.heroes).push.apply(_a, heroes); // fill cache
+            var _a;
+        });
+        this.logger.log("returning " + this.heroes.length + " heroes the first time.");
         return this.heroes;
     };
     HeroService = __decorate([
         core_1.Injectable(), 
-        __metadata('design:paramtypes', [logger_service_1.Logger])
+        __metadata('design:paramtypes', [backend_service_1.BackendService, logger_service_1.Logger])
     ], HeroService);
     return HeroService;
 }());

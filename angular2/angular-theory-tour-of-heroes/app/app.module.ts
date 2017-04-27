@@ -13,6 +13,7 @@ import { Logger } from './logger.service';
 import { AppComponent }  from './app.component';
 import { HeroDetailComponent } from './hero-detail.component';
 import { HeroesComponent } from './heroes.component';
+import { BackendService } from './backend.service';
 import { HeroService } from './hero.service';
 import { DashboardComponent } from './dashboard.component'
 import { HeroSearchComponent } from './hero-search.component'
@@ -37,7 +38,7 @@ import { AppRoutingModule } from './app-routing.module';
     HeroSearchComponent,
     HeroListComponent
   ],
-  providers: [ HeroService, Logger ],
+  providers: [ BackendService, HeroService, Logger ],
   bootstrap:    [ AppComponent ]
 })
 export class AppModule { }
