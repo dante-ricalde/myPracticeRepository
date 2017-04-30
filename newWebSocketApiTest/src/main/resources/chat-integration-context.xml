@@ -31,8 +31,8 @@
 			<websocket:sockjs heartbeat-time="20000" client-library-url="../../../js/sockjs-1.0.3.js" />
 		</websocket:stomp-endpoint>
 <!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-host="clam.rmq.cloudamqp.com" relay-port="5672" system-login="ylftqcju" system-passcode="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" client-login="ylftqcju" client-passcode="JXmBn5BqE-lt1bOcUVmgiortLxlj6eKG" virtual-host="ylftqcju" /> -->
-		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" />
-<!-- 			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" /> -->
+<!-- 		<websocket:stomp-broker-relay prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" relay-port="61613" /> -->
+			<websocket:simple-broker prefix="/topic/,/user/queue/messages/,/queue/,/user/,/exchange/" />
 	</websocket:message-broker>
 	
 	<int:channel id="welcomeChannel" />

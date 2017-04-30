@@ -27,7 +27,7 @@
 }
 
 .chat-window .chat-message-input {
-	height: 50px;
+	height: 60px;
 	width: 98%;
 	margin-top: 20px;
 	margin-bottom: 20px;
@@ -37,13 +37,13 @@
 }
 
 .chat-window .chat-intro-key {
-	left: -5px;
+	left: -20px;
 	position: relative;
 	z-index: 10;
 	background-color: #EEE;
 	border-radius: 4.5px;
 	float: right;
-	top: -55px;
+	top: -62px;
 }
 
 .message {
@@ -60,6 +60,7 @@
 	border-radius: 7.5px;
 	display: block;
 	max-width: 90%;
+	white-space: pre;
 }  
 
 .chat-received-message {

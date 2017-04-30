@@ -253,9 +253,9 @@ I need to set https in this chat app (100%)
 
 	I would like to implement the state of message (sand watch icon) using "local store" so that when there's no internet connection or server running the message appears like tried to send but not have arrived to the server.
 
-	Send the message when I press Enter. 
+	Send the message when I press Enter. (100%)
 
-	Add a button <-| to insert a new line in the text that I am writing in the field text. (30%)
+	Add a button <-| to insert a new line in the text that I am writing in the field text. (100%)
 
 	Try to increase the session of the application (I think that by default is set to 30 seconds)
 

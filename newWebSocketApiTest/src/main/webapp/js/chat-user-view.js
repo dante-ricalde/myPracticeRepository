@@ -104,19 +104,25 @@ var _canLog = true;
 
 					that.$messageInput.keypress(function (event) {
 						console.log('pressing a key ...');
-						var lines = that.$messageInput.val().split('\n');
-						var length;
-						for (var i = lines.length; i>0; i--) {
-							length=lines[i].length;
-							if (length > 0) {
-								i=0;
+						// verify if the user has pressed enter
+						if (event.which === 13) {
+							that.$buttonSubmit.trigger('click');
+							return false; // I disable keypress event in case of a enter key pressed
+						} else {
+							var lines = that.$messageInput.val().split('\n');
+							var length;
+							for (var i = lines.length-1; i>=0; i--) {
+								length=lines[i].length;
+								if (length > 0) {
+									i=0;
+								}
 							}
-						}
-						if (that.$messageInput.val() && length % 38 === 0) {
-						//if (that.$messageInput.val() && that.$messageInput.val().length % 38 === 0) {
-							// we insert a new line
-							console.log('hahaha');
-							that.$messageInput.val(that.$messageInput.val() + String.fromCharCode(13, 10));
+							if (that.$messageInput.val() && length % 37 === 0) {
+							//if (that.$messageInput.val() && that.$messageInput.val().length % 38 === 0) {
+								// we insert a new line
+								console.log('hahaha');
+								that.$messageInput.val(that.$messageInput.val() + String.fromCharCode(13, 10));
+							}
 						}
 					});
 

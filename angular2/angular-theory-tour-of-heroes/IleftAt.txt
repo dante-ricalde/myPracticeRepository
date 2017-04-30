@@ -117,7 +117,11 @@ I have left at:
 	Angular templates are dynamic. When Angul
 
 22/04/2017
-	I need to implement the backend.service.ts and then continue to:
-	https://angular.io/docs/ts/latest/guide/architecture.html
+	I need to implement the backend.service.ts and then continue to: (100%)
+	https://angular.io/docs/ts/latest/guide/architecture.html 
 	Dependency injection
 		Dependency injection is a way to supply a new
+
+27/04/2017
+	Wrap up
+	You've learned the basics about the eight main building blocks of an
