@@ -125,3 +125,7 @@ I have left at:
 27/04/2017
 	Wrap up
 	You've learned the basics about the eight main building blocks of an
+02/05/2017
+	https://angular.io/docs/ts/latest/guide/displaying-data.html
+	DISPLAYING DATA
+	Property binding helps show app data in the UI.

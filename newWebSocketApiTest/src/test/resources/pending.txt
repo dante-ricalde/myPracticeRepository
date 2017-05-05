@@ -257,9 +257,10 @@ I need to set https in this chat app (100%)
 
 	Add a button <-| to insert a new line in the text that I am writing in the field text. (100%)
 
-	Try to increase the session of the application (I think that by default is set to 30 seconds)
+	Try to increase the session of the application (I think that by default is set to 30 seconds) (100%)
+	(I have set it to 0 which means indefinitely)
 
-	If I can't to increase the session, I would try to reconnect automatically reading the password from the cookies...indicating in a message that I have reconnected again.
+	If I can't increase the session, I would try to reconnect automatically reading the password from the cookies...indicating in a message that I have reconnected again.(100%, it's not necessary to do)
 
 	review this: http://www.baeldung.com/spring-security-session
 
