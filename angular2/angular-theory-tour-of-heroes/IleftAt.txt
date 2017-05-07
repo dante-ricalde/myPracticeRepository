@@ -1,0 +1,131 @@
+
+steps required:
+ 
+ 1. cd /cygdrive/f/misPracticas/myPracticeRepository/angular2/angular-tour-of-heroes/node_modules/protractor/node_modules/webdriver-manager/selenium/
+ 	cp chromedriver_win32.zip /cygdrive/f/misPracticas/myPracticeRepository/angular2/angular-tour-of-heroes/node_modules/protractor/node_modules/webdriver-manager/selenium/
+ 2. execute npm install -g webdriver-manager
+ 2. execute npm run pree2e
+ 3. execute npm install --save @types/selenium-webdriver
+ 4. execute npm install lite-server
+
+
+I have left at:
+
+	https://angular.io/docs/ts/latest/tutorial/toh-pt1.html
+	Show our Hero
+		We want to display Hero data in our app (100%)
+
+	https://angular.io/docs/ts/latest/tutorial/toh-pt2.html
+		We build a master/detail page with a list of heroes
+		Notice that we again use the back-tick notation for multi-line strings. (100%)
+12/01/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt3.html
+		We refactor the master/detail view into separate components (95%)
+13/01/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt3.html
+	The Road Ahead (95%). 
+		Review this chapter entirely if necessary to remember the theory. I reviewed it quickly.
+
+20/01/2017
+	Use the Hero Service
+	https://angular.io/docs/ts/latest/tutorial/toh-pt4.html
+
+	I advanced until Async Services and Promises, but I did it quickly. I need to read slowly and again from 'Use the Hero Service'
+21/01/2017
+	I am going to start this chapter
+	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
+
+29/01/2017
+	Add a Dashboard
+	Routing only makes sense when we have multiple vie
+
+05/02/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
+	Find our way back
+	We can navigate to the HeroDetailComponent
+
+11/02/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
+	Styling the App
+
+19/02/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt5.html
+	Style the Navigation Links
+
+26/02/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	HTTP
+	GETTING AND SAVING DATA
+
+05/03/2017
+	.catch(this.handleError); in getHeroes() method at Heroes and HTTP.
+
+11/03/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	To add a new hero we need to know the hero's name. Let's u
+
+16/03/2017
+	Observables
+	Each Http service method returns an Observable of HTTP R
+
+20/03/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	coding this: 
+	gotoDetail(hero: Hero): void {
+
+25/03/2017
+	https://angular.io/docs/ts/latest/tutorial/toh-pt6.html
+	Return to the learning path, where you can read more about the concepts and practices found in this tutorial.
+
+31/03/2017
+	https://angular.io/docs/ts/latest/guide/learning-angular.html#!#architecture
+		I left at: 
+			Angular is a framework for building client applications in HTML 
+
+	links:
+		https://angular.io/docs/ts/latest/guide/learning-angular.html#!#architecture ==> (main link)
+		https://embed.plnkr.co/?show=preview (examples)
+		http://exploringjs.com/es6/ch_modules.html ==> The JavaScript module system on the web.
+
+	freeCourses:
+		https://coursetro.com/courses/8/Learn-Angular-2-Development-with-our-Free-Course
+		https://coursetro.com/posts/code/25/Understanding-Angular-2-Animations-Tutorial
+		https://egghead.io/lessons/angular-2-controlling-how-styles-are-shared-with-view-encapsulation
+		http://courses.angularclass.com/p/angular-2-fundamentals
+		http://learnangular2.com/viewChild/
+		http://www.angular2.com/
+		https://www.lynda.com/AngularJS-tutorials/Welcome/428058/482929-4.html
+		https://www.ng-book.com/2/
+		http://angularjs.blogspot.com.es/2017/03/angular-400-now-available.html
+		https://github.com/robwormald/ng-universal-demo/tree/master/src ==> (angular4)
+
+06/04/2016
+	https://angular.io/docs/ts/latest/guide/architecture.html
+	Angular libraries
+		Angular ships as a collection of JavaScript
+
+11/04/2016
+	Templates
+	https://angular.io/docs/ts/latest/guide/architecture.html
+	You define a component's view with its companion template
+
+	I have created the files: hero-list.component.ts, hero.theory.service.ts. Tha application has started but I need to incorporate this new component in the app-routing.module.ts and app.component.ts in a new menu link. (100%)
+
+16/04/2016
+	Directives
+	https://angular.io/docs/ts/latest/guide/architecture.html
+	Angular templates are dynamic. When Angul
+
+22/04/2017
+	I need to implement the backend.service.ts and then continue to: (100%)
+	https://angular.io/docs/ts/latest/guide/architecture.html 
+	Dependency injection
+		Dependency injection is a way to supply a new
+
+27/04/2017
+	Wrap up
+	You've learned the basics about the eight main building blocks of an
+02/05/2017
+	https://angular.io/docs/ts/latest/guide/displaying-data.html
+	DISPLAYING DATA
+	Property binding helps show app data in the UI.
