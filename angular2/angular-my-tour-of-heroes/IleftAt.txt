@@ -103,8 +103,3 @@ I have left at:
 	https://angular.io/docs/ts/latest/guide/architecture.html
 	Angular libraries
 		Angular ships as a collection of JavaScript
-07/05/2016
-	I have left creating the click me component.
-	
-	https://angular.io/docs/ts/latest/guide/user-input.html
-	When writing a binding, be aware of a template statement's execution context. The identifiers in a template statement

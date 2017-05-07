@@ -9,26 +9,19 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require('@angular/core');
-var hero_theory_service_1 = require('./hero.theory.service');
-//import { Logger } from './logger.service';
-var HeroListComponent = (function () {
-    function HeroListComponent(service) {
-        this.service = service;
+// This AppComponent is a Router Component because (The AppComponent is now attached to a router and displaying routed views).
+var AppComponent = (function () {
+    function AppComponent() {
     }
-    HeroListComponent.prototype.ngOnInit = function () {
-        this.heroes = this.service.getHeroes();
-    };
-    HeroListComponent.prototype.selectHero = function (hero) { this.selectedHero = hero; };
-    HeroListComponent = __decorate([
+    AppComponent = __decorate([
         core_1.Component({
             moduleId: module.id,
-            selector: 'hero-list',
-            templateUrl: './hero-list.component.html',
-            providers: [hero_theory_service_1.HeroService]
+            selector: 'my-app',
+            templateUrl: './app.component.html'
         }), 
-        __metadata('design:paramtypes', [hero_theory_service_1.HeroService])
-    ], HeroListComponent);
-    return HeroListComponent;
+        __metadata('design:paramtypes', [])
+    ], AppComponent);
+    return AppComponent;
 }());
-exports.HeroListComponent = HeroListComponent;
-//# sourceMappingURL=hero-list.component.js.map
+exports.AppComponent = AppComponent;
+//# sourceMappingURL=app.component.js.map
