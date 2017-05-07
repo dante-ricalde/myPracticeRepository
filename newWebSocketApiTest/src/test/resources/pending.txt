@@ -133,16 +133,16 @@ I need to analyze the queues and polish the chat
 
 23/08 ==> 8:55 -> 11:35
 25.4.11 User Destinations
-I am going to build a chat, first login in the app, then choosing a user to chat and finally chat with the user in a dialog window.
+I am going to build a chat, first login in the app, then choosing a user to chat and finally chat with the user in a dialog window.(100%)
 
 29/08 ==> 7:55 -> 1:40
-I left creating the chat, I need to return the users connected to myChat.jsp to connect to an user and start a conversation creating their user queue, sending the messages to the respective user.
+I left creating the chat, I need to return the users connected to myChat.jsp to connect to an user and start a conversation creating their user queue, sending the messages to the respective user.(100%)
 
 01/09 ==> 5:10 -> 7:14
-create a plugin of the form: $('#content').chat(options); to manage all the chat process (creating the dialogs, the calls to the websockets and all the ui needed).
+create a plugin of the form: $('#content').chat(options); to manage all the chat process (creating the dialogs, the calls to the websockets and all the ui needed). (100%)
 
 03/09 ==> 4:40 -> 7:00
-I left creating the window dialog to chat with another user, i need to set the standard css for jquery ui. (the jquery ui is downloaded in download folder)
+I left creating the window dialog to chat with another user, i need to set the standard css for jquery ui. (the jquery ui is downloaded in download folder) (100%)
 
 20/09 ==> 
 I need to program the case when a user is connected and another one signs in so that the first user sees immediately when the second user has signed in. (100%)
@@ -172,11 +172,11 @@ I need to program the case when a user is connected and another one signs in so 
  
  1.) When a user is disconnected, notify him that he is disconnected with a message, and when the user logs in again in the app he can received the pending messages which he couldn't 
  	receive while disconnected (using the heartbeats and trying to reconnect from the client if it's possible and if it's necessary try to log in automatically from the client showing a message
- 	that the user has been reconnected).
- 2.) Add the time and the user name to the message sent.
+ 	that the user has been reconnected). (100% I have set the session timeout to indefintely...the messages always can be received because They are stored in a queue).
+ 2.) Add the time and the user name to the message sent. (100%)
  3.) Show all the users but highlighting with a green colour button the users connected.
  4.) Add the acknowledgements to the messages sent with a single tick when the message has been successfully sent (use the receipts for this when sending the message), a double tick 
- 	when the message has been delivered to the recipient, and a green double tick when the recipient has read your message.
+ 	when the message has been delivered to the recipient, and a green double tick when the recipient has read your message.(100%)
 
  	
  8/10 ==> 5:00 - 8:00
@@ -214,9 +214,9 @@ https://localhost:4443/anyUrlPattern/@websocketSpringIntegration
 	I need to implement the highlighted double tick to show that the recipient has read the message.
 	Solution:
 		- When the recipient receives the message besides sending the message indicating that is received by the client it's necessary to send a message indicating
-		that the message has been read if the user window is open.
+		that the message has been read if the user window is open. (100%)
 		When the user window passes from being closed to open it's necesary to send a message to the messages-message.sender-notification that the messages has been read
-		so that the sender can mark all the messages that have not been marked as read as read.   
+		so that the sender can mark all the messages that have not been marked as read as read. (100%)
 		
 		
 CHAT URL in local: https://localhost:8443/anyUrlPattern/chat/myChat
