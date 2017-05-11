@@ -1,6 +1,7 @@
 package test.org.spring.websocket.api.integration.chat;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
 
 import test.org.spring.websocket.api.model.ChatMessage;
 
@@ -51,5 +53,9 @@ public interface ChatControllerGateway {
 	@SubscribeMapping("/getMessages/{queueName}")
 	@Gateway(requestChannel = "chatMessagesProcessorChannel")
 	public List<ChatMessage> getMessages(@DestinationVariable(value = "queueName") String queueName, MessageHeaders headers);
+	
+	@RequestMapping(value = "/admin", method = GET)
+	@Gateway(requestChannel = "adminChannel")
+	public String admin(ModelMap modelMap);
 
 }

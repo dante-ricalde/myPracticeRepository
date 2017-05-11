@@ -24,7 +24,7 @@ import test.org.spring.websocket.api.controller.ChatController;
 @MessageEndpoint
 public class WelcomeProcessor {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ChatController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(WelcomeProcessor.class);
 
 	@Qualifier("sessionRegistry")
 	@Autowired(required = false)
