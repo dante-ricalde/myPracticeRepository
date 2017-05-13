@@ -13,6 +13,8 @@ var platform_browser_1 = require('@angular/platform-browser');
 var forms_1 = require('@angular/forms');
 var http_1 = require('@angular/http');
 var app_component_1 = require('./app.component');
+var click_me_component_1 = require('./click-me.component');
+var keyup_components_1 = require('./keyup.components');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -24,7 +26,9 @@ var AppModule = (function () {
                 http_1.HttpModule
             ],
             declarations: [
-                app_component_1.AppComponent
+                app_component_1.AppComponent,
+                click_me_component_1.ClickMeComponent,
+                keyup_components_1.KeyUpComponent_v1
             ],
             providers: [],
             bootstrap: [app_component_1.AppComponent]

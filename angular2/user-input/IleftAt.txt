@@ -130,8 +130,12 @@ I have left at:
 	DISPLAYING DATA
 	Property binding helps show app data in the UI.
 
-07/05/2016
+07/05/2017
 	I have left creating the click me component.
 	
 	https://angular.io/docs/ts/latest/guide/user-input.html
 	When writing a binding, be aware of a template statement's execution context. The identifiers in a template statement
+
+13/05/2017
+	Get user input from a template reference variable
+	There's another way to get the user data: use Angul

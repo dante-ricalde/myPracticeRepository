@@ -5,6 +5,8 @@ import { RouterModule } from '@angular/router';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent }  from './app.component';
+import { ClickMeComponent } from './click-me.component';
+import { KeyUpComponent_v1 } from './keyup.components';
 
 
 @NgModule({
@@ -14,7 +16,9 @@ import { AppComponent }  from './app.component';
     HttpModule
   ],
   declarations: [ 
-  	AppComponent
+  	AppComponent,
+    ClickMeComponent,
+    KeyUpComponent_v1
   ],
   providers: [ ],
   bootstrap:    [ AppComponent ]
