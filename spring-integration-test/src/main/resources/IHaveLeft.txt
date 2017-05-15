@@ -1,0 +1,3 @@
+I have leaft reading this: http://docs.spring.io/spring-integration/docs/4.3.9.RELEASE/reference/html/mongodb.html
+1. I need to increment the versions of spring and spring-integration and test this mongo adapter
+2. I need to develop the admin section in my chat project using mongo adapters of spring integration

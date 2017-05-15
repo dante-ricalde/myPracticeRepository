@@ -36,7 +36,7 @@
 	<span class="userName">Hi ${principalUserName}</span>
 	<h2>Users connected:</h2>
 	<DIV id="chatContent" data-params='{"welcomeUrl": "${welcomeUrl}", "userName": "${principalUserName}"}'>
-	
+		Under construction
 	</DIV>
 </body>
 </html>
