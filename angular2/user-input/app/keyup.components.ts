@@ -17,3 +17,17 @@ export class KeyUpComponent_v1 {
 		this.values += (<HTMLInputElement>event.target).value + ' | ';
 	}
 }
+//////////////////////////// KEY UP 2 ///////////////////////////////////
+@Component({
+	selector: 'key-up2',
+	template: `
+		<input #box (keyup)="onKey(box.value)">
+		<p>{{values}}</p>
+	`
+})
+export class KeyUpComponent_v2 {
+	values = '';
+	onKey(value: string) {
+		this.values += value + ' | ';
+	}
+}

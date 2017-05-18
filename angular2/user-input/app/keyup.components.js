@@ -31,4 +31,22 @@ var KeyUpComponent_v1 = (function () {
     return KeyUpComponent_v1;
 }());
 exports.KeyUpComponent_v1 = KeyUpComponent_v1;
+//////////////////////////// KEY UP 2 ///////////////////////////////////
+var KeyUpComponent_v2 = (function () {
+    function KeyUpComponent_v2() {
+        this.values = '';
+    }
+    KeyUpComponent_v2.prototype.onKey = function (value) {
+        this.values += value + ' | ';
+    };
+    KeyUpComponent_v2 = __decorate([
+        core_1.Component({
+            selector: 'key-up2',
+            template: "\n\t\t<input #box (keyup)=\"onKey(box.value)\">\n\t\t<p>{{values}}</p>\n\t"
+        }), 
+        __metadata('design:paramtypes', [])
+    ], KeyUpComponent_v2);
+    return KeyUpComponent_v2;
+}());
+exports.KeyUpComponent_v2 = KeyUpComponent_v2;
 //# sourceMappingURL=keyup.components.js.map

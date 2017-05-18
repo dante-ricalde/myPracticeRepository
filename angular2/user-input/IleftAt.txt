@@ -139,3 +139,5 @@ I have left at:
 13/05/2017
 	Get user input from a template reference variable
 	There's another way to get the user data: use Angul
+18/05/2017
+	Key event filtering (with key.enter)
