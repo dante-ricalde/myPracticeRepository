@@ -1,0 +1,4 @@
+to start mongo from cygdrive:
+	/cygdrive/c/Program\ Files/MongoDB/Server/3.4/bin/mongod.exe --dbpath "d:\mongodb\data"
+to connect to mongo shell from cmd:
+	C:\Program Files\MongoDB\Server\3.4\bin>mongo.exe

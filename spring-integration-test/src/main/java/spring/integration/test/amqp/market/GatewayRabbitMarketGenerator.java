@@ -6,9 +6,9 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.integration.amqp.AmqpHeaders;
 import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
