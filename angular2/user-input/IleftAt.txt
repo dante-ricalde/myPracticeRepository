@@ -141,3 +141,7 @@ I have left at:
 	There's another way to get the user data: use Angul
 18/05/2017
 	Key event filtering (with key.enter)
+
+25/05/2017
+	https://angular.io/docs/ts/latest/guide/forms.html
+	A form creates a cohesive, effective, and compelling data entry experienc

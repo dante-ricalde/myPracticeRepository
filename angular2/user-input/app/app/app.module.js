@@ -12,11 +12,19 @@ var core_1 = require('@angular/core');
 var platform_browser_1 = require('@angular/platform-browser');
 var forms_1 = require('@angular/forms');
 var http_1 = require('@angular/http');
+// Imports for loading & configuring the in-memory web api
+var angular_in_memory_web_api_1 = require('angular-in-memory-web-api');
+var in_memory_data_service_1 = require('./in-memory-data.service');
+var logger_service_1 = require('./logger.service');
 var app_component_1 = require('./app.component');
-var click_me_component_1 = require('./click-me.component');
-var keyup_components_1 = require('./keyup.components');
-var little_tour_component_1 = require('./little-tour.component');
-var loop_back_component_1 = require('./loop-back.component');
+var hero_detail_component_1 = require('./hero-detail.component');
+var heroes_component_1 = require('./heroes.component');
+var backend_service_1 = require('./backend.service');
+var hero_service_1 = require('./hero.service');
+var dashboard_component_1 = require('./dashboard.component');
+var hero_search_component_1 = require('./hero-search.component');
+var hero_list_component_1 = require('./hero-list.component');
+var app_routing_module_1 = require('./app-routing.module');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -25,19 +33,19 @@ var AppModule = (function () {
             imports: [
                 platform_browser_1.BrowserModule,
                 forms_1.FormsModule,
-                http_1.HttpModule
+                http_1.HttpModule,
+                angular_in_memory_web_api_1.InMemoryWebApiModule.forRoot(in_memory_data_service_1.InMemoryDataService),
+                app_routing_module_1.AppRoutingModule
             ],
             declarations: [
                 app_component_1.AppComponent,
-                click_me_component_1.ClickMeComponent,
-                keyup_components_1.KeyUpComponent_v1,
-                keyup_components_1.KeyUpComponent_v2,
-                keyup_components_1.KeyUpComponent_v3,
-                keyup_components_1.KeyUpComponent_v4,
-                little_tour_component_1.LittleTourComponent,
-                loop_back_component_1.LoopbackComponent
+                dashboard_component_1.DashboardComponent,
+                heroes_component_1.HeroesComponent,
+                hero_detail_component_1.HeroDetailComponent,
+                hero_search_component_1.HeroSearchComponent,
+                hero_list_component_1.HeroListComponent
             ],
-            providers: [],
+            providers: [backend_service_1.BackendService, hero_service_1.HeroService, logger_service_1.Logger],
             bootstrap: [app_component_1.AppComponent]
         }), 
         __metadata('design:paramtypes', [])
