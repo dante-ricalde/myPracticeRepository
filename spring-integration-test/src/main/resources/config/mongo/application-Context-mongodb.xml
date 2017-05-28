@@ -16,7 +16,7 @@
 		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
 		http://www.springframework.org/schema/integration/ftp http://www.springframework.org/schema/integration/ftp/spring-integration-ftp-2.2.xsd
 		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip-2.2.xsd
-		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.0.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.3.xsd
 		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms-4.0.xsd
 		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx-2.2.xsd
 		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.2.xsd
@@ -47,5 +47,156 @@
 		</bean>
 		
 		<bean id="mongoDbMessageStore" class="org.springframework.integration.mongodb.store.MongoDbMessageStore" c:mongoDbFactory-ref="mongoDbFactory" />
+		
+	<!--  In this case I am testing a simple mongoDbMessageStore used by a QueueChannel. The MongoDbMessageStore expands the Message as a Mongo document with all nested properties using the 
+	Spring Data Mongo Mapping mechanism. This is useful when you need to have access to the payload or headers for auditing or analytics, for example, against stored messages. 
+	The MongoDbMessageStore uses a custom MappingMongoConverter implementation to store Messages as MongoDB documents and there are some limitations for the properties (payload or headers 
+	values) of the Message. For example, there is no ability to configure custom converters for complex domain payloads or header values, or to provide a custom MongoTemplate (or 
+	MappingMongoConverter). To achieve these capabilities, an alternative MongoDB MessageStore implementation has been introduced (the ConfigurableMongoDbMessageStore).
+	
+		In this case each generated message by the "mongoDbMessageStoreInboundChannelAdapter" inbound channel adapter that is sent to the queue channel "somePersistentQueueChannel" is
+		stored in the collection "messages" of the data base "test". These are some messages stored in the collection messages retrieved using "db.messages.find().pretty()": 
+		
+		{
+	        "_id" : ObjectId("592aa501b7565609210edba8"),
+	        "_createdDate" : NumberLong("1495966977672"),
+	        "_class" : "org.springframework.integration.mongodb.store.MongoDbMessageStore$MessageWrapper",
+	        "_groupId" : "mongoDbMessageStore:somePersistentQueueChannel",
+	        "_messageType" : "org.springframework.messaging.support.GenericMessage",
+	        "payload" : {
+	                "_class" : "spring.integration.test.var.Item",
+	                "_id" : "273aa71c-e5a3-4edc-8d9d-8433dc9dab1c",
+	                "code" : "Danielito Ricalde Rivera",
+	                "description" : "Danielito Ricalde Rivera",
+	                "status" : 2
+	        },
+	        "headers" : {
+	                "mqtt_retained" : false,
+	                "history" : {
+	                        "_class" : "org.springframework.integration.history.MessageHistory",
+	                        "components" : [
+	                                {
+	                                        "name" : "mongoDbMessageStoreInboundChannelAdapter",
+	                                        "type" : "inbound-channel-adapter",
+	                                        "timestamp" : "1495966977610"
+	                                },
+	                                {
+	                                        "name" : "somePersistentQueueChannel",
+	                                        "type" : "channel",
+	                                        "timestamp" : "1495966977611"
+	                                }
+	                        ]
+	                },
+	                "id" : {
+	                        "_value" : "2b2d2bf5-abd1-35cf-8dda-e652f40772f5",
+	                        "_class" : "java.util.UUID"
+	                },
+	                "timestamp" : NumberLong("1495966977611")
+	        },
+	        "_group_timestamp" : NumberLong("1495966977661"),
+	        "_group_update_timestamp" : NumberLong("1495966977661"),
+	        "_last_released_sequence" : 0,
+	        "_group_complete" : false,
+	        "sequence" : 1
+	}
+	{
+	        "_id" : ObjectId("592aa502b7565609210edba9"),
+	        "_createdDate" : NumberLong("1495966978604"),
+	        "_class" : "org.springframework.integration.mongodb.store.MongoDbMessageStore$MessageWrapper",
+	        "_groupId" : "mongoDbMessageStore:somePersistentQueueChannel",
+	        "_messageType" : "org.springframework.messaging.support.GenericMessage",
+	        "payload" : {
+	                "_class" : "spring.integration.test.var.Item",
+	                "_id" : "3ddf8076-c5a6-4325-9f68-338419aff031",
+	                "code" : "Dantito Ricalde Rivera",
+	                "description" : "Dantito Ricalde Rivera",
+	                "status" : 1
+	        },
+	        "headers" : {
+	                "mqtt_retained" : false,
+	                "history" : {
+	                        "_class" : "org.springframework.integration.history.MessageHistory",
+	                        "components" : [
+	                                {
+	                                        "name" : "mongoDbMessageStoreInboundChannelAdapter",
+	                                        "type" : "inbound-channel-adapter",
+	                                        "timestamp" : "1495966978600"
+	                                },
+	                                {
+	                                        "name" : "somePersistentQueueChannel",
+	                                        "type" : "channel",
+	                                        "timestamp" : "1495966978600"
+	                                }
+	                        ]
+	                },
+	                "id" : {
+	                        "_value" : "593e8db7-c8de-6e0c-479b-75540bf07c08",
+	                        "_class" : "java.util.UUID"
+	                },
+	                "timestamp" : NumberLong("1495966978600")
+	        },
+	        "_group_timestamp" : NumberLong("1495966977661"),
+	        "_group_update_timestamp" : NumberLong("1495966978603"),
+	        "_last_released_sequence" : 0,
+	        "_group_complete" : false,
+	        "sequence" : 2
+	}
+	{
+	        "_id" : ObjectId("592aa503b7565609210edbaa"),
+	        "_createdDate" : NumberLong("1495966979606"),
+	        "_class" : "org.springframework.integration.mongodb.store.MongoDbMessageStore$MessageWrapper",
+	        "_groupId" : "mongoDbMessageStore:somePersistentQueueChannel",
+	        "_messageType" : "org.springframework.messaging.support.GenericMessage",
+	        "payload" : {
+	                "_class" : "spring.integration.test.var.Item",
+	                "_id" : "a9f6437d-a165-44fc-998b-d45e082c5612",
+	                "code" : "Dantito Ricalde Rivera",
+	                "description" : "Dantito Ricalde Rivera",
+	                "status" : 1
+	        },
+	        "headers" : {
+	                "mqtt_retained" : false,
+	                "history" : {
+	                        "_class" : "org.springframework.integration.history.MessageHistory",
+	                        "components" : [
+	                                {
+	                                        "name" : "mongoDbMessageStoreInboundChannelAdapter",
+	                                        "type" : "inbound-channel-adapter",
+	                                        "timestamp" : "1495966979600"
+	                                },
+	                                {
+	                                        "name" : "somePersistentQueueChannel",
+	                                        "type" : "channel",
+	                                        "timestamp" : "1495966979601"
+	                                }
+	                        ]
+	                },
+	                "id" : {
+	                        "_value" : "eed1a97f-01b6-2164-6d8d-d6325052a4bb",
+	                        "_class" : "java.util.UUID"
+	                },
+	                "timestamp" : NumberLong("1495966979601")
+	        },
+	        "_group_timestamp" : NumberLong("1495966977661"),
+	        "_group_update_timestamp" : NumberLong("1495966979605"),
+	        "_last_released_sequence" : 0,
+	        "_group_complete" : false,
+	        "sequence" : 3
+	}
+		
+		 -->
+		
+		<int:inbound-channel-adapter id="mongoDbMessageStoreInboundChannelAdapter"
+			expression="T(java.lang.Math).random() > 0.5 ? T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 
+	 		'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('mqtt_retained', false).build():
+			T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera',
+			'Danielito Ricalde Rivera', 2)).setHeader('mqtt_retained', false).build()"
+			channel="somePersistentQueueChannel" auto-startup="true">
+			<int:poller fixed-rate="1000" />
+		</int:inbound-channel-adapter>
+		
+		<int:channel id="somePersistentQueueChannel">
+			<int:queue message-store="mongoDbMessageStore" />
+		</int:channel>
 	
 </beans>
