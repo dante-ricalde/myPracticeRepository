@@ -191,12 +191,85 @@
 	 		'Dantito Ricalde Rivera', 'Dantito Ricalde Rivera', 1)).setHeader('mqtt_retained', false).build():
 			T(org.springframework.integration.support.MessageBuilder).withPayload(new spring.integration.test.var.Item(T(java.util.UUID).randomUUID().toString(), 'Danielito Ricalde Rivera',
 			'Danielito Ricalde Rivera', 2)).setHeader('mqtt_retained', false).build()"
-			channel="somePersistentQueueChannel" auto-startup="true">
+			channel="somePersistentQueueChannel" auto-startup="false">
 			<int:poller fixed-rate="1000" />
 		</int:inbound-channel-adapter>
 		
 		<int:channel id="somePersistentQueueChannel">
 			<int:queue message-store="mongoDbMessageStore" />
 		</int:channel>
-	
+		
+		<!--  In this case I am testing a configurableMongoDbMessageStore usage by an aggregator. I have tested the aggregator using the mongoDbMessageStore and it works perfectly (the messages
+		are store in the messages collection). Regarding the testing of the aggregator using the configurableMongoDbMessageStore I am getting the error:
+		
+		mework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.messaging.support.GenericMessage]: No default constructor
+		
+		, but the messages are being stored in the collection "configurableStoreMessages". Theory says that the ConfigurableMongoDbMessageStore uses standard Java serialization 
+		to write/read Message s to/from MongoDB (see MongoDbMessageBytesConverter) and relies on default values for other properties from MongoTemplate, which is built from the 
+		provided MongoDbFactory and MappingMongoConverter, but in the logs I see that the ConfigurableMongoDbMessageStore is using the MongoTemplate and a MappingMongoConverter and
+		not the MongoDbMessageBytesConverter.
+		
+		
+		Caused by: org.springframework.data.mapping.model.MappingInstantiationException: Failed to instantiate org.springframework.messaging.support.GenericMessage using constructor NO_CONSTRUCTOR with arguments 
+			at org.springframework.data.convert.ReflectionEntityInstantiator.createInstance(ReflectionEntityInstantiator.java:64)
+			at org.springframework.data.convert.ClassGeneratingEntityInstantiator.createInstance(ClassGeneratingEntityInstantiator.java:83)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:251)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:231)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.readValue(MappingMongoConverter.java:1186)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.access$200(MappingMongoConverter.java:78)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter$MongoDbPropertyValueProvider.getPropertyValue(MappingMongoConverter.java:1134)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter$MongoDbPropertyValueProvider.getPropertyValue(MappingMongoConverter.java:1097)
+			at org.springframework.data.mapping.model.PersistentEntityParameterValueProvider.getParameterValue(PersistentEntityParameterValueProvider.java:78)
+			at org.springframework.data.mapping.model.SpELExpressionParameterValueProvider.getParameterValue(SpELExpressionParameterValueProvider.java:63)
+			at org.springframework.data.convert.ReflectionEntityInstantiator.createInstance(ReflectionEntityInstantiator.java:71)
+			at org.springframework.data.convert.ClassGeneratingEntityInstantiator.createInstance(ClassGeneratingEntityInstantiator.java:83)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:251)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:231)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:191)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:187)
+			at org.springframework.data.mongodb.core.convert.MappingMongoConverter.read(MappingMongoConverter.java:78)
+			at org.springframework.data.mongodb.core.MongoTemplate$ReadDbObjectCallback.doWith(MongoTemplate.java:2269)
+			at org.springframework.data.mongodb.core.MongoTemplate.executeFindMultiInternal(MongoTemplate.java:1945)
+			at org.springframework.data.mongodb.core.MongoTemplate.doFind(MongoTemplate.java:1763)
+			at org.springframework.data.mongodb.core.MongoTemplate.doFind(MongoTemplate.java:1746)
+			at org.springframework.data.mongodb.core.MongoTemplate.find(MongoTemplate.java:624)
+			at org.springframework.data.mongodb.core.MongoTemplate.findOne(MongoTemplate.java:589)
+			at org.springframework.integration.mongodb.store.ConfigurableMongoDbMessageStore.getMessageGroup(ConfigurableMongoDbMessageStore.java:145)
+			at org.springframework.integration.mongodb.store.ConfigurableMongoDbMessageStore.addMessageToGroup(ConfigurableMongoDbMessageStore.java:168)
+			at org.springframework.integration.aggregator.AbstractCorrelatingMessageHandler.store(AbstractCorrelatingMessageHandler.java:621)
+			at org.springframework.integration.aggregator.AbstractCorrelatingMessageHandler.handleMessageInternal(AbstractCorrelatingMessageHandler.java:413)
+			at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:127)
+		-->
+		<bean id="configurableMongoDbMessageStore" class="org.springframework.integration.mongodb.store.ConfigurableMongoDbMessageStore" c:mongoTemplate-ref="myMongoTemplate" />
+		
+		<bean id="myMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+			<constructor-arg index="0" ref="mongoDbFactory" type="org.springframework.data.mongodb.MongoDbFactory"></constructor-arg>
+<!-- 			<constructor-arg index="1" ref="myMongoDbConverter" type="org.springframework.data.mongodb.core.convert.MongoConverter"></constructor-arg> -->
+		</bean>
+		
+<!-- 		<bean id="myMongoDbConverter" class="org.springframework.integration.mongodb.support.MongoDbMessageBytesConverter"></bean> -->
+		
+		<int:inbound-channel-adapter id="toTestAMongoDbMessageStoreUsageByAnAggregatorInboundChannelAdapter" channel="toTestAMongoDbMessageStoreUsageByAnAggregatorSplitterInputChannel"
+			expression="T(java.util.Arrays).asList('message number 1', 'message number 2', 'message number 3', 'message number 4', 'message number 5')" auto-startup="true">
+			<int:poller fixed-rate="1000" />
+		</int:inbound-channel-adapter>
+		
+		<int:splitter id="toTestAMongoDbMessageStoreUsageByAnAggregatorSplitter" input-channel="toTestAMongoDbMessageStoreUsageByAnAggregatorSplitterInputChannel" 
+			output-channel="toTestAMongoDbMessageStoreUsageByAnAggregatorSplitterOutputChannel" 
+			auto-startup="true" />
+		
+<!-- 		<int:channel id="toTestAMongoDbMessageStoreUsageByAnAggregatorSplitterOutputChannel"> -->
+<!-- 			<int:queue capacity="500" /> -->
+<!-- 			<int:interceptors> -->
+<!-- 				<ref bean="myChannelInterceptor" /> -->
+<!-- 			</int:interceptors> -->
+<!-- 		</int:channel> -->
+		
+		<int:aggregator id="toTestAMongoDbMessageStoreUsageByAnAggregator" input-channel="toTestAMongoDbMessageStoreUsageByAnAggregatorSplitterOutputChannel" 
+			output-channel="toTestAMongoDbMessageStoreUsageByAnAggregatorOutboundChannelAdapter" message-store="configurableMongoDbMessageStore" auto-startup="true">
+		</int:aggregator>
+		
+		<int:outbound-channel-adapter id="toTestAMongoDbMessageStoreUsageByAnAggregatorOutboundChannelAdapter"
+			ref="channelAdapterReceiver" method="receiveMessage" auto-startup="true" />			
+		
 </beans>
