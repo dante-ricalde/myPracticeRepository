@@ -153,3 +153,6 @@ I have left at:
 	Why don't you write the template inline in the component file as you often do elsewhere?
 
 	Note: I should read quickly from start again...
+10/06/2017
+	https://angular.io/docs/ts/latest/guide/forms.HTML
+	Track control state and validity with ngModel
