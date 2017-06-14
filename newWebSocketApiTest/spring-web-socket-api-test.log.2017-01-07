@@ -1,0 +1,11 @@
+INFO  [org.springframework.amqp.rabbit.connection.CachingConnectionFactory]  - Created new connection: SimpleConnection@25bbe1b6 [delegate=amqp://guest@127.0.0.1:5672/, localPort= 61671]
+DEBUG [org.springframework.amqp.rabbit.connection.CachingConnectionFactory]  - Creating cached Rabbit Channel from AMQChannel(amqp://guest@127.0.0.1:5672/,1)
+DEBUG [org.springframework.amqp.rabbit.core.RabbitTemplate]  - Executing callback on RabbitMQ Channel: Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:5672/,1), conn: Proxy@3159c4b8 Shared Rabbit Connection: SimpleConnection@25bbe1b6 [delegate=amqp://guest@127.0.0.1:5672/, localPort= 61671]
+DEBUG [org.springframework.amqp.rabbit.core.RabbitAdmin]  - declaring Queue 'kkQueue'
+DEBUG [org.springframework.amqp.rabbit.core.RabbitTemplate]  - Executing callback on RabbitMQ Channel: Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:5672/,1), conn: Proxy@3159c4b8 Shared Rabbit Connection: SimpleConnection@25bbe1b6 [delegate=amqp://guest@127.0.0.1:5672/, localPort= 61671]
+DEBUG [org.springframework.amqp.rabbit.core.RabbitTemplate]  - Publishing message on exchange [], routingKey = [kkQueue]
+DEBUG [org.springframework.web.client.RestTemplate]  - Created POST request for "http://localhost:15672/api/queues/%2F/kkQueue/get"
+DEBUG [org.springframework.web.client.RestTemplate]  - Setting request Accept header to [text/plain, application/json, application/*+json, */*]
+DEBUG [org.springframework.web.client.RestTemplate]  - Writing [{requeue=true, truncate=50000, count=5, encoding=auto}] as "application/json" using [org.springframework.http.converter.json.MappingJackson2HttpMessageConverter@6193932a]
+DEBUG [org.springframework.web.client.RestTemplate]  - POST request for "http://localhost:15672/api/queues/%2F/kkQueue/get" resulted in 200 (OK)
+DEBUG [org.springframework.web.client.RestTemplate]  - Reading [java.lang.String] as "application/json" using [org.springframework.http.converter.StringHttpMessageConverter@149e0f5d]
